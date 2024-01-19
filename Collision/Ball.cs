@@ -102,13 +102,22 @@ namespace Collision
                     // Collision detected
 
                     // Decide on how to change the ball's movement based on the side of collision
-                    if (pos.X < obstacleHitbox.Left || pos.X > obstacleHitbox.Right)
+                    if (pos.X < obstacleHitbox.Left)
                     {
-                        impulseX = -impulseX; // Horizontal collision
+                        impulseX = -speedX;
                     }
-                    if (pos.Y < obstacleHitbox.Top || pos.Y > obstacleHitbox.Bottom)
+                    else if (pos.X > obstacleHitbox.Right)
                     {
-                        impulseY = -impulseY; // Vertical collision
+                        impulseX = +speedX;
+                    }
+
+                    if (pos.Y < obstacleHitbox.Top)
+                    {
+                        impulseY = -speedY;
+                    }
+                    else if (pos.Y > obstacleHitbox.Bottom)
+                    {
+                        impulseY = +speedY;
                     }
 
                     // Adjusting the position of the ball to avoid sticking into the obstacle
