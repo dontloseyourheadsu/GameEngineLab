@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parallax", "Parallax\Parall
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Collision", "Collision\Collision.csproj", "{A537EDD1-7688-48DB-9999-8ABE607EA143}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mapas", "Mapas\Mapas.csproj", "{069ADAE2-2A16-4A53-A73E-F39215F2BA8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{A537EDD1-7688-48DB-9999-8ABE607EA143}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A537EDD1-7688-48DB-9999-8ABE607EA143}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A537EDD1-7688-48DB-9999-8ABE607EA143}.Release|Any CPU.Build.0 = Release|Any CPU
+		{069ADAE2-2A16-4A53-A73E-F39215F2BA8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{069ADAE2-2A16-4A53-A73E-F39215F2BA8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{069ADAE2-2A16-4A53-A73E-F39215F2BA8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{069ADAE2-2A16-4A53-A73E-F39215F2BA8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
