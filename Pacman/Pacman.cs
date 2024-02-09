@@ -29,7 +29,7 @@ namespace Pacman
                 pictureBox.Image = Resource1.madoka_running;
 
                 pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
-                pictureBox.Size = new Size(50, 50);
+                pictureBox.Size = new Size(30, 30);
 
                 pictureBox.Paint -= PictureBox_Paint;
                 pictureBox.Paint += PictureBox_Paint;
@@ -48,7 +48,7 @@ namespace Pacman
                 pictureBox.Image = Resource1.madoka_running;
 
                 pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
-                pictureBox.Size = new Size(50, 50);
+                pictureBox.Size = new Size(30, 30);
 
                 pictureBox.Paint -= PictureBox_Paint;
                 pictureBox.Paint += PictureBox_Paint;

@@ -16,7 +16,7 @@ namespace Pacman
         {
             pacman = p;
             this.g = g;
-            cellSize = 50;
+            cellSize = 30;
             mapSize = 15;
             this.ghosts = ghosts;
             // 15 x 15 map assign to level
