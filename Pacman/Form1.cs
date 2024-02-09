@@ -18,6 +18,8 @@ namespace Pacman
 
         public Form1()
         {
+            this.WindowState = FormWindowState.Maximized;
+            this.TopMost = true;
             InitializeComponent();
             Init();
         }
