@@ -20,6 +20,6 @@ Se encuentra en la carpeta Collision y contiene los sprites trabajados en clase 
 ![Collision 2](ProjectsInfo/collision-2.png)
 
 ## Pacman
-Se encuentra en la carpeta Pacman y contiene el juego de Pacman. Para ejecutar el juego utilizar el archivo zip pacman.zip que contiene la carpeta que tiene el ejecutable y sus dependencias.
+Se encuentra en la carpeta Pacman y contiene el juego de Pacman. se necesita .NET Core 8.0
 
 ![Pacman 1](ProjectsInfo/pacman.png)
