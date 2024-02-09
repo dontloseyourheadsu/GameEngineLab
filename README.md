@@ -18,3 +18,8 @@ Se encuentra en la carpeta Collision y contiene los sprites trabajados en clase 
 ![Collision 1](ProjectsInfo/collision-1.png)
 
 ![Collision 2](ProjectsInfo/collision-2.png)
+
+## Pacman
+Se encuentra en la carpeta Pacman y contiene el juego de Pacman. Para ejecutar el juego utilizar el archivo zip pacman.zip que contiene la carpeta que tiene el ejecutable y sus dependencias.
+
+![Pacman 1](ProjectsInfo/pacman.png)
