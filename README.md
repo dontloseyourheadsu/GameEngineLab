@@ -1,12 +1,16 @@
 # LaboratorioDeVideojuegos
- Laboratorio de videojuegos UDLAP
+
+Laboratorio de videojuegos UDLAP
 
 ## Índice
+
 - [Hola Parallax](#hola-parallax)
 - [Collision](#collision)
 - [Pacman](#pacman)
+- [Particle System](#particle-system)
 
 ## Hola Parallax
+
 Se encuentra en la carpeta Parallax y contiene los sprites trabajados en clase pero los que se muestran al correr la aplicación son los que se piden en la tarea, es decir, otros sprites ajustados para que se vean bien.
 
 ![Parallax 1](ProjectsInfo/parallax-1.png)
@@ -14,6 +18,7 @@ Se encuentra en la carpeta Parallax y contiene los sprites trabajados en clase p
 ![Parallax 2](ProjectsInfo/parallax-2.png)
 
 ## Collision
+
 Se encuentra en la carpeta Collision y contiene los sprites trabajados en clase pero los que se muestran al correr la aplicación son los que se piden en la tarea, es decir, otros sprites ajustados para que se vean bien.
 
 ![Collision 1](ProjectsInfo/collision-1.png)
@@ -21,6 +26,13 @@ Se encuentra en la carpeta Collision y contiene los sprites trabajados en clase 
 ![Collision 2](ProjectsInfo/collision-2.png)
 
 ## Pacman
+
 Se encuentra en la carpeta Pacman y contiene el juego de Pacman. se necesita .NET Core 8.0
 
 ![Pacman 1](ProjectsInfo/pacman.png)
+
+## Particle System
+
+Se encuentra en la carpeta Convolusion y contiene el projecto Particle. se necesita .NET Core 8.0
+
+![Particle 1](ProjectsInfo/particle.png)
