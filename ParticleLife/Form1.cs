@@ -8,6 +8,7 @@ namespace ParticleLife
         Graphics g;
         Dictionary<Color, List<Particle>> particles;
         Random r = new Random();
+        List<ParticleConfiguration> configurations;
 
         public Form1()
         {
@@ -24,33 +25,47 @@ namespace ParticleLife
             return particleList;
         }
 
-        private void Init()
+        private void InitializeCanvas()
         {
+            canvas.Width = Width - 100 - canvas.Location.X;
+            canvas.Height = Height - 100 - canvas.Location.Y;
             bmp = new Bitmap(canvas.Width, canvas.Height);
             g = Graphics.FromImage(bmp);
             canvas.Image = bmp;
+        }
+
+        private void Init()
+        {
+            InitializeCanvas();
+
             particles = new Dictionary<Color, List<Particle>>()
             {
-                { Color.Yellow, CreateParticles(800, Color.Yellow) },
-                { Color.Red, CreateParticles(800, Color.Red) },
-                { Color.LightGreen, CreateParticles(800, Color.LightGreen) }
+                { Color.Yellow, CreateParticles(200, Color.Yellow) },
+                { Color.Red, CreateParticles(200, Color.Red) },
+                { Color.LightGreen, CreateParticles(200, Color.LightGreen) }
             };
+
+            configurations =
+            [
+                new ParticleConfiguration(Color.LightGreen, Color.LightGreen, Force.Attract(0.1f), forceDistance: 100, friction: 0.99f),
+                new ParticleConfiguration(Color.LightGreen, Color.Red, Force.Repel(0.1f), forceDistance: 100, friction: 0.99f),
+                new ParticleConfiguration(Color.LightGreen, Color.Yellow, Force.Repel(0.1f), forceDistance: 100, friction: 0.99f),
+                new ParticleConfiguration(Color.Red, Color.Red, Force.Attract(0.1f), forceDistance: 100, friction: 0.99f),
+                new ParticleConfiguration(Color.Red, Color.Yellow, Force.Repel(0.1f), forceDistance: 100, friction: 0.99f),
+                new ParticleConfiguration(Color.Yellow, Color.Yellow, Force.Attract(0.1f), forceDistance: 100, friction: 0.99f)
+            ];
+
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
+            InitializeCanvas();
+
             g.Clear(Color.Black);
-            //green attracts green, repels red
-            //red attracts red, repels yellow
-            //yellow attracts yellow, attracts green
-            //red attracts green
-            ParticleRule(Color.LightGreen, Color.LightGreen, Gravity.Attract(0.1f));
-            ParticleRule(Color.LightGreen, Color.Red, Gravity.Repel(0.1f));
-            ParticleRule(Color.Red, Color.Red, Gravity.Attract(0.1f));
-            ParticleRule(Color.Red, Color.Yellow, Gravity.Repel(0.1f));
-            ParticleRule(Color.Yellow, Color.Yellow, Gravity.Attract(0.1f));
-            ParticleRule(Color.Yellow, Color.LightGreen, Gravity.Attract(0.1f));
-            ParticleRule(Color.Red, Color.LightGreen, Gravity.Attract(0.1f));
+            foreach (var config in configurations)
+            {
+                ParticleRule(config.receiver, config.sender, config.gravity, config.forceDistance, config.friction);
+            }
 
             foreach (var pL in particles)
             {
@@ -62,7 +77,7 @@ namespace ParticleLife
             canvas.Refresh();
         }
 
-        private void ParticleRule(Color receiver, Color sender, float gravity, float forceDistance = 150, float friction = 0.9f)
+        private void ParticleRule(Color receiver, Color sender, float gravity, float forceDistance, float friction)
         {
             var particles1 = particles[receiver];
             var particles2 = particles[sender];

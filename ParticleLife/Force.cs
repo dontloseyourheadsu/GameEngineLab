@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ParticleLife
 {
-    internal static class Gravity
+    internal static class Force
     {
         public static float Repel(float value)
         {
