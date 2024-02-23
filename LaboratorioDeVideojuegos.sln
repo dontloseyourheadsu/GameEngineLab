@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pacman", "Pacman\Pacman.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Particles", "Convolusion\Particles.csproj", "{C2866622-304A-48AE-8B40-D5487C23FA86}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParticleLife", "ParticleLife\ParticleLife.csproj", "{0E3D3A24-27CC-45FD-B18C-163AAFDED2E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ParticleLife", "ParticleLife\ParticleLife.csproj", "{0E3D3A24-27CC-45FD-B18C-163AAFDED2E0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParticlesTwo", "ParticlesTwo\ParticlesTwo.csproj", "{81E6AD1D-BEF2-4105-906E-9E037C8353E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{0E3D3A24-27CC-45FD-B18C-163AAFDED2E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E3D3A24-27CC-45FD-B18C-163AAFDED2E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E3D3A24-27CC-45FD-B18C-163AAFDED2E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81E6AD1D-BEF2-4105-906E-9E037C8353E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81E6AD1D-BEF2-4105-906E-9E037C8353E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81E6AD1D-BEF2-4105-906E-9E037C8353E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81E6AD1D-BEF2-4105-906E-9E037C8353E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
