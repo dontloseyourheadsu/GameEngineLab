@@ -8,6 +8,7 @@ Laboratorio de videojuegos UDLAP
 - [Collision](#collision)
 - [Pacman](#pacman)
 - [Particle System](#particle-system)
+- [Particle System 2](#particle-system-2)
 
 ## Hola Parallax
 
@@ -36,3 +37,9 @@ Se encuentra en la carpeta Pacman y contiene el juego de Pacman. se necesita .NE
 Se encuentra en la carpeta Convolusion y contiene el projecto Particle. se necesita .NET Core 8.0
 
 ![Particle 1](ProjectsInfo/particle.png)
+
+## Particle System 2
+
+Se encuentra en la carpeta ParticlesTwo y contiene el projecto Particle2. se necesita .NET Core 8.0
+
+![Particle 2](ProjectsInfo/particle-2.png)
