@@ -9,6 +9,7 @@ Laboratorio de videojuegos UDLAP
 - [Pacman](#pacman)
 - [Particle System](#particle-system)
 - [Particle System 2](#particle-system-2)
+- [Verlet](#verlet)
 
 ## Hola Parallax
 
@@ -43,3 +44,9 @@ Se encuentra en la carpeta Convolusion y contiene el projecto Particle. se neces
 Se encuentra en la carpeta ParticlesTwo y contiene el projecto Particle2. se necesita .NET Core 8.0
 
 ![Particle 2](ProjectsInfo/particle-2.png)
+
+## Verlet
+
+Se encuentra en la carpeta Verlet y contiene el projecto Verlet. Es para .NET Framework.
+
+![Verlet 1](ProjectsInfo/verlet.png)
