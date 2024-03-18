@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ParticlesTwo", "ParticlesTw
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PLAYGROUND", "PLAYGROUND\PLAYGROUND.csproj", "{FFE8FFA2-E40D-4310-86F6-B4F2ECB26604}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GolfIt", "GolfIt\GolfIt.csproj", "{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -91,6 +93,14 @@ Global
 		{FFE8FFA2-E40D-4310-86F6-B4F2ECB26604}.Release|Any CPU.Build.0 = Release|x86
 		{FFE8FFA2-E40D-4310-86F6-B4F2ECB26604}.Release|x86.ActiveCfg = Release|x86
 		{FFE8FFA2-E40D-4310-86F6-B4F2ECB26604}.Release|x86.Build.0 = Release|x86
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Debug|x86.Build.0 = Debug|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Release|x86.ActiveCfg = Release|Any CPU
+		{51D6EBD0-C3D6-41A8-9C26-00FC803E928F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
