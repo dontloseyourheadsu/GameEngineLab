@@ -1,4 +1,5 @@
 using System.Drawing.Text;
+using System.Media;
 using System.Net;
 
 namespace GolfIt
@@ -20,11 +21,17 @@ namespace GolfIt
         private Button MainMenuButton;
         private bool isMenuActive = true;
         private int turn = 0;
+        SoundPlayer musicPlayer;
 
 
         public Form1()
         {
             InitializeComponent();
+
+            musicPlayer = new SoundPlayer("Resources/golfit.wav");
+
+            musicPlayer.LoadAsync();
+            musicPlayer.PlayLooping();
 
             Init();
         }
@@ -34,9 +41,14 @@ namespace GolfIt
             bitmap = new Bitmap(Width, Height);
             graphics = Graphics.FromImage(bitmap);
             canvas.Image = bitmap;
-            scene = new Scene();
-            ball = new Ball(scene.cellSize, new Vector(3 * scene.cellSize, 3 * scene.cellSize), new Vector(0, 0));
-            goal = new Goal(scene.cellSize, new Vector(15 * scene.cellSize, 15 * scene.cellSize), ball);
+            scene = new Scene(level);
+
+            (int ballX, int ballY) = scene.map.GetBallPosition();
+            (int goalX, int goalY) = scene.map.GetGoalPosition();
+
+            ball = new Ball(scene.cellSize, new Vector(ballX, ballY), new Vector(0, 0));
+            goal = new Goal(scene.cellSize, new Vector(goalX, goalY), ball);
+
             scene.verlets.Add(ball);
             scene.verlets.Add(goal);
         }
@@ -219,9 +231,13 @@ namespace GolfIt
             turn = 0;
             levelDisplay.Text = $"Level: {level + 1}";
 
-            scene = new Scene();
-            ball = new Ball(scene.cellSize, new Vector(3 * scene.cellSize, 3 * scene.cellSize), new Vector(0, 0));
-            goal = new Goal(scene.cellSize, new Vector(15 * scene.cellSize, 15 * scene.cellSize), ball);
+            scene = new Scene(level);
+
+            (int ballX, int ballY) = scene.map.GetBallPosition();
+            (int goalX, int goalY) = scene.map.GetGoalPosition();
+
+            ball = new Ball(scene.cellSize, new Vector(ballX, ballY), new Vector(0, 0));
+            goal = new Goal(scene.cellSize, new Vector(goalX, goalY), ball);
 
             scene.verlets.Add(ball);
             scene.verlets.Add(goal);

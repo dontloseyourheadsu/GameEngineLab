@@ -7,6 +7,8 @@
         public const char darkTile = 'T';
         public const char wall = 'w';
         public const char sand = 's';
+        public const char ball = 'b';
+        public const char goal = 'g';
         public List<char[,]> levels;
         private int cellSize;
         private Brush darkGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#7EA00E"));
@@ -63,7 +65,7 @@
             }
         }
 
-        public Map(int cellSize)
+        public Map(int cellSize, int level)
         {
             if (levels is null) CreateMaps();
             this.cellSize = cellSize;
@@ -95,6 +97,31 @@
                         case sand:
                             g.FillRectangle(sandBrush, i * cellSize, j * cellSize, cellSize, cellSize);
                             break;
+                        case ball:
+                        case goal:
+                            if (i % 2 == 0)
+                            {
+                                if (j % 2 == 0)
+                                {
+                                    g.FillRectangle(lightGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
+                                }
+                                else
+                                {
+                                    g.FillRectangle(darkGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
+                                }
+                            }
+                            else
+                            {
+                                if (j % 2 == 0)
+                                {
+                                    g.FillRectangle(darkGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
+                                }
+                                else
+                                {
+                                    g.FillRectangle(lightGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
+                                }
+                            }
+                            break;
                     }
                 }
             }
@@ -122,6 +149,36 @@
             return map[gridX, gridY] == sand;
         }
 
+        public (int x, int y) GetBallPosition()
+        {
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    if (map[i, j] == ball)
+                    {
+                        return (i * cellSize, j * cellSize);
+                    }
+                }
+            }
+            return (0, 0);
+        }
+
+        public (int x, int y) GetGoalPosition()
+        {
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    if (map[i, j] == goal)
+                    {
+                        return (i * cellSize, j * cellSize);
+                    }
+                }
+            }
+            return (0, 0);
+        }
+
         private void CreateMaps()
         {
             levels = new List<char[,]>();
@@ -129,18 +186,8 @@
             {
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 't', 'T', 'b', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 's', 's', 's', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 't', 'T', 's', 's', 's', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 's', 's', 's', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
@@ -165,6 +212,16 @@
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
+                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
+                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
+                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
+                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
+                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'g', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
             });

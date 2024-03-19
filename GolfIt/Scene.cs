@@ -6,10 +6,9 @@
         public int cellSize = 20;
         public List<Verlet> verlets = new List<Verlet>();
         
-        public Scene()
+        public Scene(int level)
         {
-            //map = new Map(40, 20, cellSize);
-            map = new Map(cellSize);
+            map = new Map(cellSize, level);
         }
 
         public void Update(Graphics g, PictureBox canvas)
