@@ -8,6 +8,6 @@ namespace GolfIt
 {
     public interface Verlet
     {
-        void Update(Graphics g, PictureBox canvas);
+        void Update(Graphics g, PictureBox canvas, Map map);
     }
 }

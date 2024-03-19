@@ -8,7 +8,7 @@
         
         public Scene()
         {
-            map = new Map(39, 22, cellSize);
+            map = new Map(39, 21, cellSize);
         }
 
         public void Update(Graphics g, PictureBox canvas)

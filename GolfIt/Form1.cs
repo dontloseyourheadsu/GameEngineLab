@@ -62,7 +62,7 @@ namespace GolfIt
 
             foreach (Verlet v in scene.verlets)
             {
-                v.Update(graphics, canvas);
+                v.Update(graphics, canvas, scene.map);
             }
 
             if (!ball.IsMoving())

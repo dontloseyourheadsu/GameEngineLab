@@ -19,7 +19,7 @@
             this.ball = ball;
         }
 
-        public void Update(Graphics g, PictureBox canvas)
+        public void Update(Graphics g, PictureBox canvas, Map map)
         {
             if (Math.Pow(ball.position.X - position.X, 2) + Math.Pow(ball.position.Y - position.Y, 2) < Math.Pow(cellSize / 2, 2))
             {

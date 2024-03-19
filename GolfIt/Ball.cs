@@ -29,22 +29,19 @@ namespace GolfIt
             this.brush = new SolidBrush(color);
         }
 
-        public void Update(Graphics g, PictureBox canvas)
+        public void Update(Graphics g, PictureBox canvas, Map map)
         {
             if (!isPinned)
             {
                 Vector newPosition;
 
-                // Apply the push velocity once and reset it
                 acceleration = pushVelocity / mass;
-                pushVelocity = new Vector(0, 0); // Reset pushVelocity after applying it
+                pushVelocity = new Vector(0, 0);
 
-                // Verlet Integration
                 newPosition = position + (position - oldPosition) + acceleration;
                 oldPosition = position;
                 position = newPosition;
 
-                // Apply friction to simulate energy loss (damping)
                 Vector velocity = position - oldPosition;
                 velocity *= friction;
                 position = oldPosition + velocity;
@@ -58,11 +55,35 @@ namespace GolfIt
                     velocity.Y = -velocity.Y;
                 }
 
+                Collision collision = CheckWallCollision(map);
+
+                if (collision == Collision.TopLeft)
+                {
+                    velocity.X = Math.Abs(velocity.X);
+                    velocity.Y = Math.Abs(velocity.Y);
+                }
+                else if (collision == Collision.TopRight)
+                {
+                    velocity.X = -Math.Abs(velocity.X);
+                    velocity.Y = Math.Abs(velocity.Y);
+                }
+                else if (collision == Collision.BottomLeft)
+                {
+                    velocity.X = Math.Abs(velocity.X);
+                    velocity.Y = -Math.Abs(velocity.Y);
+                }
+                else if (collision == Collision.BottomRight)
+                {
+                    velocity.X = -Math.Abs(velocity.X);
+                    velocity.Y = -Math.Abs(velocity.Y);
+                }
+
                 position = oldPosition + velocity;
             }
 
             Render(g);
         }
+
 
         public void PushBall(Vector pushVelocity)
         {
@@ -81,8 +102,24 @@ namespace GolfIt
         public bool IsMoving()
         {
             Vector currentVelocity = position - oldPosition;
-            float speedThreshold = 0.01f; // Define a suitable threshold for your game
+            float speedThreshold = 0.01f;
             return currentVelocity.Length() > speedThreshold;
+        }
+
+        public Collision CheckWallCollision(Map map)
+        {
+            float radius = cellSize / 2.0f + 2; 
+
+            bool topLeft = map.IsWall((int)(position.X - radius), (int)(position.Y - radius));
+            bool topRight = map.IsWall((int)(position.X + radius), (int)(position.Y - radius));
+            bool bottomLeft = map.IsWall((int)(position.X - radius), (int)(position.Y + radius));
+            bool bottomRight = map.IsWall((int)(position.X + radius), (int)(position.Y + radius));
+
+            if (topLeft) return Collision.TopLeft;
+            if (topRight) return Collision.TopRight;
+            if (bottomLeft) return Collision.BottomLeft;
+            if (bottomRight) return Collision.BottomRight;
+            return Collision.None;
         }
 
     }
