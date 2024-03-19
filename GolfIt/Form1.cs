@@ -97,9 +97,10 @@ namespace GolfIt
 
             for (int i = 0; i < 10; i++)
             {
+                var index = i;
                 Button levelButton = new Button
                 {
-                    Text = $"Level {i + 1}",
+                    Text = $"Level {index + 1}",
                     Font = new Font("Arial", 12, FontStyle.Bold),
                     ForeColor = Color.White,
                     BackColor = Color.Black,
@@ -111,7 +112,7 @@ namespace GolfIt
 
                 levelButton.Click += (sender, e) =>
                 {
-                    level = int.Parse(((Button)sender).Text.Split(' ')[1]);
+                    level = index;
                     isMenuActive = false;
                     ClearMenuButtons();
                     InitLevel();
@@ -216,7 +217,7 @@ namespace GolfIt
             graphics.Clear(Color.White);
             turnDisplay.Show();
             turn = 0;
-            levelDisplay.Text = $"Level: {level}";
+            levelDisplay.Text = $"Level: {level + 1}";
 
             scene = new Scene();
             ball = new Ball(scene.cellSize, new Vector(3 * scene.cellSize, 3 * scene.cellSize), new Vector(0, 0));
@@ -224,6 +225,8 @@ namespace GolfIt
 
             scene.verlets.Add(ball);
             scene.verlets.Add(goal);
+
+            scene.map.SetMap(level);
         }
 
         private void canvas_MouseDown(object sender, MouseEventArgs e)

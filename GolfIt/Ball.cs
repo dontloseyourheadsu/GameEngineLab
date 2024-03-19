@@ -43,6 +43,18 @@ namespace GolfIt
                 position = newPosition;
 
                 Vector velocity = position - oldPosition;
+
+                bool sandCollision = CheckSandCollision(map);
+
+                if (sandCollision)
+                {
+                    friction = 0.9f;
+                }
+                else
+                {
+                    friction = 0.99f;
+                }
+
                 velocity *= friction;
                 position = oldPosition + velocity;
 
@@ -55,27 +67,46 @@ namespace GolfIt
                     velocity.Y = -velocity.Y;
                 }
 
-                Collision collision = CheckWallCollision(map);
+                Collision wallCollision = CheckWallCollision(map);
 
-                if (collision == Collision.TopLeft)
+                if (wallCollision != Collision.None)
                 {
-                    velocity.X = Math.Abs(velocity.X);
-                    velocity.Y = Math.Abs(velocity.Y);
-                }
-                else if (collision == Collision.TopRight)
-                {
-                    velocity.X = -Math.Abs(velocity.X);
-                    velocity.Y = Math.Abs(velocity.Y);
-                }
-                else if (collision == Collision.BottomLeft)
-                {
-                    velocity.X = Math.Abs(velocity.X);
-                    velocity.Y = -Math.Abs(velocity.Y);
-                }
-                else if (collision == Collision.BottomRight)
-                {
-                    velocity.X = -Math.Abs(velocity.X);
-                    velocity.Y = -Math.Abs(velocity.Y);
+                    if (wallCollision == Collision.TopLeft)
+                    {
+                        velocity.X = Math.Abs(velocity.X);
+                        velocity.Y = Math.Abs(velocity.Y);
+                    }
+                    else if (wallCollision == Collision.TopRight)
+                    {
+                        velocity.X = -Math.Abs(velocity.X);
+                        velocity.Y = Math.Abs(velocity.Y);
+                    }
+                    else if (wallCollision == Collision.BottomLeft)
+                    {
+                        velocity.X = Math.Abs(velocity.X);
+                        velocity.Y = -Math.Abs(velocity.Y);
+                    }
+                    else if (wallCollision == Collision.BottomRight)
+                    {
+                        velocity.X = -Math.Abs(velocity.X);
+                        velocity.Y = -Math.Abs(velocity.Y);
+                    }
+                    else if (wallCollision == Collision.Top)
+                    {
+                        velocity.Y = Math.Abs(velocity.Y);
+                    }
+                    else if (wallCollision == Collision.Bottom)
+                    {
+                        velocity.Y = -Math.Abs(velocity.Y);
+                    }
+                    else if (wallCollision == Collision.Left)
+                    {
+                        velocity.X = Math.Abs(velocity.X);
+                    }
+                    else if (wallCollision == Collision.Right)
+                    {
+                        velocity.X = -Math.Abs(velocity.X);
+                    }
                 }
 
                 position = oldPosition + velocity;
@@ -110,17 +141,41 @@ namespace GolfIt
         {
             float radius = cellSize / 2.0f + 2; 
 
+            bool top = map.IsWall((int)(position.X), (int)(position.Y - radius));
+            bool bottom = map.IsWall((int)(position.X), (int)(position.Y + radius));
+            bool left = map.IsWall((int)(position.X - radius), (int)(position.Y));
+            bool right = map.IsWall((int)(position.X + radius), (int)(position.Y));
             bool topLeft = map.IsWall((int)(position.X - radius), (int)(position.Y - radius));
             bool topRight = map.IsWall((int)(position.X + radius), (int)(position.Y - radius));
             bool bottomLeft = map.IsWall((int)(position.X - radius), (int)(position.Y + radius));
             bool bottomRight = map.IsWall((int)(position.X + radius), (int)(position.Y + radius));
 
+            if (top) return Collision.Top;
+            if (bottom) return Collision.Bottom;
+            if (left) return Collision.Left;
+            if (right) return Collision.Right;
             if (topLeft) return Collision.TopLeft;
             if (topRight) return Collision.TopRight;
             if (bottomLeft) return Collision.BottomLeft;
             if (bottomRight) return Collision.BottomRight;
+
             return Collision.None;
         }
 
+        public bool CheckSandCollision(Map map)
+        {
+            float radius = cellSize / 2.0f + 2;
+
+            bool top = map.IsSand((int)(position.X), (int)(position.Y - radius));
+            bool bottom = map.IsSand((int)(position.X), (int)(position.Y + radius));
+            bool left = map.IsSand((int)(position.X - radius), (int)(position.Y));
+            bool right = map.IsSand((int)(position.X + radius), (int)(position.Y));
+            bool topLeft = map.IsSand((int)(position.X - radius), (int)(position.Y - radius));
+            bool topRight = map.IsSand((int)(position.X + radius), (int)(position.Y - radius));
+            bool bottomLeft = map.IsSand((int)(position.X - radius), (int)(position.Y + radius));
+            bool bottomRight = map.IsSand((int)(position.X + radius), (int)(position.Y + radius));
+
+            return top || bottom || left || right || topLeft || topRight || bottomLeft || bottomRight;
+        }
     }
 }
