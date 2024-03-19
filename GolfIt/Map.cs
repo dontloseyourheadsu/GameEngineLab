@@ -10,6 +10,7 @@
         private int cellSize;
         private Brush darkGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#7EA00E"));
         private Brush lightGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#DCD964"));
+        private Brush wallBrush = new SolidBrush(ColorTranslator.FromHtml("#213502"));
 
         public Map(int width, int height, int cellSize)
         {
@@ -19,12 +20,11 @@
             {
                 for (int j = 0; j < map.GetLength(1); j++)
                 {
-                    // Determine if the current position is part of the stair wall
-                    bool isStairWall = (height - 1 - j) == i; // Adjust this condition based on your stair's desired thickness and direction
+                    bool isStairWall = (height - 1 - j) == i; 
 
                     if (isStairWall)
                     {
-                        map[i, j] = wall; // Mark this cell as a wall
+                        map[i, j] = wall;
                     }
                     else if (i % 2 == 0)
                     {
@@ -50,6 +50,15 @@
                     }
                 }
             }
+
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                map[i, 12] = wall;
+            }
+            for (int i = 0; i < map.GetLength(1); i++)
+            {
+                map[12, i] = wall;
+            }
         }
 
         public Map(int cellSize)
@@ -74,7 +83,7 @@
                             g.FillRectangle(darkGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
                             break;
                         case wall:
-                            g.FillRectangle(Brushes.White, i * cellSize, j * cellSize, cellSize, cellSize);
+                            g.FillRectangle(wallBrush, i * cellSize, j * cellSize, cellSize, cellSize);
                             break;
                     }
                 }
