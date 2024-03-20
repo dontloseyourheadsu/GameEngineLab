@@ -42,7 +42,7 @@
             // 
             canvas.Location = new Point(12, 57);
             canvas.Name = "canvas";
-            canvas.Size = new Size(776, 432);
+            canvas.Size = new Size(800, 400);
             canvas.TabIndex = 0;
             canvas.TabStop = false;
             canvas.MouseDown += canvas_MouseDown;
@@ -91,7 +91,7 @@
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
-            ClientSize = new Size(801, 556);
+            ClientSize = new Size(822, 556);
             Controls.Add(levelDisplay);
             Controls.Add(turnDisplay);
             Controls.Add(canShootDisplay);

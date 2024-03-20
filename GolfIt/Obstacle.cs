@@ -8,7 +8,7 @@ namespace GolfIt
 {
     public interface Obstacle
     {
-        public Collision DetectCollision(Ball ball);
+        public Vector DetectCollision(Ball ball);
         public void Render(Graphics g, PictureBox canvas);
         public void Update(Graphics g, PictureBox canvas, Map map, int cntT);
     }

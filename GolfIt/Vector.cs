@@ -11,7 +11,6 @@
 
         }
 
-
         public static Vector operator -(Vector v)
         {
             return new Vector(-v.X, -v.Y);
@@ -36,6 +35,11 @@
         public static Vector operator *(Vector v, float a)
         {
             return new Vector(a * v.X, a * v.Y);
+        }
+
+        public static Vector operator *(Vector a, Vector b)
+        {
+            return new Vector(a.X * b.X, a.Y * b.Y);
         }
 
         public static Vector operator /(Vector v, float a)
@@ -65,8 +69,18 @@
         public Vector Normalized()
         {
             float magnitude = Length();
-            if (magnitude == 0) throw new InvalidOperationException("Cannot normalize a zero vector.");
+            if (magnitude == 0) return new Vector(0, 0);
             return this / magnitude;
+        }
+
+        public float Dot(Vector b)
+        {
+            return X * b.X + Y * b.Y;
+        }
+
+        public float Cross(Vector b)
+        {
+            return X * b.Y - Y * b.X;
         }
     }
 }

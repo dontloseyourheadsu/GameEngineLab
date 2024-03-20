@@ -4,7 +4,7 @@ namespace GolfIt
 {
     public class Ball : Verlet
     {
-        private int cellSize;
+        public int cellSize;
         public Vector position;
         public Vector oldPosition;
         private Vector velocity;
@@ -16,6 +16,7 @@ namespace GolfIt
         public float mass = 1.0f;
         Brush brush;
         public bool isPinned;
+        public List<Obstacle> obstacles;
 
         public Ball(int cellSize, Vector position, Vector velocity)
         {
@@ -27,6 +28,7 @@ namespace GolfIt
             this.pushVelocity = new Vector(0, 0);
             this.color = Color.White;
             this.brush = new SolidBrush(color);
+            this.radius = cellSize / 2;
         }
 
         public void Update(Graphics g, PictureBox canvas, Map map)
@@ -42,7 +44,7 @@ namespace GolfIt
                 oldPosition = position;
                 position = newPosition;
 
-                Vector velocity = position - oldPosition;
+                velocity = position - oldPosition;
 
                 bool sandCollision = CheckSandCollision(map);
 
@@ -109,16 +111,20 @@ namespace GolfIt
                     }
                 }
 
+                for (int i = 0; i < obstacles.Count; i++)
+                {
+                    var obstacleCollisionForce = obstacles[i].DetectCollision(this);
+
+                    if (obstacleCollisionForce.Length() > 0)
+                    {
+                        velocity += obstacleCollisionForce / 4;
+                    }
+                }
+
                 position = oldPosition + velocity;
             }
 
             Render(g);
-        }
-
-
-        public void PushBall(Vector pushVelocity)
-        {
-            this.pushVelocity = pushVelocity;
         }
 
         public void Render(Graphics g)
@@ -130,10 +136,22 @@ namespace GolfIt
             g.FillEllipse(brush, position.X - cellSize / 2 + borderRadius / 2, position.Y - cellSize / 2 + borderRadius / 2, cellSize - borderRadius, cellSize - borderRadius);
         }
 
+        public void PushBall(Vector pushVelocity)
+        {
+            this.pushVelocity = pushVelocity;
+        }
+
         public bool IsMoving()
         {
             Vector currentVelocity = position - oldPosition;
             float speedThreshold = 0.01f;
+            return currentVelocity.Length() > speedThreshold;
+        }
+
+        public bool CanEnterGoal()
+        {
+            Vector currentVelocity = position - oldPosition;
+            float speedThreshold = .5f;
             return currentVelocity.Length() > speedThreshold;
         }
 

@@ -22,7 +22,7 @@ namespace GolfIt
         private bool isMenuActive = true;
         private int turn = 0;
         SoundPlayer musicPlayer;
-
+        private int cntT = 0;
 
         public Form1()
         {
@@ -77,6 +77,11 @@ namespace GolfIt
                 v.Update(graphics, canvas, scene.map);
             }
 
+            foreach (Obstacle o in scene.obstacles)
+            {
+                o.Update(graphics, canvas, scene.map, cntT);
+            }
+
             if (!ball.IsMoving())
             {
                 if (isDragging)
@@ -92,6 +97,15 @@ namespace GolfIt
             }
 
             canvas.Image = bitmap;
+
+            if (cntT < int.MaxValue)
+            {
+                cntT++;
+            }
+            else
+            {
+                cntT = 0;
+            }
 
             Invalidate();
         }
@@ -239,8 +253,23 @@ namespace GolfIt
             ball = new Ball(scene.cellSize, new Vector(ballX, ballY), new Vector(0, 0));
             goal = new Goal(scene.cellSize, new Vector(goalX, goalY), ball);
 
+            var obstacles = new List<Obstacle>();
+
+            for (int i = 0; i < scene.map.GetObstaclePositions().Count; i++)
+            {
+                (int obsX, int obsY) = scene.map.GetObstaclePositions()[i];
+                switch (scene.map.obstacles[level][i])
+                {
+                    case Map.triangle:
+                        obstacles.Add(new Triangle(scene.cellSize, new Vector(obsX, obsY)));
+                        break;
+                }
+            }
+
             scene.verlets.Add(ball);
             scene.verlets.Add(goal);
+            scene.obstacles = obstacles;
+            ball.obstacles = obstacles;
 
             scene.map.SetMap(level);
         }

@@ -9,12 +9,18 @@
         public const char sand = 's';
         public const char ball = 'b';
         public const char goal = 'g';
+        public const char triangle = 'r';
         public List<char[,]> levels;
+        private List<(int, int)> ballLevelPositions;
+        private List<(int, int)> goalLevelPositions;
+        public List<List<(int, int)>> obstaclePositions;
+        public List<List<char>> obstacles;
         private int cellSize;
         private Brush darkGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#7EA00E"));
         private Brush lightGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#DCD964"));
         private Brush wallBrush = new SolidBrush(ColorTranslator.FromHtml("#213502"));
         private Brush sandBrush = new SolidBrush(ColorTranslator.FromHtml("#E8D8A6"));
+        private int level = 0;
 
         public Map(int width, int height, int cellSize)
         {
@@ -69,7 +75,8 @@
         {
             if (levels is null) CreateMaps();
             this.cellSize = cellSize;
-            SetMap(0);
+            SetMap(level);
+            this.level = level;
         }
 
         public void SetMap(int index)
@@ -96,31 +103,6 @@
                             break;
                         case sand:
                             g.FillRectangle(sandBrush, i * cellSize, j * cellSize, cellSize, cellSize);
-                            break;
-                        case ball:
-                        case goal:
-                            if (i % 2 == 0)
-                            {
-                                if (j % 2 == 0)
-                                {
-                                    g.FillRectangle(lightGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
-                                }
-                                else
-                                {
-                                    g.FillRectangle(darkGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
-                                }
-                            }
-                            else
-                            {
-                                if (j % 2 == 0)
-                                {
-                                    g.FillRectangle(darkGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
-                                }
-                                else
-                                {
-                                    g.FillRectangle(lightGreenBrush, i * cellSize, j * cellSize, cellSize, cellSize);
-                                }
-                            }
                             break;
                     }
                 }
@@ -151,43 +133,32 @@
 
         public (int x, int y) GetBallPosition()
         {
-            for (int i = 0; i < map.GetLength(0); i++)
-            {
-                for (int j = 0; j < map.GetLength(1); j++)
-                {
-                    if (map[i, j] == ball)
-                    {
-                        return (i * cellSize, j * cellSize);
-                    }
-                }
-            }
-            return (0, 0);
+            return (ballLevelPositions[level].Item1 * cellSize, ballLevelPositions[level].Item2 * cellSize);
         }
 
         public (int x, int y) GetGoalPosition()
         {
-            for (int i = 0; i < map.GetLength(0); i++)
-            {
-                for (int j = 0; j < map.GetLength(1); j++)
-                {
-                    if (map[i, j] == goal)
-                    {
-                        return (i * cellSize, j * cellSize);
-                    }
-                }
-            }
-            return (0, 0);
+            return (goalLevelPositions[level].Item2 * cellSize, goalLevelPositions[level].Item1 * cellSize);
+        }
+
+        public List<(int, int)> GetObstaclePositions()
+        {
+            return obstaclePositions[level];
         }
 
         private void CreateMaps()
         {
+            obstaclePositions = new List<List<(int, int)>>();
+            obstacles = new List<List<char>>();
             levels = new List<char[,]>();
+            ballLevelPositions = new List<(int, int)>();
+            goalLevelPositions = new List<(int, int)>();
+            obstaclePositions.Add(new List<(int, int)>());
+            obstacles.Add(new List<char>());
             levels.Add(new char[40, 20]
             {
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
-                { 't', 'T', 'b', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
@@ -221,10 +192,16 @@
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
-                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'g', 'T', 't' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
+                { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
+                { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
                 { 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't' },
             });
+            ballLevelPositions.Add((2, 2));
+            goalLevelPositions.Add((18, 38));
+            obstaclePositions[0].Add((10, 10));
+            obstacles[0].Add('r');
         }
     }
 }
