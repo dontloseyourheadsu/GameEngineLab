@@ -168,55 +168,55 @@ namespace GolfIt
             int startX = (canvas.Width - messageWidth) / 2;
             int startY = (canvas.Height - messageHeight) / 2;
 
-            if (finishLabel == null)
+            if (finishLabel is null)
             {
                 finishLabel = new Label();
                 canvas.Controls.Add(finishLabel);
+
+                finishLabel.BackColor = Color.Green;
+                finishLabel.ForeColor = Color.YellowGreen;
+                finishLabel.BorderStyle = BorderStyle.FixedSingle;
+                finishLabel.Text = "Level Finished";
+                finishLabel.Font = new Font("Arial", 24, FontStyle.Bold);
+                finishLabel.TextAlign = ContentAlignment.MiddleCenter;
+                finishLabel.Width = messageWidth;
+                finishLabel.Height = messageHeight;
+                finishLabel.Location = new Point(startX, startY);
+                finishLabel.BringToFront();
+                finishLabel.Visible = true;
             }
 
-            finishLabel.BackColor = Color.Green;
-            finishLabel.ForeColor = Color.YellowGreen;
-            finishLabel.BorderStyle = BorderStyle.FixedSingle;
-            finishLabel.Text = "Level Finished";
-            finishLabel.Font = new Font("Arial", 24, FontStyle.Bold);
-            finishLabel.TextAlign = ContentAlignment.MiddleCenter;
-            finishLabel.Width = messageWidth;
-            finishLabel.Height = messageHeight;
-            finishLabel.Location = new Point(startX, startY);
-            finishLabel.BringToFront();
-            finishLabel.Visible = true;
-
-            if (nextLevelButton == null)
+            if (nextLevelButton is null && level + 1 < scene.map.levels.Count && scene.map.levels[level + 1] is not null)
             {
                 nextLevelButton = new Button();
                 canvas.Controls.Add(nextLevelButton);
                 nextLevelButton.Click += NextLevelButton_Click;
+
+                nextLevelButton.Text = "Next Level";
+                nextLevelButton.Font = new Font("Arial", 12, FontStyle.Bold);
+                nextLevelButton.ForeColor = Color.White;
+                nextLevelButton.Width = 120;
+                nextLevelButton.Height = 40;
+                nextLevelButton.Location = new Point((startX + messageWidth / 2 - 60) + 120, (startY + messageHeight - 40) - 20);
+                nextLevelButton.BringToFront();
+                nextLevelButton.Visible = true;
             }
 
-            nextLevelButton.Text = "Next Level";
-            nextLevelButton.Font = new Font("Arial", 12, FontStyle.Bold);
-            nextLevelButton.ForeColor = Color.White;
-            nextLevelButton.Width = 120;
-            nextLevelButton.Height = 40;
-            nextLevelButton.Location = new Point((startX + messageWidth / 2 - 60) + 120, (startY + messageHeight - 40) - 20);
-            nextLevelButton.BringToFront();
-            nextLevelButton.Visible = true;
-
-            if (MainMenuButton == null)
-            {
+            if (MainMenuButton is null)
+            { 
                 MainMenuButton = new Button();
                 canvas.Controls.Add(MainMenuButton);
                 MainMenuButton.Click += MainMenuButton_Click;
+            
+                MainMenuButton.Text = "Main Menu";
+                MainMenuButton.Font = new Font("Arial", 12, FontStyle.Bold);
+                MainMenuButton.ForeColor = Color.White;
+                MainMenuButton.Width = 120;
+                MainMenuButton.Height = 40;
+                MainMenuButton.Location = new Point((startX + messageWidth / 2 - 60) - 120, (startY + messageHeight - 40) - 20);
+                MainMenuButton.BringToFront();
+                MainMenuButton.Visible = true;
             }
-
-            MainMenuButton.Text = "Main Menu";
-            MainMenuButton.Font = new Font("Arial", 12, FontStyle.Bold);
-            MainMenuButton.ForeColor = Color.White;
-            MainMenuButton.Width = 120;
-            MainMenuButton.Height = 40;
-            MainMenuButton.Location = new Point((startX + messageWidth / 2 - 60) - 120, (startY + messageHeight - 40) - 20);
-            MainMenuButton.BringToFront();
-            MainMenuButton.Visible = true;
         }
 
         private void MainMenuButton_Click(object sender, EventArgs e)
@@ -224,18 +224,48 @@ namespace GolfIt
             isMenuActive = true;
 
             finishLabel.Visible = false;
-            nextLevelButton.Visible = false;
+            if (nextLevelButton is not null)
+            {
+                nextLevelButton.Visible = false;
+            }
             MainMenuButton.Visible = false;
+
+            canvas.Controls.Clear();
+            if (nextLevelButton is not null)
+            { 
+                nextLevelButton.Dispose();
+            }
+            MainMenuButton.Dispose();
+            finishLabel.Dispose();
+
+            nextLevelButton = null;
+            MainMenuButton = null;
+            finishLabel = null;
         }
 
         private void NextLevelButton_Click(object sender, EventArgs e)
         {
+            finishLabel.Visible = false;
+            if (nextLevelButton is not null)
+            {
+                nextLevelButton.Visible = false;
+            }
+            MainMenuButton.Visible = false;
+
+            canvas.Controls.Clear();
+            if (nextLevelButton is not null)
+            {
+                nextLevelButton.Dispose();
+            }
+            MainMenuButton.Dispose();
+            finishLabel.Dispose();
+
+            nextLevelButton = null;
+            MainMenuButton = null;
+            finishLabel = null;
+
             level++;
             InitLevel(); 
-
-            finishLabel.Visible = false;
-            nextLevelButton.Visible = false;
-            MainMenuButton.Visible = false;
         }
 
         private void InitLevel()
