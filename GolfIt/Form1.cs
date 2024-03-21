@@ -70,8 +70,6 @@ namespace GolfIt
                 return;
             }
 
-            turnDisplay.Text = $"Turn: {turn}";
-
             foreach (Obstacle o in scene.obstacles)
             {
                 o.Update(graphics, canvas, scene.map, cntT);
@@ -126,7 +124,7 @@ namespace GolfIt
                 var index = i;
                 Button levelButton = new Button
                 {
-                    Text = $"Level {index + 1}",
+                    Text = $"Hoyo {index + 1}",
                     Font = new Font("Arial", 12, FontStyle.Bold),
                     ForeColor = Color.White,
                     BackColor = Color.Black,
@@ -176,7 +174,41 @@ namespace GolfIt
                 finishLabel.BackColor = Color.Green;
                 finishLabel.ForeColor = Color.YellowGreen;
                 finishLabel.BorderStyle = BorderStyle.FixedSingle;
-                finishLabel.Text = "Level Finished";
+
+                string message;
+
+                if (turn == 1)
+                {
+                    message = "Hole-in-one!";
+                }
+                else if (turn == 2)
+                {
+                    message = "Eagle!";
+                }
+                else if (turn == 4)
+                {
+                    message = "Par!";
+                }
+                else if (turn == 5)
+                {
+                    message = "Bogey!";
+                }
+                else if (turn == 6)
+                {
+                    message = "Double Bogey!";
+                }
+                else if (turn == 7)
+                {
+                    message = "Triple Bogey!";
+                }
+                else
+                {
+                    message = "Level Finished!";
+                }
+
+                finishLabel.Text = message;
+                
+                
                 finishLabel.Font = new Font("Arial", 24, FontStyle.Bold);
                 finishLabel.TextAlign = ContentAlignment.MiddleCenter;
                 finishLabel.Width = messageWidth;
@@ -273,7 +305,7 @@ namespace GolfIt
             graphics.Clear(Color.White);
             turnDisplay.Show();
             turn = 0;
-            levelDisplay.Text = $"Level: {level + 1}";
+            levelDisplay.Text = $"Hoyo: {level + 1}";
 
             scene = new Scene(level);
 
@@ -304,6 +336,7 @@ namespace GolfIt
             ball.obstacles = obstacles;
 
             scene.map.SetMap(level);
+            turnDisplay.Text = $"Par: {turn}";
         }
 
         private void canvas_MouseDown(object sender, MouseEventArgs e)
@@ -328,7 +361,19 @@ namespace GolfIt
         {
             if (isDragging && !ball.IsMoving())
             {
-                endPoint = e.Location;
+                Vector currentPoint = new Vector(e.Location.X, e.Location.Y);
+                Vector startToEnd = currentPoint - new Vector(startPoint.X, startPoint.Y);
+
+                if (startToEnd.Length() > forceLimit)
+                {
+                    Vector limitedPoint = new Vector(startPoint.X, startPoint.Y) + startToEnd.Normalized() * forceLimit * scene.cellSize;
+                    endPoint = new Point((int)limitedPoint.X, (int)limitedPoint.Y);
+                }
+                else
+                {
+                    endPoint = e.Location;
+                }
+
                 canvas.Invalidate();
             }
         }
@@ -344,6 +389,7 @@ namespace GolfIt
                 forceDirection = forceDirection.Normalized();
                 ball.PushBall(-forceDirection * forceMagnitude);
                 turn++;
+                turnDisplay.Text = $"Par: {turn}";
             }
         }
 
