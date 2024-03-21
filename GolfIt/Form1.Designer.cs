@@ -92,12 +92,15 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
             ClientSize = new Size(822, 556);
+            ControlBox = false;
             Controls.Add(levelDisplay);
             Controls.Add(turnDisplay);
             Controls.Add(canShootDisplay);
             Controls.Add(canvas);
+            MaximumSize = new Size(844, 612);
+            MinimumSize = new Size(844, 612);
             Name = "Form1";
-            Text = "Form1";
+            Text = "Golf it";
             ((System.ComponentModel.ISupportInitialize)canvas).EndInit();
             ((System.ComponentModel.ISupportInitialize)canShootDisplay).EndInit();
             ResumeLayout(false);

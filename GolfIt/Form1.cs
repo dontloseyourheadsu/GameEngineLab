@@ -56,7 +56,7 @@ namespace GolfIt
         private void timer1_Tick(object sender, EventArgs e)
         {
             graphics.Clear(Color.White);
-            scene.Update(graphics, canvas);
+            scene.Update(graphics, canvas, cntT);
 
             if (isMenuActive)
             {
@@ -72,14 +72,14 @@ namespace GolfIt
 
             turnDisplay.Text = $"Turn: {turn}";
 
-            foreach (Verlet v in scene.verlets)
-            {
-                v.Update(graphics, canvas, scene.map);
-            }
-
             foreach (Obstacle o in scene.obstacles)
             {
                 o.Update(graphics, canvas, scene.map, cntT);
+            }
+
+            foreach (Verlet v in scene.verlets)
+            {
+                v.Update(graphics, canvas, scene.map);
             }
 
             if (!ball.IsMoving())
@@ -266,6 +266,8 @@ namespace GolfIt
                 }
             }
 
+            obstacles = [..obstacles, ..scene.map.movingFloors[level]];
+
             scene.verlets.Add(ball);
             scene.verlets.Add(goal);
             scene.obstacles = obstacles;
@@ -311,6 +313,7 @@ namespace GolfIt
                 float forceMagnitude = Math.Min(forceDirection.Length(), forceLimit);
                 forceDirection = forceDirection.Normalized();
                 ball.PushBall(-forceDirection * forceMagnitude);
+                turn++;
             }
         }
 

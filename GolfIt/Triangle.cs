@@ -16,8 +16,10 @@
         {
             this.cellSize = cellSize;
             this.position = position * cellSize;
-            this.color = Color.LightBlue;
-            this.brush = new SolidBrush(color);
+            Color[] colors = [Color.LightBlue, Color.PaleVioletRed, Color.PapayaWhip];
+            var random = new Random();
+            random.Shuffle(colors);
+            this.brush = new SolidBrush(colors[0]);
             this.width = 5 * cellSize;
             this.height = 5 * cellSize;
 
@@ -96,6 +98,7 @@
         public void Render(Graphics g, PictureBox canvas)
         {
             g.FillPolygon(brush, points);
+            g.DrawPolygon(Pens.Black, points);
         }
 
         public void SetRotationSpeed(int newSpeed)

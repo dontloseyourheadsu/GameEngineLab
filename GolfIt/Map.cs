@@ -7,14 +7,13 @@
         public const char darkTile = 'T';
         public const char wall = 'w';
         public const char sand = 's';
-        public const char ball = 'b';
-        public const char goal = 'g';
         public const char triangle = 'r';
         public List<char[,]> levels;
         private List<(int, int)> ballLevelPositions;
         private List<(int, int)> goalLevelPositions;
         public List<List<(int, int)>> obstaclePositions;
         public List<List<char>> obstacles;
+        public List<List<MovingFloor>> movingFloors;
         private int cellSize;
         private Brush darkGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#7EA00E"));
         private Brush lightGreenBrush = new SolidBrush(ColorTranslator.FromHtml("#DCD964"));
@@ -73,10 +72,10 @@
 
         public Map(int cellSize, int level)
         {
-            if (levels is null) CreateMaps();
             this.cellSize = cellSize;
-            SetMap(level);
             this.level = level;
+            if (levels is null) CreateMaps();
+            SetMap(level);
         }
 
         public void SetMap(int index)
@@ -84,7 +83,7 @@
             map = levels[index];
         }
 
-        public void Render(Graphics g)
+        public void Render(Graphics g, int cntT)
         {
             for (int i = 0; i < map.GetLength(0); i++)
             {
@@ -153,8 +152,13 @@
             levels = new List<char[,]>();
             ballLevelPositions = new List<(int, int)>();
             goalLevelPositions = new List<(int, int)>();
+            movingFloors = new List<List<MovingFloor>>();
+
+            //============================================ LEVEL 1
+            
             obstaclePositions.Add(new List<(int, int)>());
             obstacles.Add(new List<char>());
+            movingFloors.Add(new List<MovingFloor>());
             levels.Add(new char[40, 20]
             {
                 { 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T' },
@@ -202,6 +206,13 @@
             goalLevelPositions.Add((18, 38));
             obstaclePositions[0].Add((10, 10));
             obstacles[0].Add('r');
+            movingFloors[0].Add(new MovingFloor(new Vector(3, 3), Direction.Up, cellSize));
+            movingFloors[0].Add(new MovingFloor(new Vector(3, 4), Direction.Right, cellSize));
+            movingFloors[0].Add(new MovingFloor(new Vector(3, 5), Direction.Down, cellSize));
+            movingFloors[0].Add(new MovingFloor(new Vector(3, 6), Direction.Left, cellSize));
+
+            //============================================
+            //============================================ LEVEL 2
         }
     }
 }

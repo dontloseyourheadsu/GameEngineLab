@@ -12,14 +12,14 @@
             map = new Map(cellSize, level);
         }
 
-        public void Update(Graphics g, PictureBox canvas)
+        public void Update(Graphics g, PictureBox canvas, int cntT)
         {
-            Render(g);
+            Render(g, cntT);
         }
 
-        public void Render(Graphics g)
+        public void Render(Graphics g, int cntT)
         {
-            map.Render(g);
+            map.Render(g, cntT);
         }
     }
 }

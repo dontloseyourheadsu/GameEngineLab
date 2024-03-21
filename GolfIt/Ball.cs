@@ -115,9 +115,14 @@ namespace GolfIt
                 {
                     var obstacleCollisionForce = obstacles[i].DetectCollision(this);
 
-                    if (obstacleCollisionForce.Length() > 0)
+                    if (obstacleCollisionForce.Length() > 0 && obstacles[i] is Triangle)
                     {
                         velocity += obstacleCollisionForce / 4;
+                    }
+
+                    if (obstacles[i] is MovingFloor)
+                    {
+                        velocity += obstacleCollisionForce;
                     }
                 }
 
