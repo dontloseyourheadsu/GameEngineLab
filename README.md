@@ -10,6 +10,7 @@ Laboratorio de videojuegos UDLAP
 - [Particle System](#particle-system)
 - [Particle System 2](#particle-system-2)
 - [Verlet](#verlet)
+- [Golf It](#golf-it)
 
 ## Hola Parallax
 
@@ -50,3 +51,8 @@ Se encuentra en la carpeta ParticlesTwo y contiene el projecto Particle2. se nec
 Se encuentra en la carpeta Verlet y contiene el projecto Verlet. Es para .NET Framework.
 
 ![Verlet 1](ProjectsInfo/verlet.png)
+
+## Golf It
+Juego de golf en el que el jugador debe meter la pelota en el hoyo con la menor cantidad de golpes posibles. Se encuentra en la carpeta GolfIt y contiene el projecto GolfIt. Es para .NET 8.0
+
+![Golf It 1](ProjectsInfo/golfit.png)
