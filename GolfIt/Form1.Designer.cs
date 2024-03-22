@@ -40,9 +40,10 @@
             // 
             // canvas
             // 
-            canvas.Location = new Point(12, 57);
+            canvas.Location = new Point(8, 34);
+            canvas.Margin = new Padding(2, 2, 2, 2);
             canvas.Name = "canvas";
-            canvas.Size = new Size(800, 400);
+            canvas.Size = new Size(560, 240);
             canvas.TabIndex = 0;
             canvas.TabStop = false;
             canvas.MouseDown += canvas_MouseDown;
@@ -58,9 +59,10 @@
             // canShootDisplay
             // 
             canShootDisplay.BackColor = Color.YellowGreen;
-            canShootDisplay.Location = new Point(12, 12);
+            canShootDisplay.Location = new Point(8, 7);
+            canShootDisplay.Margin = new Padding(2, 2, 2, 2);
             canShootDisplay.Name = "canShootDisplay";
-            canShootDisplay.Size = new Size(29, 28);
+            canShootDisplay.Size = new Size(20, 17);
             canShootDisplay.TabIndex = 1;
             canShootDisplay.TabStop = false;
             // 
@@ -69,9 +71,10 @@
             turnDisplay.AutoSize = true;
             turnDisplay.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             turnDisplay.ForeColor = Color.White;
-            turnDisplay.Location = new Point(709, 15);
+            turnDisplay.Location = new Point(496, 9);
+            turnDisplay.Margin = new Padding(2, 0, 2, 0);
             turnDisplay.Name = "turnDisplay";
-            turnDisplay.Size = new Size(77, 27);
+            turnDisplay.Size = new Size(50, 18);
             turnDisplay.TabIndex = 2;
             turnDisplay.Text = "label1";
             // 
@@ -80,25 +83,26 @@
             levelDisplay.AutoSize = true;
             levelDisplay.Font = new Font("Impact", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
             levelDisplay.ForeColor = Color.White;
-            levelDisplay.Location = new Point(341, 15);
+            levelDisplay.Location = new Point(239, 9);
+            levelDisplay.Margin = new Padding(2, 0, 2, 0);
             levelDisplay.Name = "levelDisplay";
-            levelDisplay.Size = new Size(83, 35);
+            levelDisplay.Size = new Size(57, 23);
             levelDisplay.TabIndex = 3;
             levelDisplay.Text = "label1";
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleDimensions = new SizeF(4.9F, 9F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
-            ClientSize = new Size(822, 556);
-            ControlBox = false;
+            ClientSize = new Size(580, 344);
             Controls.Add(levelDisplay);
             Controls.Add(turnDisplay);
             Controls.Add(canShootDisplay);
             Controls.Add(canvas);
-            MaximumSize = new Size(844, 612);
-            MinimumSize = new Size(844, 612);
+            Margin = new Padding(2, 2, 2, 2);
+            MaximumSize = new Size(596, 383);
+            MinimumSize = new Size(596, 383);
             Name = "Form1";
             Text = "Golf it";
             ((System.ComponentModel.ISupportInitialize)canvas).EndInit();
