@@ -14,7 +14,7 @@ namespace GolfIt
         private bool isDragging = false;
         private Point startPoint;
         private Point endPoint;
-        private float forceLimit = 6;
+        private float forceLimit = 8;
         private int level = 0;
         private Label finishLabel;
         private Button nextLevelButton;
@@ -63,7 +63,7 @@ namespace GolfIt
                 DrawMenu();
                 return;
             }
-            
+
             if (goal.isBallInGoal)
             {
                 FinishLevel();
@@ -207,8 +207,8 @@ namespace GolfIt
                 }
 
                 finishLabel.Text = message;
-                
-                
+
+
                 finishLabel.Font = new Font("Arial", 24, FontStyle.Bold);
                 finishLabel.TextAlign = ContentAlignment.MiddleCenter;
                 finishLabel.Width = messageWidth;
@@ -235,11 +235,11 @@ namespace GolfIt
             }
 
             if (MainMenuButton is null)
-            { 
+            {
                 MainMenuButton = new Button();
                 canvas.Controls.Add(MainMenuButton);
                 MainMenuButton.Click += MainMenuButton_Click;
-            
+
                 MainMenuButton.Text = "Main Menu";
                 MainMenuButton.Font = new Font("Arial", 12, FontStyle.Bold);
                 MainMenuButton.ForeColor = Color.White;
@@ -264,7 +264,7 @@ namespace GolfIt
 
             canvas.Controls.Clear();
             if (nextLevelButton is not null)
-            { 
+            {
                 nextLevelButton.Dispose();
             }
             MainMenuButton.Dispose();
@@ -297,7 +297,7 @@ namespace GolfIt
             finishLabel = null;
 
             level++;
-            InitLevel(); 
+            InitLevel();
         }
 
         private void InitLevel()
@@ -328,7 +328,7 @@ namespace GolfIt
                 }
             }
 
-            obstacles = [..obstacles, ..scene.map.movingFloors[level]];
+            obstacles = [.. obstacles, .. scene.map.movingFloors[level]];
 
             scene.verlets.Add(ball);
             scene.verlets.Add(goal);
@@ -349,7 +349,7 @@ namespace GolfIt
                     {
                         return;
                     }
-                
+
                     isDragging = true;
                     startPoint = e.Location;
                     endPoint = startPoint;
@@ -361,7 +361,7 @@ namespace GolfIt
         {
             if (isDragging && !ball.IsMoving())
             {
-                Vector currentPoint = new Vector(e.Location.X, e.Location.Y);
+                /*Vector currentPoint = new Vector(e.Location.X, e.Location.Y);
                 Vector startToEnd = currentPoint - new Vector(startPoint.X, startPoint.Y);
 
                 if (startToEnd.Length() > forceLimit)
@@ -371,8 +371,8 @@ namespace GolfIt
                 }
                 else
                 {
-                    endPoint = e.Location;
-                }
+                }*/
+                endPoint = e.Location;
 
                 canvas.Invalidate();
             }
