@@ -162,7 +162,7 @@ namespace GolfIt
 
         public Collision CheckWallCollision(Map map)
         {
-            float radius = cellSize / 2.0f + 2; 
+            float radius = cellSize / 2.0f - 3; 
 
             bool top = map.IsWall((int)(position.X), (int)(position.Y - radius));
             bool bottom = map.IsWall((int)(position.X), (int)(position.Y + radius));

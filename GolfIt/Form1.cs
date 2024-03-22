@@ -124,7 +124,7 @@ namespace GolfIt
                 var index = i;
                 Button levelButton = new Button
                 {
-                    Text = $"Hoyo {index + 1}",
+                    Text = $"Hole {index + 1}",
                     Font = new Font("Arial", 12, FontStyle.Bold),
                     ForeColor = Color.White,
                     BackColor = Color.Black,
@@ -305,7 +305,7 @@ namespace GolfIt
             graphics.Clear(Color.White);
             turnDisplay.Show();
             turn = 0;
-            levelDisplay.Text = $"Hoyo: {level + 1}";
+            levelDisplay.Text = $"Hole: {level + 1}";
 
             scene = new Scene(level);
 

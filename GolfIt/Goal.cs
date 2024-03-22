@@ -21,7 +21,11 @@
 
         public void Update(Graphics g, PictureBox canvas, Map map)
         {
-            if (Math.Pow(ball.position.X - position.X, 2) + Math.Pow(ball.position.Y - position.Y, 2) < Math.Pow(cellSize / 2, 2))
+            double distance = Math.Sqrt(Math.Pow(ball.position.X - position.X, 2) + Math.Pow(ball.position.Y - position.Y, 2));
+
+            double maxDistance = cellSize / 2 + ball.radius;
+
+            if (distance < maxDistance)
             {
                 if (ball.CanEnterGoal())
                 {
@@ -35,6 +39,7 @@
 
             Render(g);
         }
+
 
         public void Render(Graphics g)
         {
