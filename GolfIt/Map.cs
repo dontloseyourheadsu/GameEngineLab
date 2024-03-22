@@ -797,30 +797,30 @@
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
-                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 't', 'T', 't', 'T', 't', 'T', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 'w', 'w', 'w', 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 'w', 'w', 'w', 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 'w', 'w', 'w', 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 'w', 'w', 'w', 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 'w', 'w', 'w', 'w', 's', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 's', 'w', 'w', 'w', 'w', 'w' },
+                { 'w', 't', 'T', 't', 's', 's', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 's', 's', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 's', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 's', 's', 's', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 's', 'T', 't', 'T', 's', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 's', 's', 't', 'T', 't', 's', 's', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 's', 's', 't', 'T', 't', 's', 's', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 's', 'T', 't', 'T', 's', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
+                { 'w', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 'w' },
+                { 'w', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'T', 't', 'w' },
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
@@ -830,8 +830,28 @@
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
                 { 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w' },
             });
-            ballLevelPositions.Add((22, 17));
-            goalLevelPositions.Add((6, 25));
+            ballLevelPositions.Add((10, 10));
+            goalLevelPositions.Add((10, 23));
+
+            movingFloors[9].Add(new MovingFloor(new Vector(14, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(16, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(18, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(20, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(22, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(24, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(26, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(28, 1), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(30, 1), Direction.Down, cellSize));
+                         
+            movingFloors[9].Add(new MovingFloor(new Vector(15, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(17, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(19, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(21, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(23, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(25, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(27, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(29, 2), Direction.Down, cellSize));
+            movingFloors[9].Add(new MovingFloor(new Vector(31, 2), Direction.Down, cellSize));
         }
     }
 }
