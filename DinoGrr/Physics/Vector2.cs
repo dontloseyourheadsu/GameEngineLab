@@ -16,13 +16,13 @@
             return (float)Math.Sqrt(X * X + Y * Y);
         }
 
-        public Vector2 Normalize()
+        public Vector2 Normalized()
         {
             float magnitude = Magnitude();
             return new Vector2(X / magnitude, Y / magnitude);
         }
 
-        public float DotProduct(Vector2 other)
+        public float Dot(Vector2 other)
         {
             return X * other.X + Y * other.Y;
         }

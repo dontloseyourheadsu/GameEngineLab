@@ -23,8 +23,9 @@
 
         private void UpdateParticles(int subStep, int width, int height)
         {
-            foreach (var particle in particles)
+            for (int i = 0; i < particles.Count; i++)
             {
+                Particle? particle = particles[i];
                 particle.Update(subStep, gravity: 0.1f);
                 particle.KeepInsideCanvas(width, height);
             }
@@ -32,8 +33,9 @@
 
         private void UpdateSticks()
         {
-            foreach (var stick in sticks)
+            for (int i = 0; i < sticks.Count; i++)
             {
+                Stick? stick = sticks[i];
                 stick.Update();
             }
         }

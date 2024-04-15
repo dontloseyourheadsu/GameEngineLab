@@ -1,5 +1,6 @@
 using DinoGrr.Physics;
 using DinoGrr.Rendering;
+using Microsoft.VisualBasic.Devices;
 
 namespace DinoGrr
 {
@@ -10,8 +11,10 @@ namespace DinoGrr
         Render render;
         bool mouseDown = false;
 
-        Player player;
-        List<Dinosaur> dinosaurs;
+        Vector2 mouseG = new Vector2(0, 0);
+
+        PhysicWorld physicWorld;
+
         int cntT = 0;
 
         public Form1()
@@ -31,45 +34,13 @@ namespace DinoGrr
         {
             ScaleCanvas();
             render = new Render(graphics);
-            CreatePlayer();
-            DefineWordObjects();
+            physicWorld = new PhysicWorld(canvas.Width, canvas.Height);
 
-        }
-
-        private void CreatePlayer()
-        {
-            player = new Player();
-        }
-
-        private void DefineWordObjects()
-        {
-            dinosaurs = new List<Dinosaur>();
-            dinosaurs.Add(new Dinosaur(100, 100, 50, 50));
         }
 
         private void UpdateGame()
         {
-            foreach (var dinosaur in dinosaurs)
-            {
-                dinosaur.Update(canvas.Width, canvas.Height, cntT);
-            }
-
-            player.Update(canvas.Width, canvas.Height);
-
-            foreach (var polygon in player.Polygons)
-            {
-                render.DrawPolygon(polygon);
-            }
-            
-            if (player.NewPolygon != null)
-            {
-                render.DrawPolygon(player.NewPolygon);
-            }
-
-            foreach (var dinosaur in dinosaurs)
-            {
-                render.DrawDinosaur(dinosaur);
-            }
+            physicWorld.Update(cntT, mouseG, render);
         }
 
         private void TimerGameLoop(object sender, EventArgs e)
@@ -82,13 +53,13 @@ namespace DinoGrr
 
         private void canvas_MouseDown(object sender, EventArgs e)
         {
-            player.NewPolygon = new Polygon(new List<Particle>(), new List<Stick>());
+            physicWorld.player.NewPolygon = new Polygon(new List<Particle>(), new List<Stick>());
             mouseDown = true;
         }
 
         private void Canvas_MouseUp(object sender, MouseEventArgs e)
         {
-            player.AddPolygon();
+            physicWorld.player.AddPolygon();
             mouseDown = false;
         }
 
@@ -97,7 +68,29 @@ namespace DinoGrr
             if (mouseDown && cntT % 5 == 0)
             {
                 var mass = 2;
-                player.AddParticle(mouse.X, mouse.Y, mass);
+                physicWorld.player.AddParticle(mouse.X, mouse.Y, mass);
+            }
+
+            mouseG = new Vector2(mouse.X, mouse.Y);
+        }
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.A)
+            {
+                physicWorld.player.Position += new Vector2(-10, 0);
+            }
+            else if (e.KeyCode == Keys.D)
+            {
+                physicWorld.player.Position += new Vector2(10, 0);
+            }
+            else if (e.KeyCode == Keys.W)
+            {
+                physicWorld.player.Position += new Vector2(0, -10);
+            }
+            else if (e.KeyCode == Keys.S)
+            {
+                physicWorld.player.Position += new Vector2(0, 10);
             }
         }
     }

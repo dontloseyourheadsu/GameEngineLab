@@ -4,7 +4,9 @@ namespace DinoGrr.Rendering
 {
     public class Render
     {
-        private Graphics graphics;
+        public Graphics graphics;
+        Camera camera;
+
         public Render(Graphics g)
         {
             graphics = g;
@@ -23,18 +25,35 @@ namespace DinoGrr.Rendering
 
         public void DrawPolygon(Polygon polygon)
         {
-            foreach (var stick in polygon.sticks)
+            for (int i = 0; i < polygon.sticks.Count; i++)
             {
+                Stick? stick = polygon.sticks[i];
                 DrawStick(stick);
             }
         }
 
         public void DrawDinosaur(Dinosaur dinosaur)
         {
-            foreach (var stick in dinosaur.polygon.sticks)
+            var width = dinosaur.polygon.particles[1].Position.X - dinosaur.polygon.particles[0].Position.X;
+            var height = dinosaur.polygon.particles[3].Position.Y - dinosaur.polygon.particles[0].Position.Y;
+     
+            if (dinosaur.Orientation == Orientation.Right && dinosaur.ImageOrientation != Orientation.Right)
             {
-                DrawStick(stick);
+                dinosaur.image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                dinosaur.ImageOrientation = Orientation.Right;
             }
+
+            graphics.DrawImage(dinosaur.image,
+                dinosaur.formKeeper.Center.X - dinosaur.Width / 2,
+                dinosaur.formKeeper.Center.Y - dinosaur.Height / 2,
+                width, height);
+        }
+
+        public void DrawRaycast(Vector2 start, Vector2 end)
+        {
+            var pen = new Pen(Color.Red, 1);
+            graphics.DrawLine(pen, start.X, start.Y, end.X, end.Y);
+            graphics.FillEllipse(Brushes.Red, start.X - 5, start.Y - 5, 10, 10);
         }
     }
 }

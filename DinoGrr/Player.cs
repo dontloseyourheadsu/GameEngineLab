@@ -1,5 +1,4 @@
 ﻿using DinoGrr.Physics;
-using System.Numerics;
 
 namespace DinoGrr
 {
@@ -11,10 +10,19 @@ namespace DinoGrr
         public Particle PreviousParticle { get; set; }
         public Particle CurrentParticle { get; set; }
         public Polygon NewPolygon { get; set; }
+        public Vector2 Position { get; set; }
 
-        public Player()
+        public Player(Vector2 position = null)
         {
             Polygons = new List<Polygon>();
+            if (position == null)
+            {
+                Position = new Vector2(100, 100);
+            }
+            else
+            {
+                Position = position;
+            }
         }
 
         public void AddParticle(int mouseX, int mouseY, int mass)
@@ -23,7 +31,7 @@ namespace DinoGrr
             NewPolygon.particles.Add(CurrentParticle);
             if (PreviousParticle != null)
             {
-                NewPolygon.sticks.Add(new Stick(PreviousParticle, CurrentParticle));
+                NewPolygon.sticks.Add(new Stick(PreviousParticle, CurrentParticle, 0.9f));
             }
             PreviousParticle = CurrentParticle;
         }
@@ -47,8 +55,9 @@ namespace DinoGrr
 
         public void Update(int width, int height)
         {
-            foreach (var polygon in Polygons)
+            for (int i = 0; i < Polygons.Count; i++)
             {
+                Polygon? polygon = Polygons[i];
                 polygon.Update(width, height);
             }
         }

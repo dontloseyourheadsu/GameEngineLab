@@ -63,6 +63,7 @@
             MinimumSize = new Size(800, 800);
             Name = "Form1";
             Text = "Form1";
+            KeyDown += Form1_KeyDown;
             ((System.ComponentModel.ISupportInitialize)canvas).EndInit();
             ResumeLayout(false);
         }
