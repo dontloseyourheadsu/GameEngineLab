@@ -41,7 +41,8 @@ namespace DinoGrr.Physics
 
         public void Update(int cntT, Vector2 mouseG, Render render)
         {
-            //camera.ApplyZoom(render.graphics);
+            // ========================== WORLD
+            render.DrawBounds(Width, Height);
             // ========================== UPDATES
             for (int i = 0; i < dinosaurs.Count; i++)
             {

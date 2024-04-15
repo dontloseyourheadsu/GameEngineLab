@@ -33,9 +33,9 @@ namespace DinoGrr
         private void StartWorld()
         {
             ScaleCanvas();
-            render = new Render(graphics);
             physicWorld = new PhysicWorld(canvas.Width, canvas.Height);
-
+            Camera camera = new Camera(physicWorld.player, new Size(canvas.Width , canvas.Height));
+            render = new Render(graphics, camera);
         }
 
         private void UpdateGame()
@@ -45,7 +45,7 @@ namespace DinoGrr
 
         private void TimerGameLoop(object sender, EventArgs e)
         {
-            graphics.Clear(Color.Black);
+            graphics.Clear(Color.White);
             UpdateGame();
             canvas.Invalidate();
             cntT++;

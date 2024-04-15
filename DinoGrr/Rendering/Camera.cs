@@ -7,9 +7,9 @@ namespace DinoGrr.Rendering
         public Player player { get; set; }
         public Size ViewportSize { get; set; }
 
-        public Camera(Player position, Size viewportSize)
+        public Camera(Player p, Size viewportSize)
         {
-            player = position;
+            player = p;
             ViewportSize = viewportSize;
         }
 
@@ -17,6 +17,16 @@ namespace DinoGrr.Rendering
         {
             return new Rectangle((int)player.Position.X, (int)player.Position.Y, ViewportSize.Width, ViewportSize.Height);
         }
-    }
 
+        public bool IsVisible(Point position)
+        {
+            var visibleArea = GetVisibleArea();
+            return visibleArea.Contains(position);
+        }
+
+        public Point TranslateToView(Point worldPosition)
+        {
+            return new Point(worldPosition.X - (int)player.Position.X, worldPosition.Y - (int)player.Position.Y);
+        }
+    }
 }
