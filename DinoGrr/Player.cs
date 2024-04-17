@@ -4,17 +4,22 @@ namespace DinoGrr
 {
     public class Player
     {
-        public List<Polygon> Polygons { get; set; }
-        public int maxPolygonPoints = 100;
-        public int polygonPoints = 0;
-        public Particle PreviousParticle { get; set; }
-        public Particle CurrentParticle { get; set; }
-        public Polygon NewPolygon { get; set; }
+        public Polygon polygon { get; set; }
+        public FormKeeper formKeeper { get; set; }
         public Vector2 Position { get; set; }
+        public Vector2 CameraPosition { get; set; }
+        public Orientation Orientation { get; set; }
+        public Orientation ImageOrientation { get; set; }
+        public Particle LeftLeg { get; set; }
+        public Particle RightLeg { get; set; }
+        public Bitmap image;
+        int speed = 1;
+
+        public DinoPencil dinoPencil { get; set; }
 
         public Player(Vector2 position = null)
         {
-            Polygons = new List<Polygon>();
+            dinoPencil = new DinoPencil();
             if (position == null)
             {
                 Position = new Vector2(100, 100);
@@ -23,42 +28,68 @@ namespace DinoGrr
             {
                 Position = position;
             }
-        }
+            CameraPosition = new Vector2(Position.X - 200, Position.Y - 500);
 
-        public void AddParticle(int mouseX, int mouseY, int mass)
-        {
-            CurrentParticle = new Particle(new Physics.Vector2(mouseX, mouseY), mass);
-            NewPolygon.particles.Add(CurrentParticle);
-            if (PreviousParticle != null)
-            {
-                NewPolygon.sticks.Add(new Stick(PreviousParticle, CurrentParticle, 0.9f));
-            }
-            PreviousParticle = CurrentParticle;
-        }
-        
-        public void AddPolygon()
-        {
-            Polygons.Add(NewPolygon);
-            CurrentParticle = null;
-            PreviousParticle = null;
-            NewPolygon = null;
-        }
+            var height = 40;
+            var width = 20;
+            var x = (int)Position.X;
+            var y = (int)Position.Y;
 
-        public void RemovePolygon()
-        {
-            if (polygonPoints > 0)
+            var particles = new List<Particle>
             {
-                Polygons.RemoveAt(Polygons.Count - 1);
-                polygonPoints--;
-            }
+                new Particle(new Vector2(x - width / 2, y - height / 2), 2), // top left
+                new Particle(new Vector2(x + width / 2, y - height / 2), 2), // top right
+                new Particle(new Vector2(x + width / 2, y + height / 2), 2), // bottom right
+                new Particle(new Vector2(x - width / 2, y + height / 2), 2), // bottom left
+            };
+
+            var sticks = new List<Stick>
+            {
+                new Stick(particles[0], particles[1]), // top edge
+                new Stick(particles[1], particles[2]), // right edge
+                new Stick(particles[2], particles[3]), // bottom edge
+                new Stick(particles[3], particles[0]), // left edge
+            };
+
+            polygon = new Polygon(particles, sticks);
+            LeftLeg = particles[3];
+            RightLeg = particles[2];
+
+            formKeeper = new FormKeeper(polygon);
+            ImageOrientation = Orientation.Left;
+            image = Resource.dinosaur_girl;
         }
 
         public void Update(int width, int height)
         {
-            for (int i = 0; i < Polygons.Count; i++)
+            Position = formKeeper.Center;
+            CameraPosition = new Vector2(Position.X-200, Position.Y-500);
+            polygon.Update(width, height);
+            formKeeper.RestoreOriginalForm();
+
+            dinoPencil.Update(width, height);
+        }
+
+        public void MoveRight()
+        {
+            LeftLeg.Position += new Vector2(speed, 0);
+            RightLeg.Position += new Vector2(speed, 0);
+            Orientation = Orientation.Right;
+        }
+
+        public void MoveLeft()
+        {
+            LeftLeg.Position += new Vector2(-speed, 0);
+            RightLeg.Position += new Vector2(-speed, 0);
+            Orientation = Orientation.Left;
+        }
+
+        public void Jump()
+        {
+            if (LeftLeg.IsInGround && RightLeg.IsInGround)
             {
-                Polygon? polygon = Polygons[i];
-                polygon.Update(width, height);
+                LeftLeg.Position += new Vector2(0, -speed * 2);
+                RightLeg.Position += new Vector2(0, -speed * 2);
             }
         }
     }

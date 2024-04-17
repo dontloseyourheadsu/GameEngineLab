@@ -73,6 +73,16 @@ namespace DinoGrr {
         /// <summary>
         ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap dinosaur_girl {
+            get {
+                object obj = ResourceManager.GetObject("dinosaur_girl", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap dinosaur_green {
             get {
                 object obj = ResourceManager.GetObject("dinosaur_green", resourceCulture);
@@ -116,6 +126,16 @@ namespace DinoGrr {
         internal static System.Drawing.Bitmap dinosaur_violet {
             get {
                 object obj = ResourceManager.GetObject("dinosaur_violet", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap mountains {
+            get {
+                object obj = ResourceManager.GetObject("mountains", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

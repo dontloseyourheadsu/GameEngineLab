@@ -19,8 +19,6 @@
 
         public void Update(int subStep, float gravity)
         {
-            IsInGround = false;
-
             if (Locked)
             {
                 return;
@@ -28,7 +26,27 @@
 
             var velocity = new Vector2(2 * Position.X - PreviousPosition.X, 2 * Position.Y - PreviousPosition.Y);
 
-            var force = new Vector2(0.0f, gravity / subStep);
+            float maxVelocity = 200.0f;
+            if (velocity.X > maxVelocity)
+            {//todo: do proper velocity clamping
+                velocity.X = velocity.Normalized().X * maxVelocity;
+            }
+
+            Vector2 force = new Vector2(0.0f, gravity / subStep);
+
+            if (IsInGround)
+            {
+                var frictionFactor = gravity / subStep;
+                if (PreviousPosition.X < Position.X)
+                {
+                    force = new Vector2(-frictionFactor, gravity / subStep);
+                }
+                else if (PreviousPosition.X > Position.X)
+                {
+                    force = new Vector2(frictionFactor, gravity / subStep);
+                }
+            }
+
             var acceleration = new Vector2(force.X / Mass, force.Y / Mass);
             var prevPosition = new Vector2(Position.X, Position.Y);
             var deltaTimeSquared = (1.0f / subStep) * (1.0f / subStep);
@@ -37,6 +55,8 @@
                                velocity.Y + acceleration.Y * deltaTimeSquared
                                );
             PreviousPosition = prevPosition;
+
+            IsInGround = false;
         }
 
         public void CheckPolygonCollision(Polygon polygon)
@@ -58,11 +78,9 @@
         private void HandlePolygonCollision(Polygon polygon)
         {
             var closestEdge = RayCasting.GetClosestEdge(Position, polygon.sticks);
-            Stick edge = closestEdge.Item1;
             Vector2 closestPoint = closestEdge.Item2;
 
-            Position = closestPoint + (Position - closestPoint) * 1f;
-            PreviousPosition = closestPoint + (Position - closestPoint) * 0.8f;
+            Position = closestPoint;
         }
 
         public void ParticleCollision(Particle otherParticle)

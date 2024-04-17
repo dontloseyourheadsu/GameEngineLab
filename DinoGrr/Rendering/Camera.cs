@@ -15,7 +15,7 @@ namespace DinoGrr.Rendering
 
         public Rectangle GetVisibleArea()
         {
-            return new Rectangle((int)player.Position.X, (int)player.Position.Y, ViewportSize.Width, ViewportSize.Height);
+            return new Rectangle((int)player.CameraPosition.X, (int)player.CameraPosition.Y, ViewportSize.Width, ViewportSize.Height);
         }
 
         public bool IsVisible(Point position)
@@ -26,7 +26,7 @@ namespace DinoGrr.Rendering
 
         public Point TranslateToView(Point worldPosition)
         {
-            return new Point(worldPosition.X - (int)player.Position.X, worldPosition.Y - (int)player.Position.Y);
+            return new Point(worldPosition.X - (int)player.CameraPosition.X, worldPosition.Y - (int)player.CameraPosition.Y);
         }
     }
 }

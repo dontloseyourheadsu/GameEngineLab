@@ -13,8 +13,9 @@ namespace DinoGrr
         public int Width { get; set; }
         public int Height { get; set; }
         public Bitmap image { get; set; }
+        public Player player { get; set; }
 
-        public Dinosaur(int x, int y, int width, int height, Bitmap image)
+        public Dinosaur(int x, int y, int width, int height, Bitmap image, Player player)
         {
             Width = width;
             Height = height;
@@ -41,6 +42,7 @@ namespace DinoGrr
 
             formKeeper = new FormKeeper(polygon);
             this.image = image;
+            this.player = player;
         }
 
         public void Update(int width, int height, int cntT)
@@ -49,7 +51,15 @@ namespace DinoGrr
             formKeeper.RestoreOriginalForm();
             if (cntT % 60 == 0)
             {
-                JumpRight();
+                if (player.Position.X > formKeeper.Center.X)
+                {
+                    JumpRight();
+                }
+                else if (player.Position.X < formKeeper.Center.X)
+                {
+                    JumpLeft();
+                }
+
                 StandUp();
             }
         }
@@ -58,8 +68,8 @@ namespace DinoGrr
         {
             if (polygon.particles[2].IsInGround && polygon.particles[3].IsInGround)
             {
-                LeftLeg.Position += new Vector2(3, -7);
-                RightLeg.Position += new Vector2(3, -7);
+                LeftLeg.Position += new Vector2(2, -2);
+                RightLeg.Position += new Vector2(2, -2);
                 Orientation = Orientation.Right;
             }
         }
@@ -68,8 +78,8 @@ namespace DinoGrr
         {
             if (polygon.particles[0].IsInGround && polygon.particles[1].IsInGround)
             {
-                LeftLeg.Position += new Vector2(-3, -7);
-                RightLeg.Position += new Vector2(-3, -7);
+                LeftLeg.Position += new Vector2(-2, -2);
+                RightLeg.Position += new Vector2(-2, -2);
                 Orientation = Orientation.Left;
             }
         }

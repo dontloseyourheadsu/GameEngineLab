@@ -57,6 +57,12 @@ namespace DinoGrr.Rendering
                 dinosaur.ImageOrientation = Orientation.Right;
             }
 
+            if (dinosaur.Orientation == Orientation.Left && dinosaur.ImageOrientation != Orientation.Left)
+            {
+                dinosaur.image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                dinosaur.ImageOrientation = Orientation.Left;
+            }
+
             if (Camera.IsVisible(new Point((int)dinosaur.formKeeper.Center.X, (int)dinosaur.formKeeper.Center.Y)))
             {
                 Graphics.DrawImage(dinosaur.image, centerView.X - width / 2, centerView.Y - height / 2, width, height);
@@ -78,7 +84,6 @@ namespace DinoGrr.Rendering
 
         public void DrawBounds(int Width, int Height)
         {
-            // draw the bounds with black lines
             var pen = new Pen(Color.Black, 1);
             var viewTopLeft = Camera.TranslateToView(new Point(0, 0));
             var viewTopRight = Camera.TranslateToView(new Point(Width, 0));
@@ -89,6 +94,39 @@ namespace DinoGrr.Rendering
             Graphics.DrawLine(pen, viewTopRight.X, viewTopRight.Y, viewBottomRight.X, viewBottomRight.Y);
             Graphics.DrawLine(pen, viewBottomRight.X, viewBottomRight.Y, viewBottomLeft.X, viewBottomLeft.Y);
             Graphics.DrawLine(pen, viewBottomLeft.X, viewBottomLeft.Y, viewTopLeft.X, viewTopLeft.Y);
+        }
+
+        public void DrawGirl(Player player)
+        {
+            var width = player.polygon.particles[1].Position.X - player.polygon.particles[0].Position.X;
+            var height = player.polygon.particles[3].Position.Y - player.polygon.particles[0].Position.Y;
+            var centerView = Camera.TranslateToView(new Point((int)player.formKeeper.Center.X, (int)player.formKeeper.Center.Y));
+
+            if (player.Orientation == Orientation.Right && player.ImageOrientation != Orientation.Right)
+            {
+                player.image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                player.ImageOrientation = Orientation.Right;
+            }
+
+            if (player.Orientation == Orientation.Left && player.ImageOrientation != Orientation.Left)
+            {
+                player.image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                player.ImageOrientation = Orientation.Left;
+            }
+
+            if (Camera.IsVisible(new Point((int)player.formKeeper.Center.X, (int)player.formKeeper.Center.Y)))
+            {
+                Graphics.DrawImage(player.image, centerView.X - width / 2, centerView.Y - height / 2, width, height);
+            }
+        }
+
+        public void DrawBackground(Background background)
+        {
+            var centerView1 = Camera.TranslateToView(new Point((int)background.l1_X1, 50));
+            var centerView2 = Camera.TranslateToView(new Point((int)background.l1_X2, 50));
+
+            Graphics.DrawImage(background.layer1, centerView1.X, centerView1.Y, background.layer1.Width + 225, background.height - 50);
+            Graphics.DrawImage(background.layer1, centerView2.X, centerView2.Y, background.layer1.Width + 225, background.height - 50);
         }
     }
 }

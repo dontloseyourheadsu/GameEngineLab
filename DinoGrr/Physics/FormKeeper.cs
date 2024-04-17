@@ -26,7 +26,7 @@
             }
 
             Center = centerOfMass / totalMass;
-            return centerOfMass / totalMass;
+            return Center;
         }
 
         public void RestoreOriginalForm()
@@ -43,7 +43,7 @@
 
                 var restoreVector = desiredPosition - currentPosition;
 
-                float stiffness = 0.1f;
+                float stiffness = 0.9f;
                 particle.Position += restoreVector * stiffness;
             }
         }

@@ -53,13 +53,13 @@ namespace DinoGrr
 
         private void canvas_MouseDown(object sender, EventArgs e)
         {
-            physicWorld.player.NewPolygon = new Polygon(new List<Particle>(), new List<Stick>());
+            physicWorld.player.dinoPencil.NewPolygon = new Polygon(new List<Particle>(), new List<Stick>());
             mouseDown = true;
         }
 
         private void Canvas_MouseUp(object sender, MouseEventArgs e)
         {
-            physicWorld.player.AddPolygon();
+            physicWorld.player.dinoPencil.AddPolygon();
             mouseDown = false;
         }
 
@@ -68,7 +68,7 @@ namespace DinoGrr
             if (mouseDown && cntT % 5 == 0)
             {
                 var mass = 2;
-                physicWorld.player.AddParticle(mouse.X, mouse.Y, mass);
+                physicWorld.player.dinoPencil.AddParticle(mouse.X, mouse.Y, mass);
             }
 
             mouseG = new Vector2(mouse.X, mouse.Y);
@@ -78,19 +78,15 @@ namespace DinoGrr
         {
             if (e.KeyCode == Keys.A)
             {
-                physicWorld.player.Position += new Vector2(-10, 0);
+                physicWorld.player.MoveLeft();
             }
             else if (e.KeyCode == Keys.D)
             {
-                physicWorld.player.Position += new Vector2(10, 0);
+                physicWorld.player.MoveRight();
             }
             else if (e.KeyCode == Keys.W)
             {
-                physicWorld.player.Position += new Vector2(0, -10);
-            }
-            else if (e.KeyCode == Keys.S)
-            {
-                physicWorld.player.Position += new Vector2(0, 10);
+                physicWorld.player.Jump();
             }
         }
     }

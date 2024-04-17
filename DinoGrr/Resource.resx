@@ -121,6 +121,9 @@
   <data name="dinosaur_blue" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\dinosaur-blue.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="dinosaur_girl" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\dinosaur_girl.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="dinosaur_green" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\dinosaur-green.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -135,5 +138,8 @@
   </data>
   <data name="dinosaur_violet" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\dinosaur-violet.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="mountains" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\mountains.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
