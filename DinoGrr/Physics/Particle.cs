@@ -24,39 +24,75 @@
                 return;
             }
 
-            var velocity = new Vector2(2 * Position.X - PreviousPosition.X, 2 * Position.Y - PreviousPosition.Y);
-
-            float maxVelocity = 200.0f;
-            if (velocity.X > maxVelocity)
-            {//todo: do proper velocity clamping
-                velocity.X = velocity.Normalized().X * maxVelocity;
-            }
-
-            Vector2 force = new Vector2(0.0f, gravity / subStep);
-
             if (IsInGround)
             {
-                var frictionFactor = gravity / subStep;
-                if (PreviousPosition.X < Position.X)
-                {
-                    force = new Vector2(-frictionFactor, gravity / subStep);
-                }
-                else if (PreviousPosition.X > Position.X)
-                {
-                    force = new Vector2(frictionFactor, gravity / subStep);
-                }
+                SetMaxVelocity(2.5f);
+            }
+            else
+            {
+                SetMaxAirVelocity(30f);
             }
 
-            var acceleration = new Vector2(force.X / Mass, force.Y / Mass);
-            var prevPosition = new Vector2(Position.X, Position.Y);
-            var deltaTimeSquared = (1.0f / subStep) * (1.0f / subStep);
+            Vector2 velocity = CalculateVelocity();
+            Vector2 force = CalculateForce(subStep, gravity);
+            Vector2 acceleration = force / Mass;
+            Vector2 deltaTimeSquared = new Vector2(1,1) * (1.0f / subStep) * (1.0f / subStep);
 
-            Position = new Vector2(velocity.X + acceleration.X * deltaTimeSquared,
-                               velocity.Y + acceleration.Y * deltaTimeSquared
-                               );
-            PreviousPosition = prevPosition;
-
+            UpdatePositions(velocity, acceleration, deltaTimeSquared);
             IsInGround = false;
+        }
+
+        private void SetMaxVelocity(float maxVelocity)
+        {
+            if (Position.Distance(PreviousPosition) > maxVelocity)
+            {
+                PreviousPosition += (Position - PreviousPosition).Normalized() * maxVelocity;
+            }
+        }
+
+        private void SetMaxAirVelocity(float maxVelocity)
+        {
+            if (Position.Distance(PreviousPosition) > maxVelocity)
+            {
+                PreviousPosition += (Position - PreviousPosition).Normalized() * maxVelocity;
+            }
+        }
+
+        private Vector2 CalculateVelocity()
+        {
+            return new Vector2(2 * Position.X - PreviousPosition.X, 2 * Position.Y - PreviousPosition.Y);
+        }
+
+        private Vector2 CalculateForce(int subStep, float gravity)
+        {
+            Vector2 force = new Vector2(0.0f, gravity / subStep);
+            if (IsInGround)
+            {
+                force = CalculateFrictionForce(subStep, gravity);
+            }
+            return force;
+        }
+
+        private Vector2 CalculateFrictionForce(int subStep, float gravity)
+        {
+            float frictionFactor = (gravity / subStep) * 1.5f;
+            if (PreviousPosition.X < Position.X)
+            {
+                return new Vector2(-frictionFactor, gravity / subStep);
+            }
+            else if (PreviousPosition.X > Position.X)
+            {
+                return new Vector2(frictionFactor, gravity / subStep);
+            }
+            return new Vector2(0.0f, gravity / subStep);
+        }
+
+        private void UpdatePositions(Vector2 velocity, Vector2 acceleration, Vector2 deltaTimeSquared)
+        {
+            Vector2 prevPosition = new Vector2(Position.X, Position.Y);
+            Position = new Vector2(velocity.X + acceleration.X * deltaTimeSquared.X,
+                                   velocity.Y + acceleration.Y * deltaTimeSquared.Y);
+            PreviousPosition = prevPosition;
         }
 
         public void CheckPolygonCollision(Polygon polygon)
@@ -78,9 +114,19 @@
         private void HandlePolygonCollision(Polygon polygon)
         {
             var closestEdge = RayCasting.GetClosestEdge(Position, polygon.sticks);
+            Stick stick = closestEdge.Item1;
             Vector2 closestPoint = closestEdge.Item2;
 
-            Position = closestPoint;
+            var normalizedCollisionVector = (closestPoint - Position).Normalized();
+
+            PreviousPosition = Position;
+            Position = closestPoint + (normalizedCollisionVector * 8);
+
+            stick.A.PreviousPosition = stick.A.Position;
+            stick.B.PreviousPosition = stick.B.Position;
+
+            stick.A.Position = stick.A.Position - (normalizedCollisionVector * 8);
+            stick.B.Position = stick.B.Position - (normalizedCollisionVector * 8);
         }
 
         public void ParticleCollision(Particle otherParticle)
@@ -90,7 +136,7 @@
                 return;
             }
 
-            var distance = Position.GetDistance(otherParticle.Position);
+            var distance = Position.Distance(otherParticle.Position);
             var sumRadius = Mass + otherParticle.Mass;
 
             if (distance < sumRadius)

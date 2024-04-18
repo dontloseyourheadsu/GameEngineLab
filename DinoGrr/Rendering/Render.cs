@@ -84,7 +84,7 @@ namespace DinoGrr.Rendering
 
         public void DrawBounds(int Width, int Height)
         {
-            var pen = new Pen(Color.Black, 1);
+            var pen = new Pen(Color.Black, 5);
             var viewTopLeft = Camera.TranslateToView(new Point(0, 0));
             var viewTopRight = Camera.TranslateToView(new Point(Width, 0));
             var viewBottomLeft = Camera.TranslateToView(new Point(0, Height));
@@ -94,6 +94,21 @@ namespace DinoGrr.Rendering
             Graphics.DrawLine(pen, viewTopRight.X, viewTopRight.Y, viewBottomRight.X, viewBottomRight.Y);
             Graphics.DrawLine(pen, viewBottomRight.X, viewBottomRight.Y, viewBottomLeft.X, viewBottomLeft.Y);
             Graphics.DrawLine(pen, viewBottomLeft.X, viewBottomLeft.Y, viewTopLeft.X, viewTopLeft.Y);
+        }
+
+        public void DrawOutsideBounds(int Width, int Height)
+        {
+            var brush = new SolidBrush(Color.White);
+            var viewTopLeft = Camera.TranslateToView(new Point(0, 0));
+            var viewTopRight = Camera.TranslateToView(new Point(Width, 0));
+            var viewBottomLeft = Camera.TranslateToView(new Point(0, Height));
+            var viewBottomRight = Camera.TranslateToView(new Point(Width, Height));
+            var extension = 200;
+
+            Graphics.FillRectangle(brush, viewTopLeft.X - extension, viewTopLeft.Y, extension - 2.5f, Height + extension);
+            Graphics.FillRectangle(brush, viewTopRight.X, viewTopRight.Y, extension * 3, Height + extension);
+            Graphics.FillRectangle(brush, viewBottomLeft.X - extension, viewBottomLeft.Y + 1f, Width + extension*2, extension);
+
         }
 
         public void DrawGirl(Player player)
@@ -125,8 +140,14 @@ namespace DinoGrr.Rendering
             var centerView1 = Camera.TranslateToView(new Point((int)background.l1_X1, 50));
             var centerView2 = Camera.TranslateToView(new Point((int)background.l1_X2, 50));
 
-            Graphics.DrawImage(background.layer1, centerView1.X, centerView1.Y, background.layer1.Width + 225, background.height - 50);
-            Graphics.DrawImage(background.layer1, centerView2.X, centerView2.Y, background.layer1.Width + 225, background.height - 50);
+            var center2View1 = Camera.TranslateToView(new Point((int)background.l2_X1, background.height / 2 + 15));
+            var center2View2 = Camera.TranslateToView(new Point((int)background.l2_X2, background.height / 2 + 15));
+
+            Graphics.DrawImage(background.layer1, centerView1.X, centerView1.Y, background.layer1.Width + 225, background.height);
+            Graphics.DrawImage(background.layer1, centerView2.X, centerView2.Y, background.layer1.Width + 225, background.height);
+
+            Graphics.DrawImage(background.layer2, center2View1.X, center2View1.Y, background.layer2.Width + 225, background.height / 3);
+            Graphics.DrawImage(background.layer2, center2View2.X, center2View2.Y, background.layer2.Width + 225, background.height / 3);
         }
     }
 }

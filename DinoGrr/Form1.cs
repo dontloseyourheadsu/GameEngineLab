@@ -79,10 +79,12 @@ namespace DinoGrr
             if (e.KeyCode == Keys.A)
             {
                 physicWorld.player.MoveLeft();
+                physicWorld.background.BackgroundMoveRight();
             }
             else if (e.KeyCode == Keys.D)
             {
                 physicWorld.player.MoveRight();
+                physicWorld.background.BackgroundMoveLeft();
             }
             else if (e.KeyCode == Keys.W)
             {

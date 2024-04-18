@@ -16,6 +16,11 @@
             return (float)Math.Sqrt(X * X + Y * Y);
         }
 
+        public float Length()
+        {
+            return Magnitude();
+        }
+
         public Vector2 Normalized()
         {
             float magnitude = Magnitude();
@@ -27,7 +32,7 @@
             return X * other.X + Y * other.Y;
         }
 
-        public float GetDistance(Vector2 other)
+        public float Distance(Vector2 other)
         {
             var dx = X - other.X;
             var dy = Y - other.Y;

@@ -58,6 +58,7 @@ namespace DinoGrr
                 else if (player.Position.X < formKeeper.Center.X)
                 {
                     JumpLeft();
+
                 }
 
                 StandUp();
@@ -68,18 +69,22 @@ namespace DinoGrr
         {
             if (polygon.particles[2].IsInGround && polygon.particles[3].IsInGround)
             {
-                LeftLeg.Position += new Vector2(2, -2);
-                RightLeg.Position += new Vector2(2, -2);
+                LeftLeg.Position += new Vector2(4, -4);
+                RightLeg.Position += new Vector2(4, -4);
+                LeftLeg.PreviousPosition += new Vector2(2, -2);
+                RightLeg.PreviousPosition += new Vector2(2, -2);
                 Orientation = Orientation.Right;
             }
         }
 
         public void JumpLeft()
         {
-            if (polygon.particles[0].IsInGround && polygon.particles[1].IsInGround)
+            if (polygon.particles[2].IsInGround && polygon.particles[3].IsInGround)
             {
-                LeftLeg.Position += new Vector2(-2, -2);
-                RightLeg.Position += new Vector2(-2, -2);
+                LeftLeg.Position += new Vector2(-4, -4);
+                RightLeg.Position += new Vector2(-4, -4);
+                LeftLeg.PreviousPosition += new Vector2(-1, -1);
+                RightLeg.PreviousPosition += new Vector2(-1, -1);
                 Orientation = Orientation.Left;
             }
         }

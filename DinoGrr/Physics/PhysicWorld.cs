@@ -46,7 +46,6 @@ namespace DinoGrr.Physics
             // ========================== WORLD
             render.DrawBackground(background);
             render.DrawBounds(Width, Height);
-            background.BackgroundMoveRight();
 
             // ========================== UPDATES
             for (int i = 0; i < dinosaurs.Count; i++)
@@ -97,6 +96,9 @@ namespace DinoGrr.Physics
             }
 
             render.DrawGirl(player);
+
+            // ========================== AFTER DRAWINGS
+            render.DrawOutsideBounds(Width, Height);
         }
     }
 }
