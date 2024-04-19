@@ -1,6 +1,6 @@
 using DinoGrr.Physics;
 using DinoGrr.Rendering;
-using Microsoft.VisualBasic.Devices;
+using DinoGrr.WorldGen;
 
 namespace DinoGrr
 {
@@ -11,7 +11,10 @@ namespace DinoGrr
         Render render;
         bool mouseDown = false;
 
+        Camera camera;
+
         Vector2 mouseG = new Vector2(0, 0);
+        WorldGenerator worldGenerator;
 
         PhysicWorld physicWorld;
 
@@ -25,6 +28,8 @@ namespace DinoGrr
 
         private void ScaleCanvas()
         {
+            canvas.Width = Width;
+            canvas.Height = Height;
             bitmap = new Bitmap(canvas.Width, canvas.Height);
             graphics = Graphics.FromImage(bitmap);
             canvas.Image = bitmap;
@@ -33,8 +38,10 @@ namespace DinoGrr
         private void StartWorld()
         {
             ScaleCanvas();
-            physicWorld = new PhysicWorld(canvas.Width, canvas.Height);
-            Camera camera = new Camera(physicWorld.player, new Size(canvas.Width , canvas.Height));
+            worldGenerator = new WorldGenerator();
+            
+            physicWorld = worldGenerator.CurrentWorld;
+            camera = new Camera(physicWorld.player, new Size(canvas.Width, canvas.Height));
             render = new Render(graphics, camera);
         }
 
@@ -47,6 +54,13 @@ namespace DinoGrr
         {
             graphics.Clear(Color.White);
             UpdateGame();
+            if (physicWorld.gameEnd)
+            {
+                worldGenerator.NextLevel();
+                physicWorld = worldGenerator.CurrentWorld;
+                camera = new Camera(physicWorld.player, new Size(canvas.Width, canvas.Height));
+                render = new Render(graphics, camera);
+            }
             canvas.Invalidate();
             cntT++;
         }
@@ -65,10 +79,11 @@ namespace DinoGrr
 
         private void Canvas_MouseMove(object sender, MouseEventArgs mouse)
         {
-            if (mouseDown && cntT % 5 == 0)
+            if (mouseDown)
             {
                 var mass = 2;
-                physicWorld.player.dinoPencil.AddParticle(mouse.X, mouse.Y, mass);
+                var realPlacement = camera.TranslateToOrigin(new Point(mouse.X, mouse.Y));
+                physicWorld.player.dinoPencil.AddParticle(realPlacement.X, realPlacement.Y, mass);
             }
 
             mouseG = new Vector2(mouse.X, mouse.Y);
@@ -76,6 +91,16 @@ namespace DinoGrr
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.KeyCode == Keys.Z)
+            {
+                physicWorld.player.dinoPencil.RemovePolygon();
+            }
+
+            if (physicWorld.player.isDamaged)
+            {
+                return;
+            }
+
             if (e.KeyCode == Keys.A)
             {
                 physicWorld.player.MoveLeft();

@@ -28,5 +28,10 @@ namespace DinoGrr.Rendering
         {
             return new Point(worldPosition.X - (int)player.CameraPosition.X, worldPosition.Y - (int)player.CameraPosition.Y);
         }
+
+        public Point TranslateToOrigin(Point viewPosition)
+        {
+            return new Point(viewPosition.X + (int)player.CameraPosition.X, viewPosition.Y + (int)player.CameraPosition.Y);
+        }
     }
 }

@@ -22,10 +22,10 @@ namespace DinoGrr
             Orientation = Orientation.Left;
             var particles = new List<Particle>
             {
-                new Particle(new Vector2(x - width / 2, y - height / 2), 2), // top left
-                new Particle(new Vector2(x + width / 2, y - height / 2), 2), // top right
-                new Particle(new Vector2(x + width / 2, y + height / 2), 2), // bottom right
-                new Particle(new Vector2(x - width / 2, y + height / 2), 2), // bottom left
+                new Particle(new Vector2(x - width / 2, y - height / 2), 2, 'd'), // top left
+                new Particle(new Vector2(x + width / 2, y - height / 2), 2, 'd'), // top right
+                new Particle(new Vector2(x + width / 2, y + height / 2), 2, 'd'), // bottom right
+                new Particle(new Vector2(x - width / 2, y + height / 2), 2, 'd'), // bottom left
             };
 
             var sticks = new List<Stick>
@@ -69,10 +69,8 @@ namespace DinoGrr
         {
             if (polygon.particles[2].IsInGround && polygon.particles[3].IsInGround)
             {
-                LeftLeg.Position += new Vector2(4, -4);
-                RightLeg.Position += new Vector2(4, -4);
-                LeftLeg.PreviousPosition += new Vector2(2, -2);
-                RightLeg.PreviousPosition += new Vector2(2, -2);
+                LeftLeg.Position += new Vector2(5, -10);
+                RightLeg.Position += new Vector2(5, -10);
                 Orientation = Orientation.Right;
             }
         }
@@ -81,10 +79,8 @@ namespace DinoGrr
         {
             if (polygon.particles[2].IsInGround && polygon.particles[3].IsInGround)
             {
-                LeftLeg.Position += new Vector2(-4, -4);
-                RightLeg.Position += new Vector2(-4, -4);
-                LeftLeg.PreviousPosition += new Vector2(-1, -1);
-                RightLeg.PreviousPosition += new Vector2(-1, -1);
+                LeftLeg.Position += new Vector2(-5, -10);
+                RightLeg.Position += new Vector2(-5, -10);
                 Orientation = Orientation.Left;
             }
         }
@@ -93,11 +89,11 @@ namespace DinoGrr
         {
             if (polygon.particles[0].IsInGround)
             {
-                polygon.particles[0].Position += new Vector2(0, -5);
+                polygon.particles[0].Position += new Vector2(0, -10);
             }
             if (polygon.particles[1].IsInGround)
             {
-                polygon.particles[1].Position += new Vector2(0, -5);
+                polygon.particles[1].Position += new Vector2(0, -10);
             }
         }
     }

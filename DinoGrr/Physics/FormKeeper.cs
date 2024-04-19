@@ -3,15 +3,17 @@
     public class FormKeeper
     {
         private Polygon targetPolygon;
-        private List<Vector2> initialLocalPositions; // Positions relative to the initial center of mass
+        private List<Vector2> initialLocalPositions;
         private Vector2 initialCenterOfMass;
         public Vector2 Center { get; private set; }
+        public float Stiffness { get; set; }
 
-        public FormKeeper(Polygon polygon)
+        public FormKeeper(Polygon polygon, float stiffness = 0.1f)
         {
             targetPolygon = polygon;
             initialCenterOfMass = CalculateCenterOfMass(polygon.particles);
             initialLocalPositions = polygon.particles.Select(p => p.Position - initialCenterOfMass).ToList();
+            Stiffness = stiffness;
         }
 
         private Vector2 CalculateCenterOfMass(List<Particle> particles)
@@ -43,8 +45,7 @@
 
                 var restoreVector = desiredPosition - currentPosition;
 
-                float stiffness = 0.9f;
-                particle.Position += restoreVector * stiffness;
+                particle.Position += restoreVector * Stiffness;
             }
         }
     }

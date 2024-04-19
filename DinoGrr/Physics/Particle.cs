@@ -8,13 +8,15 @@
         public bool IsInGround { get; set; }
         public bool Locked { get; set; }
         public bool IsCollisionActive { get; set; }
+        public char BelongsTo { get; set; }
 
-        public Particle(Vector2 position, float mass)
+        public Particle(Vector2 position, float mass, char belongsTo)
         {
             Position = position;
             PreviousPosition = position;
             Mass = mass;
             IsCollisionActive = true;
+            BelongsTo = belongsTo;
         }
 
         public void Update(int subStep, float gravity)
@@ -24,14 +26,7 @@
                 return;
             }
 
-            if (IsInGround)
-            {
-                SetMaxVelocity(2.5f);
-            }
-            else
-            {
-                SetMaxAirVelocity(30f);
-            }
+            SetMaxVelocity(2.5f);
 
             Vector2 velocity = CalculateVelocity();
             Vector2 force = CalculateForce(subStep, gravity);
@@ -44,17 +39,9 @@
 
         private void SetMaxVelocity(float maxVelocity)
         {
-            if (Position.Distance(PreviousPosition) > maxVelocity)
+            if (Math.Abs(Position.X - PreviousPosition.X) > maxVelocity)
             {
-                PreviousPosition += (Position - PreviousPosition).Normalized() * maxVelocity;
-            }
-        }
-
-        private void SetMaxAirVelocity(float maxVelocity)
-        {
-            if (Position.Distance(PreviousPosition) > maxVelocity)
-            {
-                PreviousPosition += (Position - PreviousPosition).Normalized() * maxVelocity;
+                PreviousPosition.X += ((Position - PreviousPosition).Normalized() * maxVelocity).X;
             }
         }
 
@@ -95,11 +82,11 @@
             PreviousPosition = prevPosition;
         }
 
-        public void CheckPolygonCollision(Polygon polygon)
+        public bool CheckPolygonCollision(Polygon polygon)
         {
             if (!IsCollisionActive)
             {
-                return;
+                return false;
             }
 
             var leftIntersectionCount = RayCasting.GetRayCastingCount(
@@ -108,7 +95,10 @@
             if (leftIntersectionCount % 2 != 0)
             {
                 HandlePolygonCollision(polygon);
+                return true;
             }
+
+            return false;
         }
 
         private void HandlePolygonCollision(Polygon polygon)
@@ -118,15 +108,25 @@
             Vector2 closestPoint = closestEdge.Item2;
 
             var normalizedCollisionVector = (closestPoint - Position).Normalized();
+            normalizedCollisionVector *= 8;
 
-            PreviousPosition = Position;
-            Position = closestPoint + (normalizedCollisionVector * 8);
+            if (!Locked)
+            {
+                PreviousPosition = Position;
+                Position = closestPoint + normalizedCollisionVector;
+            }
 
-            stick.A.PreviousPosition = stick.A.Position;
+            if (stick is null || stick.A is null || stick.B is null) return;
+
+            if (!stick.A.Locked)
+            {
+                stick.A.PreviousPosition = stick.A.Position;
+                stick.A.Position -= normalizedCollisionVector;
+            }
+
+            if (stick.B.Locked) return;
             stick.B.PreviousPosition = stick.B.Position;
-
-            stick.A.Position = stick.A.Position - (normalizedCollisionVector * 8);
-            stick.B.Position = stick.B.Position - (normalizedCollisionVector * 8);
+            stick.B.Position -= normalizedCollisionVector;
         }
 
         public void ParticleCollision(Particle otherParticle)
@@ -155,22 +155,22 @@
 
         public void KeepInsideCanvas(int width, int height)
         {
-            if (Position.Y >= height)
+            if (Position.Y >= height-5)
             {
-                Position.Y = height;
+                Position.Y = height-5;
                 IsInGround = true;
             }
-            if (Position.X >= width)
+            if (Position.X >= width-5)
             {
-                Position.X = width;
+                Position.X = width-5;
             }
-            if (Position.Y < 0)
+            if (Position.Y < 5)
             {
-                Position.Y = 0;
+                Position.Y = 5;
             }
-            if (Position.X < 0)
+            if (Position.X < 5)
             { 
-                Position.X = 0; 
+                Position.X = 5; 
             }
         }
     }

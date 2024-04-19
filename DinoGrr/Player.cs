@@ -9,13 +9,39 @@ namespace DinoGrr
         public Vector2 Position { get; set; }
         public Vector2 CameraPosition { get; set; }
         public Orientation Orientation { get; set; }
-        public Orientation ImageOrientation { get; set; }
+        public Orientation StandingImageOrientation { get; set; }
+        public Orientation[] RunningImagesOrientations = [Orientation.Left, 
+                   Orientation.Left, 
+                   Orientation.Left, 
+                   Orientation.Left, 
+                   Orientation.Left, 
+                   Orientation.Left, 
+                   Orientation.Left, 
+                   Orientation.Left];
+        public Orientation HitImageOrientation { get; set; }
         public Particle LeftLeg { get; set; }
         public Particle RightLeg { get; set; }
-        public Bitmap image;
-        int speed = 1;
+        public Bitmap standingImage = Resource.madoka_standing_0;
+        public Bitmap[] runningImages = [Resource.madoka_running_0, 
+            Resource.madoka_running_1, 
+            Resource.madoka_running_2, 
+            Resource.madoka_running_3, 
+            Resource.madoka_running_4, 
+            Resource.madoka_running_5, 
+            Resource.madoka_running_6, 
+            Resource.madoka_running_7];
+        public Bitmap hitImage = Resource.madoka_hit_0;
+        public bool[] lifeHearts { get; set; }
+        public int lifePointer { get; set; }
+        public int inmunityCntT { get; set; }
+        int inmunityTime = 120;
+        public bool isDamaged = false;
+        public Vector2 PreviousPosition { get; set; }
 
         public DinoPencil dinoPencil { get; set; }
+
+        public bool isRunning { get; set; }
+        public int runningCntT { get; set; }
 
         public Player(Vector2 position = null)
         {
@@ -30,17 +56,17 @@ namespace DinoGrr
             }
             CameraPosition = new Vector2(Position.X - 200, Position.Y - 500);
 
-            var height = 40;
-            var width = 20;
+            var height = 60;
+            var width = 40;
             var x = (int)Position.X;
             var y = (int)Position.Y;
 
             var particles = new List<Particle>
             {
-                new Particle(new Vector2(x - width / 2, y - height / 2), 2), // top left
-                new Particle(new Vector2(x + width / 2, y - height / 2), 2), // top right
-                new Particle(new Vector2(x + width / 2, y + height / 2), 2), // bottom right
-                new Particle(new Vector2(x - width / 2, y + height / 2), 2), // bottom left
+                new Particle(new Vector2(x - width / 2, y - height / 2), 2, 'g'), // top left
+                new Particle(new Vector2(x + width / 2, y - height / 2), 2, 'g'), // top right
+                new Particle(new Vector2(x + width / 2, y + height / 2), 2, 'g'), // bottom right
+                new Particle(new Vector2(x - width / 2, y + height / 2), 2, 'g'), // bottom left
             };
 
             var sticks = new List<Stick>
@@ -56,22 +82,49 @@ namespace DinoGrr
             RightLeg = particles[2];
 
             formKeeper = new FormKeeper(polygon);
-            ImageOrientation = Orientation.Left;
-            image = Resource.dinosaur_girl;
+            StandingImageOrientation = Orientation.Left;
+            HitImageOrientation = Orientation.Left;
+            lifeHearts = [true, true, true, true, true];
+            lifePointer = 4;
         }
 
-        public void Update(int width, int height)
+        public void Update(int width, int height, List<Polygon> worldPolygons)
         {
+            PreviousPosition = new Vector2(Position.X, Position.Y);
             Position = formKeeper.Center;
             CameraPosition = new Vector2(Position.X-200, Position.Y-500);
             polygon.Update(width, height);
             formKeeper.RestoreOriginalForm();
 
-            dinoPencil.Update(width, height);
+            dinoPencil.Update(width, height, worldPolygons);
+
+            if (isDamaged && inmunityCntT < inmunityTime)
+            {
+                inmunityCntT++;
+            }
+            else
+            {
+                isDamaged = false;
+            }
+            CheckIfItsMoving();
+        }
+
+        private void CheckIfItsMoving()
+        {
+            if (Position.X > PreviousPosition.X - 0.3f && Position.X < PreviousPosition.X + 0.3f)
+            {
+                isRunning = false;
+                PreviousPosition.X = Position.X;
+            }
+            else
+            {
+                isRunning = true;
+            }
         }
 
         public void MoveRight()
         {
+            int speed = 1;
             LeftLeg.Position += new Vector2(speed, 0);
             RightLeg.Position += new Vector2(speed, 0);
             Orientation = Orientation.Right;
@@ -79,6 +132,7 @@ namespace DinoGrr
 
         public void MoveLeft()
         {
+            int speed = 1;
             LeftLeg.Position += new Vector2(-speed, 0);
             RightLeg.Position += new Vector2(-speed, 0);
             Orientation = Orientation.Left;
@@ -88,8 +142,18 @@ namespace DinoGrr
         {
             if (LeftLeg.IsInGround && RightLeg.IsInGround)
             {
-                LeftLeg.Position += new Vector2(0, -speed * 2);
-                RightLeg.Position += new Vector2(0, -speed * 2);
+                LeftLeg.Position += new Vector2(0, -10);
+                RightLeg.Position += new Vector2(0, -10);
+            }
+        }
+
+        public void RemoveHearts()
+        {
+            if (lifePointer >= 0 && !isDamaged)
+            {
+                isDamaged = true;
+                lifeHearts[lifePointer--] = false;
+                inmunityCntT = 0;
             }
         }
     }

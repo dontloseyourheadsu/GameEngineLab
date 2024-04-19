@@ -7,6 +7,9 @@
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
+        float hSW = 7F, hSH = 15F;
+        float fSW = 10F, fSH = 25F;
+
         /// <summary>
         ///  Clean up any resources being used.
         /// </summary>
@@ -43,7 +46,7 @@
             // canvas
             // 
             canvas.BackColor = Color.Black;
-            canvas.Location = new Point(40, 55);
+            canvas.Location = new Point(-2, -1);
             canvas.Name = "canvas";
             canvas.Size = new Size(697, 585);
             canvas.TabIndex = 0;
@@ -56,10 +59,9 @@
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.Black;
+            BackColor = Color.White;
             ClientSize = new Size(778, 744);
             Controls.Add(canvas);
-            MaximumSize = new Size(800, 800);
             MinimumSize = new Size(800, 800);
             Name = "Form1";
             Text = "Form1";

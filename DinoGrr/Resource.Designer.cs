@@ -63,6 +63,26 @@ namespace DinoGrr {
         /// <summary>
         ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap dino_heart {
+            get {
+                object obj = ResourceManager.GetObject("dino_heart", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap dino_heart_broken {
+            get {
+                object obj = ResourceManager.GetObject("dino_heart_broken", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap dinosaur_blue {
             get {
                 object obj = ResourceManager.GetObject("dinosaur_blue", resourceCulture);
@@ -126,6 +146,106 @@ namespace DinoGrr {
         internal static System.Drawing.Bitmap dinosaur_violet {
             get {
                 object obj = ResourceManager.GetObject("dinosaur_violet", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_hit_0 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_hit_0", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_0 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_0", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_1 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_2 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_3 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_3", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_4 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_4", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_5 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_5", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_6 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_6", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_running_7 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_running_7", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap madoka_standing_0 {
+            get {
+                object obj = ResourceManager.GetObject("madoka_standing_0", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

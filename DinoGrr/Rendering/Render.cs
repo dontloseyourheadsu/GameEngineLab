@@ -39,8 +39,9 @@ namespace DinoGrr.Rendering
 
         public void DrawPolygon(Polygon polygon)
         {
-            foreach (Stick stick in polygon.sticks)
+            for (int i = 0; i < polygon.sticks.Count; i++)
             {
+                Stick stick = polygon.sticks[i];
                 DrawStick(stick);
             }
         }
@@ -102,7 +103,6 @@ namespace DinoGrr.Rendering
             var viewTopLeft = Camera.TranslateToView(new Point(0, 0));
             var viewTopRight = Camera.TranslateToView(new Point(Width, 0));
             var viewBottomLeft = Camera.TranslateToView(new Point(0, Height));
-            var viewBottomRight = Camera.TranslateToView(new Point(Width, Height));
             var extension = 200;
 
             Graphics.FillRectangle(brush, viewTopLeft.X - extension, viewTopLeft.Y, extension - 2.5f, Height + extension);
@@ -111,43 +111,163 @@ namespace DinoGrr.Rendering
 
         }
 
-        public void DrawGirl(Player player)
+        public void DrawGirl(Player player, int cntT)
         {
             var width = player.polygon.particles[1].Position.X - player.polygon.particles[0].Position.X;
             var height = player.polygon.particles[3].Position.Y - player.polygon.particles[0].Position.Y;
             var centerView = Camera.TranslateToView(new Point((int)player.formKeeper.Center.X, (int)player.formKeeper.Center.Y));
 
-            if (player.Orientation == Orientation.Right && player.ImageOrientation != Orientation.Right)
+            Bitmap image;
+            if (player.isDamaged)
             {
-                player.image.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                player.ImageOrientation = Orientation.Right;
-            }
+                if (cntT % 30  < 15)
+                {
+                    image = player.hitImage;
+                }
+                else
+                {
+                    image = new Bitmap(1, 1);
+                }
 
-            if (player.Orientation == Orientation.Left && player.ImageOrientation != Orientation.Left)
+                if (player.Orientation == Orientation.Right && player.HitImageOrientation != Orientation.Right)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    player.HitImageOrientation = Orientation.Right;
+                }
+
+                if (player.Orientation == Orientation.Left && player.HitImageOrientation != Orientation.Left)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    player.HitImageOrientation = Orientation.Left;
+                }
+            }
+            else if (player.isRunning)
             {
-                player.image.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                player.ImageOrientation = Orientation.Left;
+                image = player.runningImages[player.runningCntT % 8];
+
+                if (player.Orientation == Orientation.Right && player.RunningImagesOrientations[player.runningCntT % 8] != Orientation.Right)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    player.RunningImagesOrientations[player.runningCntT % 8] = Orientation.Right;
+                }
+                if (player.Orientation == Orientation.Left && player.RunningImagesOrientations[player.runningCntT % 8] != Orientation.Left)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    player.RunningImagesOrientations[player.runningCntT % 8] = Orientation.Left;
+                }
+
+                if (cntT % 3 == 0)
+                {
+                    player.runningCntT++;
+                }
+            }
+            else
+            {
+                image = player.standingImage;
+                player.runningCntT = 0;
+
+                if (player.Orientation == Orientation.Right && player.StandingImageOrientation != Orientation.Right)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    player.StandingImageOrientation = Orientation.Right;
+                }
+
+                if (player.Orientation == Orientation.Left && player.StandingImageOrientation != Orientation.Left)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    player.StandingImageOrientation = Orientation.Left;
+                }
             }
 
             if (Camera.IsVisible(new Point((int)player.formKeeper.Center.X, (int)player.formKeeper.Center.Y)))
             {
-                Graphics.DrawImage(player.image, centerView.X - width / 2, centerView.Y - height / 2, width, height);
+                Graphics.DrawImage(image, centerView.X - width / 2, centerView.Y - height / 2, width, height);
             }
         }
 
         public void DrawBackground(Background background)
         {
             var centerView1 = Camera.TranslateToView(new Point((int)background.l1_X1, 50));
-            var centerView2 = Camera.TranslateToView(new Point((int)background.l1_X2, 50));
 
+            var center2View0 = Camera.TranslateToView(new Point((int)background.l2_X0, background.height / 2 + 15));
             var center2View1 = Camera.TranslateToView(new Point((int)background.l2_X1, background.height / 2 + 15));
             var center2View2 = Camera.TranslateToView(new Point((int)background.l2_X2, background.height / 2 + 15));
 
-            Graphics.DrawImage(background.layer1, centerView1.X, centerView1.Y, background.layer1.Width + 225, background.height);
-            Graphics.DrawImage(background.layer1, centerView2.X, centerView2.Y, background.layer1.Width + 225, background.height);
+            Graphics.DrawImage(background.layer1, centerView1.X - 200, centerView1.Y, background.layer1.Width, background.height);
 
+            Graphics.DrawImage(background.layer2, center2View0.X, center2View0.Y, background.layer2.Width + 225, background.height / 3);
             Graphics.DrawImage(background.layer2, center2View1.X, center2View1.Y, background.layer2.Width + 225, background.height / 3);
             Graphics.DrawImage(background.layer2, center2View2.X, center2View2.Y, background.layer2.Width + 225, background.height / 3);
+        }
+
+        public void DrawProgressBar(int width, int max, float value)
+        {
+            var centerView = Camera.TranslateToView(new Point(width - 200 - 20, 20));
+
+            Graphics.FillRectangle(Brushes.White, centerView.X, centerView.Y, 200, 20);
+            Graphics.FillRectangle(Brushes.Green, centerView.X, centerView.Y, 200 * value / max, 20);
+            Graphics.DrawRectangle(new Pen(Color.Black, 3), centerView.X, centerView.Y, 200, 20);
+        }
+
+        public void DrawHearts(bool[] lifeHearts)
+        {
+            var x = 20;
+            var y = 20;
+
+            var centerView = Camera.TranslateToView(new Point(x, y));
+
+            x = centerView.X;
+            y = centerView.Y;
+
+            var size = 30;
+            for (int i = 0; i < lifeHearts.Length; i++)
+            {
+                if (lifeHearts[i])
+                {
+                    Graphics.DrawImage(Resource.dino_heart, x, y, size, size);
+                }
+                else
+                {
+                    Graphics.DrawImage(Resource.dino_heart_broken, x, y, size, size);
+                }
+                x += size + 10;
+            }
+        }
+
+        public void DrawGoal(Goal goal)
+        {
+            var viewPosition = Camera.TranslateToView(new Point((int)goal.Position.X, (int)goal.Position.Y));
+            var pen = new Pen(Color.Black, 3);
+            var brush = new SolidBrush(Color.White);
+
+            Graphics.FillRectangle(Brushes.Orange, viewPosition.X - goal.Width / 2, viewPosition.Y - goal.Height / 2, goal.Width, goal.Height);
+            Graphics.DrawRectangle(pen, viewPosition.X - goal.Width / 2, viewPosition.Y - goal.Height / 2, goal.Width, goal.Height);
+            // draw a diamond inside the rectangle of white
+            Graphics.FillPolygon(brush, new Point[] { new Point(viewPosition.X, viewPosition.Y - goal.Height / 2), new Point(viewPosition.X + goal.Width / 2, viewPosition.Y), new Point(viewPosition.X, viewPosition.Y + goal.Height / 2), new Point(viewPosition.X - goal.Width / 2, viewPosition.Y) });
+        }
+
+        public void DrawWin(int Width, int Height)
+        {
+            var font = new Font("Arial", 50);
+            var viewCenter = Camera.TranslateToView(new Point(Width / 2, Height / 2));
+            Graphics.DrawString("You Win!", font, Brushes.Black, viewCenter.X - 100, viewCenter.Y - 25);
+        }
+
+        public void DrawLoose(int Width, int Height)
+        {
+            var font = new Font("Arial", 50);
+            var viewCenter = Camera.TranslateToView(new Point(Width / 2 - 100, Height / 2));
+            Graphics.DrawString("You Loose!", font, Brushes.Black, viewCenter.X - 100, viewCenter.Y - 25);
+        }
+
+        public void DrawPlatform(Vector2 position, int width, int height)
+        {
+            var viewPosition = Camera.TranslateToView(new Point((int)position.X, (int)position.Y));
+            var pen = new Pen(Color.Black, 3);
+            var brush = new SolidBrush(Color.White);
+
+            Graphics.FillRectangle(brush, viewPosition.X, viewPosition.Y, width, height);
+            Graphics.DrawRectangle(pen, viewPosition.X, viewPosition.Y, width, height);
         }
     }
 }

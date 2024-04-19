@@ -26,7 +26,7 @@
             for (int i = 0; i < particles.Count; i++)
             {
                 Particle? particle = particles[i];
-                particle.Update(subStep, gravity: 0.1f);
+                particle.Update(subStep, gravity: 0.5f);
                 particle.KeepInsideCanvas(width, height);
             }
         }

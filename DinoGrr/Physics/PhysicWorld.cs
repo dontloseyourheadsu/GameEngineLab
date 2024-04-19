@@ -1,4 +1,5 @@
 ﻿using DinoGrr.Rendering;
+using DinoGrr.WorldGen;
 
 namespace DinoGrr.Physics
 {
@@ -7,29 +8,57 @@ namespace DinoGrr.Physics
         public int Width { get; set; }
         public int Height { get; set; }
         public List<Dinosaur> dinosaurs;
+        public List<Platform> platforms;
         public Player player;
         public List<Polygon> worldPolygons;
         public Background background;
         Camera camera;
+        Goal goal;
+        public bool Winned { get; set; }
+        public bool Loose { get; set; }
+        public int gameFinishedTimeout = 300;
+        public int gameFinnishedCntT = 0;
+        public bool gameEnd = false;
 
-        public PhysicWorld(int width, int height)
+        public PhysicWorld(int width, int height, LevelGoal levelGoal, LevelPlayer levelPlayer, List<LevelDinosaur> levelDinosaurs, List<LevelPlatform> levelPlatforms)
         {
             Width = width;
             Height = height;
-            CreatePlayer();
-            DefineWorldObjects(width, height);
+            CreatePlatforms(levelPlatforms);
+            CreateGoal(levelGoal);
+            CreatePlayer(levelPlayer);
+            DefineWorldObjects(width, height, levelDinosaurs);
         }
 
-        private void CreatePlayer()
+        private void CreatePlatforms(List<LevelPlatform> levelPlatforms)
         {
-            player = new Player();
+            platforms = new List<Platform>();
+            for (int i = 0; i < levelPlatforms.Count; i++)
+            {
+                LevelPlatform? levelPlatform = levelPlatforms[i];
+                platforms.Add(new Platform(new Vector2(levelPlatform.X, levelPlatform.Y), levelPlatform.Width, levelPlatform.Height));
+            }
         }
 
-        private void DefineWorldObjects(int width, int height)
+        private void CreateGoal(LevelGoal levelGoal)
+        {
+            goal = new Goal(new Vector2(levelGoal.X, levelGoal.Y));
+        }
+
+        private void CreatePlayer(LevelPlayer levelPlayer)
+        {
+            player = new Player(new Vector2(levelPlayer.X, levelPlayer.Y));
+        }
+
+        private void DefineWorldObjects(int width, int height, List<LevelDinosaur> levelDinosaurs)
         {
             dinosaurs = new List<Dinosaur>();
-            dinosaurs.Add(new Dinosaur(100, 100, 75, 50, Resource.dinosaur_green, player));
-            dinosaurs.Add(new Dinosaur(100, 200, 50, 50, Resource.dinosaur_blue, player));
+            for (int i = 0; i < levelDinosaurs.Count; i++)
+            {
+                LevelDinosaur? levelDinosaur = levelDinosaurs[i];
+                var image = (Bitmap)Resource.ResourceManager.GetObject(levelDinosaur.Dino);
+                dinosaurs.Add(new Dinosaur(levelDinosaur.X, levelDinosaur.Y, levelDinosaur.Width, levelDinosaur.Height, image, player));
+            }
 
             worldPolygons = new List<Polygon>();
             for (int i = 0; i < dinosaurs.Count; i++)
@@ -37,6 +66,7 @@ namespace DinoGrr.Physics
                 Dinosaur? dinosaur = dinosaurs[i];
                 worldPolygons.Add(dinosaur.polygon);
             }
+            worldPolygons.Add(player.polygon);
 
             background = new Background(width, height+100);
         }
@@ -54,7 +84,7 @@ namespace DinoGrr.Physics
                 dinosaur.Update(Width, Height, cntT);
             }
 
-            player.Update(Width, Height);
+            player.Update(Width, Height, worldPolygons);
 
             // ========================== COLLISIONS
 
@@ -70,13 +100,72 @@ namespace DinoGrr.Physics
                         Polygon? otherPolygon = worldPolygons[k];
                         if (polygon != otherPolygon)
                         {
-                            particle.CheckPolygonCollision(otherPolygon);
+                            var isColliding = particle.CheckPolygonCollision(otherPolygon);
+                            if (isColliding)
+                            {
+                                if((particle.BelongsTo == 'g' && otherPolygon.particles[0].BelongsTo == 'd') || (particle.BelongsTo == 'd' && otherPolygon.particles[0].BelongsTo == 'g'))
+                                {
+                                    player.RemoveHearts();
+                                    var looseCounter = 0;
+                                    for (int i1 = 0; i1 < player.lifeHearts.Length; i1++)
+                                    {
+                                        bool heart = player.lifeHearts[i1];
+                                        if (!heart)
+                                        {
+                                            looseCounter++;
+                                        }
+                                    }
+                                    if (looseCounter == player.lifeHearts.Length)
+                                    {
+                                        Loose = true;
+                                        gameFinnishedCntT++;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
 
+            for (int i = 0; i < goal.polygon.particles.Count; i++)
+            {
+                Particle? particle = goal.polygon.particles[i];
+                if (particle.CheckPolygonCollision(player.polygon))
+                {
+                    Winned = true;
+                    gameFinnishedCntT++;
+                }
+            }
+
+            for (int i = 0; i < platforms.Count; i++)
+            {
+                Platform? platform = platforms[i];
+                platform.HandlePolygonCollision(player.polygon);
+                for (int i1 = 0; i1 < dinosaurs.Count; i1++)
+                {
+                    Dinosaur? dinosaur = dinosaurs[i1];
+                    platform.HandlePolygonCollision(dinosaur.polygon);
+                }
+            }
+
             // ========================== DRAWINGS
+
+            if (Winned)
+            {
+                render.DrawWin(Width, Height);
+                gameFinnishedCntT++;
+            }
+            if (Loose)
+            {
+                render.DrawLoose(Width, Height);
+                gameFinnishedCntT++;
+            }
+
+            for (int i = 0; i < platforms.Count; i++)
+            {
+                Platform? platform = platforms[i];
+                render.DrawPlatform(platform.Position, platform.Width, platform.Height);
+            }
 
             for (int i = 0; i < player.dinoPencil.Polygons.Count; i++)
             {
@@ -95,10 +184,21 @@ namespace DinoGrr.Physics
                 render.DrawDinosaur(dinosaur);
             }
 
-            render.DrawGirl(player);
+            render.DrawGoal(goal);
+            render.DrawGirl(player, cntT);
 
             // ========================== AFTER DRAWINGS
             render.DrawOutsideBounds(Width, Height);
+            render.DrawProgressBar(Width,
+                player.dinoPencil.maxPolygonPoints, 
+                player.dinoPencil.polygonPoints);
+            render.DrawHearts(player.lifeHearts);
+
+            // ========================== GAME FINISHED
+            if (gameFinnishedCntT > gameFinishedTimeout)
+            {
+                gameEnd = true;
+            }
         }
     }
 }
