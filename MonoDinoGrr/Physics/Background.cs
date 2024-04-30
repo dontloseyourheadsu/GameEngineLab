@@ -20,6 +20,7 @@ namespace MonoDinoGrr.Physics
 
         public Background(int width, int height, ContentManager Content)
         {
+            width = 1000;
             layer1 = Content.Load<Texture2D>("mountains");
             layer2 = Content.Load<Texture2D>("plants-background");
             l1_X0 = -width;

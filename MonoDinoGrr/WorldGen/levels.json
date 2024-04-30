@@ -1,9 +1,9 @@
 {
   "0": {
-    "width": 697,
+    "width": 1800,
     "levelGoal": {
-      "X": 650,
-      "Y": 550
+      "X": 1700,
+      "Y": 1000
     },
     "levelPlayer": {
       "X": 100,
@@ -12,17 +12,17 @@
     "levelDinosaurs": {
       "0": {
         "dino": "dinosaur-green",
-        "X": 400,
+        "X": 900,
         "Y": 400,
-        "width": 75,
-        "height": 50
+        "width": 100,
+        "height": 66
       },
       "1": {
         "dino": "dinosaur-blue",
-        "X": 500,
+        "X": 800,
         "Y": 400,
-        "width": 50,
-        "height": 50
+        "width": 66,
+        "height": 66
       }
     },
     "levelPlatforms": {

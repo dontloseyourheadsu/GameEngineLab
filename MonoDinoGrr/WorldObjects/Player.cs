@@ -35,8 +35,8 @@ namespace MonoDinoGrr.WorldObjects
             Position = position;
             CameraPosition = new Vector2(Position.X - 200, Position.Y - 500);
 
-            var height = 60;
-            var width = 40;
+            var height = 100;
+            var width = 60;
             var x = (int)Position.X;
             var y = (int)Position.Y;
 
@@ -121,8 +121,8 @@ namespace MonoDinoGrr.WorldObjects
         {
             if (LeftLeg.IsInGround && RightLeg.IsInGround)
             {
-                LeftLeg.Position += new Vector2(0, -10);
-                RightLeg.Position += new Vector2(0, -10);
+                LeftLeg.Position += new Vector2(0, -15);
+                RightLeg.Position += new Vector2(0, -15);
             }
         }
 

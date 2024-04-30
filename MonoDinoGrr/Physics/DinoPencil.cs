@@ -92,7 +92,7 @@ namespace MonoDinoGrr.Physics
             int mouseX = mouseState.X;
             int mouseY = mouseState.Y;
 
-            if (mouseState.RightButton == ButtonState.Pressed)
+            if (mouseState.LeftButton == ButtonState.Pressed)
             {
                 if (!mouseDrawing)
                 {
@@ -100,7 +100,8 @@ namespace MonoDinoGrr.Physics
                     mouseDrawing = true;
                 }
 
-                if (previouseMousePosition.X != mouseG.X && previouseMousePosition.Y != mouseG.Y)
+                if (previouseMousePosition.X != mouseX 
+                    && previouseMousePosition.Y != mouseY)
                 {
                     var mass = 2;
                     var realPlacement = camera.TranslateToOrigin(new Point(mouseX, mouseY));
@@ -108,7 +109,7 @@ namespace MonoDinoGrr.Physics
                 }
             }
 
-            if (mouseState.RightButton == ButtonState.Released)
+            if (mouseState.LeftButton == ButtonState.Released)
             {
                 if (mouseDrawing)
                 {

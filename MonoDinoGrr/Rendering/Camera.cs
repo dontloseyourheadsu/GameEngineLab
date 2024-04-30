@@ -18,7 +18,7 @@ namespace MonoDinoGrr.Rendering
 
         public Rectangle GetVisibleArea()
         {
-            return new Rectangle((int)player.CameraPosition.X, (int)player.CameraPosition.Y, ViewportSize.Width, ViewportSize.Height);
+            return new Rectangle((int)player.CameraPosition.X, (int)player.CameraPosition.Y+300, ViewportSize.Width, ViewportSize.Height);
         }
 
         public bool IsVisible(Point position)
@@ -35,22 +35,22 @@ namespace MonoDinoGrr.Rendering
 
         public Point TranslateToView(Point worldPosition)
         {
-            return new Point(worldPosition.X - (int)player.CameraPosition.X, worldPosition.Y - (int)player.CameraPosition.Y);
+            return new Point(worldPosition.X - (int)player.CameraPosition.X, worldPosition.Y - (int)player.CameraPosition.Y + 300);
         }
 
         public Vector2 TranslateToView(Vector2 worldPosition)
         {
-            return new Vector2(worldPosition.X - player.CameraPosition.X, worldPosition.Y - player.CameraPosition.Y);
+            return new Vector2(worldPosition.X - player.CameraPosition.X, worldPosition.Y - player.CameraPosition.Y + 300);
         }
 
         public Point TranslateToOrigin(Point viewPosition)
         {
-            return new Point(viewPosition.X + (int)player.CameraPosition.X, viewPosition.Y + (int)player.CameraPosition.Y);
+            return new Point(viewPosition.X + (int)player.CameraPosition.X, viewPosition.Y + (int)player.CameraPosition.Y + 300);
         }
 
         public Vector2 TranslateToOrigin(Vector2 viewPosition)
         {
-            return new Vector2(viewPosition.X + player.CameraPosition.X, viewPosition.Y + player.CameraPosition.Y);
+            return new Vector2(viewPosition.X + player.CameraPosition.X, viewPosition.Y + player.CameraPosition.Y + 300);
         }
     }
 }

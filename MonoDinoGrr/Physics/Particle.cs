@@ -30,7 +30,7 @@ namespace MonoDinoGrr.Physics
                 return;
             }
 
-            SetMaxVelocity(2.5f);
+            SetMaxVelocity(5f);
 
             Vector2 velocity = CalculateVelocity();
             Vector2 force = CalculateForce(subStep, gravity);
