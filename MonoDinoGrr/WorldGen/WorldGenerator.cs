@@ -1,4 +1,5 @@
 ﻿using MonoDinoGrr.Physics;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,6 +47,11 @@ namespace MonoDinoGrr.WorldGen
         public List<LevelDinosaur> GetLevelDinosaurs()
         {
             return gameData[Level.ToString()].LevelDinosaurs.Values.ToList();
+        }
+
+        public int GetLevelCount()
+        {
+            return gameData.Count;
         }
     }
 

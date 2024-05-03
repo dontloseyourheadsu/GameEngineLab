@@ -67,6 +67,7 @@ namespace MonoDinoGrr.WorldObjects
 
         public void Update(int width, int height, List<Polygon> worldPolygons, Background background, Camera camera)
         {
+            HandleKeyBoard(background, worldPolygons);
             PreviousPosition = new Vector2(Position.X, Position.Y);
             Position = formKeeper.Center;
             CameraPosition = new Vector2(Position.X-200, Position.Y-500);
@@ -84,7 +85,6 @@ namespace MonoDinoGrr.WorldObjects
                 isDamaged = false;
             }
 
-            HandleKeyBoard(background);
             CheckIfItsMoving();
         }
 
@@ -119,7 +119,7 @@ namespace MonoDinoGrr.WorldObjects
 
         public void Jump()
         {
-            if (LeftLeg.IsInGround && RightLeg.IsInGround)
+            if (LeftLeg.IsInGround || RightLeg.IsInGround)
             {
                 LeftLeg.Position += new Vector2(0, -15);
                 RightLeg.Position += new Vector2(0, -15);
@@ -136,7 +136,7 @@ namespace MonoDinoGrr.WorldObjects
             }
         }
 
-        private void HandleKeyBoard(Background background)
+        private void HandleKeyBoard(Background background, List<Polygon> worldPolygons)
         {
             KeyboardState state = Keyboard.GetState();
             if (state.IsKeyDown(Keys.Z))
@@ -159,7 +159,8 @@ namespace MonoDinoGrr.WorldObjects
                 MoveRight();
                 background.BackgroundMoveLeft();
             }
-            else if (state.IsKeyDown(Keys.W))
+            
+            if (state.IsKeyDown(Keys.W))
             {
                 Jump();
             }

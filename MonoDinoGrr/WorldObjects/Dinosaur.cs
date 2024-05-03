@@ -51,7 +51,6 @@ namespace MonoDinoGrr
 
         public void Update(int width, int height, int cntT)
         {
-            polygon.Update(width, height);
             formKeeper.RestoreOriginalForm();
             if (cntT % 60 == 0)
             {
@@ -67,6 +66,7 @@ namespace MonoDinoGrr
 
                 StandUp();
             }
+            polygon.Update(width, height);
         }
 
         public void JumpRight()

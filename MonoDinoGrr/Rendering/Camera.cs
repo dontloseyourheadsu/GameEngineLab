@@ -45,12 +45,12 @@ namespace MonoDinoGrr.Rendering
 
         public Point TranslateToOrigin(Point viewPosition)
         {
-            return new Point(viewPosition.X + (int)player.CameraPosition.X, viewPosition.Y + (int)player.CameraPosition.Y + 300);
+            return new Point(viewPosition.X + (int)player.CameraPosition.X, viewPosition.Y + (int)player.CameraPosition.Y - 300);
         }
 
         public Vector2 TranslateToOrigin(Vector2 viewPosition)
         {
-            return new Vector2(viewPosition.X + player.CameraPosition.X, viewPosition.Y + player.CameraPosition.Y + 300);
+            return new Vector2(viewPosition.X + player.CameraPosition.X, viewPosition.Y + player.CameraPosition.Y - 300);
         }
     }
 }

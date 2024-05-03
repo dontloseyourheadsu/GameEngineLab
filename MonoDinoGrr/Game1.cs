@@ -33,6 +33,7 @@ namespace MonoDinoGrr
         public Texture2D standingImage;
         public Texture2D[] runningImages;
         public Texture2D hitImage;
+        public Texture2D transparentTexture;
 
         List<Texture2D> dinosaurTextures = new List<Texture2D>();
 
@@ -57,13 +58,8 @@ namespace MonoDinoGrr
             IsMouseVisible = true;
         }
 
-        protected override void Initialize()
+        private void InstanciateWorld()
         {
-            // TODO: Add your initialization logic here
-            windowWidth = GraphicsDevice.Viewport.Width;
-            windowHeight = GraphicsDevice.Viewport.Height;
-
-            worldGenerator = new WorldGenerator();
             var levelDinosaurs = worldGenerator.GetLevelDinosaurs();
             var levelPlatforms = worldGenerator.GetLevelPlatforms();
             var levelGoal = worldGenerator.GetLevelGoal();
@@ -90,11 +86,22 @@ namespace MonoDinoGrr
             }
 
             var background = new Background(windowWidth, windowHeight, Content);
-            
+
             camera = new Camera(player, new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height), 1);
-            
+
             worldGenerator.physicWorld = new PhysicWorld(worldWidth, worldHeight, dinosaurs, platforms, player, goal, background, camera);
+        }
+
+        protected override void Initialize()
+        {
+            // TODO: Add your initialization logic here
+            windowWidth = GraphicsDevice.Viewport.Width;
+            windowHeight = GraphicsDevice.Viewport.Height;
+
+            worldGenerator = new WorldGenerator();
             
+            InstanciateWorld();
+
             base.Initialize();
         }
 
@@ -115,27 +122,32 @@ namespace MonoDinoGrr
             mountains = Content.Load<Texture2D>("mountains");
             plantsBackground = Content.Load<Texture2D>("plants-background");
 
-            standingImage = Content.Load<Texture2D>("madoka-standing-0");
+            standingImage = Content.Load<Texture2D>("dino-girl-standing-0");
             runningImages = new Texture2D[8]
             {
-                Content.Load<Texture2D>("madoka-running-0"),
-                Content.Load<Texture2D>("madoka-running-1"),
-                Content.Load<Texture2D>("madoka-running-2"),
-                Content.Load<Texture2D>("madoka-running-3"),
-                Content.Load<Texture2D>("madoka-running-4"),
-                Content.Load<Texture2D>("madoka-running-5"),
-                Content.Load<Texture2D>("madoka-running-6"),
-                Content.Load<Texture2D>("madoka-running-7")
+                Content.Load<Texture2D>("dino-girl-running-0"),
+                Content.Load<Texture2D>("dino-girl-running-1"),
+                Content.Load<Texture2D>("dino-girl-running-2"),
+                Content.Load<Texture2D>("dino-girl-running-3"),
+                Content.Load<Texture2D>("dino-girl-running-4"),
+                Content.Load<Texture2D>("dino-girl-running-5"),
+                Content.Load<Texture2D>("dino-girl-running-6"),
+                Content.Load<Texture2D>("dino-girl-running-7")
             };
-            hitImage = Content.Load<Texture2D>("madoka-hit-0");
+            hitImage = Content.Load<Texture2D>("dino-girl-hit-0");
 
-            var levelDinosaurs = worldGenerator.GetLevelDinosaurs();
-            
-            var dinoImages = levelDinosaurs.Select(x => x.Dino).Distinct().ToList();
-            for (int i = 0; i < dinoImages.Count(); i++)
+            transparentTexture = new Texture2D(GraphicsDevice, 1, 1);
+            transparentTexture.SetData(new Color[] { Color.Transparent });
+            var dinoImages = new List<Texture2D>()
             {
-                dinosaurTextures.Add(Content.Load<Texture2D>(dinoImages[i]));
-            }
+                Content.Load<Texture2D>("dinosaur-blue"),
+                Content.Load<Texture2D>("dinosaur-green"),
+                Content.Load<Texture2D>("dinosaur-light-green"),
+                Content.Load<Texture2D>("dinosaur-purple"),
+                Content.Load<Texture2D>("dinosaur-red")
+            };
+
+            dinosaurTextures.AddRange(dinoImages);
         }
 
         protected override void Update(GameTime gameTime)
@@ -144,8 +156,20 @@ namespace MonoDinoGrr
                 Exit();
 
             // TODO: Add your update logic here
-            worldGenerator.physicWorld.Update(cntT);
-            cntT++;
+            if (worldGenerator.physicWorld.gameEnd)
+            {
+                var currentLevel = worldGenerator.Level;
+                while (currentLevel == worldGenerator.Level)
+                { 
+                    worldGenerator.Level = new Random().Next(0, worldGenerator.GetLevelCount());
+                    InstanciateWorld();
+                }
+            }
+            else
+            {
+                worldGenerator.physicWorld.Update(cntT);
+                cntT++;
+            }
 
             base.Update(gameTime);
         }
@@ -179,7 +203,7 @@ namespace MonoDinoGrr
 
             if (worldGenerator.physicWorld.player.dinoPencil.NewPolygon != null)
             {
-                DrawPolygon(worldGenerator.physicWorld.player.dinoPencil.NewPolygon);
+                DrawCreatingPolygon(worldGenerator.physicWorld.player.dinoPencil.NewPolygon);
             }
 
             for (int i = 0; i < worldGenerator.physicWorld.player.dinoPencil.Polygons.Count; i++)
@@ -194,7 +218,6 @@ namespace MonoDinoGrr
 
             DrawHearts(worldGenerator.physicWorld.player.lifeHearts, heartTexture, brokenHeartTexture);
 
-            DrawMousePosAndStateString();
 
             if (worldGenerator.physicWorld.Winned)
             {
@@ -222,7 +245,7 @@ namespace MonoDinoGrr
             var center2View0 = camera.TranslateToView(new Vector2(background.l2_X0, windowHeight / 2));
             var center2View1 = camera.TranslateToView(new Vector2(background.l2_X1, windowHeight / 2));
 
-            var mountainWidth = 1000;
+            var mountainWidth = background.width;
             var mountainHeight = 700;
             _spriteBatch.Draw(mountains, new Rectangle((int)centerView1.X, (int)centerView1.Y, mountainWidth, mountainHeight),
                 new Rectangle(0, 0, mountains.Width, mountains.Height), Color.White, 0, Vector2.Zero, SpriteEffects.None, 0);
@@ -231,7 +254,7 @@ namespace MonoDinoGrr
             _spriteBatch.Draw(mountains, new Rectangle((int)centerView0.X, (int)centerView0.Y, mountainWidth, mountainHeight),
                 new Rectangle(0, 0, mountains.Width, mountains.Height), Color.White, 0, Vector2.Zero, SpriteEffects.None, 0);
 
-            var plantWidth = 1000;
+            var plantWidth = background.width;
             var plantHeight = 400;
             _spriteBatch.Draw(plantsBackground, new Rectangle((int)center2View0.X, (int)center2View0.Y + 200, plantWidth, plantHeight),
                 new Rectangle(0, 0, plantsBackground.Width, plantsBackground.Height), Color.White, 0, Vector2.Zero, SpriteEffects.None, 1);
@@ -269,9 +292,16 @@ namespace MonoDinoGrr
         {
             var player = worldGenerator.physicWorld.player;
             Texture2D image = standingImage;
-            if (player.isDamaged && cntT % 30 < 15)
+            if (player.isDamaged)
             {
-                image = hitImage;
+                if (cntT % 30 < 15)
+                {
+                    image = hitImage;
+                }
+                else
+                {
+                    image = transparentTexture;
+                }
             }
             else if (player.isRunning)
             {
@@ -293,7 +323,7 @@ namespace MonoDinoGrr
 
         private void DrawPlatform(Vector2 position, float width, float height)
         {
-            var centerView = camera.TranslateToView(new Vector2(position.X, position.Y + height));
+            var centerView = camera.TranslateToView(new Vector2(position.X, position.Y + 60));
             DrawFilledRectangle(_spriteBatch, new Rectangle((int)centerView.X, (int)centerView.Y, (int)width, (int)height), Color.White, 1);
             DrawRectangleLines(_spriteBatch, new Rectangle((int)centerView.X, (int)centerView.Y, (int)width, (int)height), Color.Black, 5, 1);
         }
@@ -304,11 +334,11 @@ namespace MonoDinoGrr
             var image = dinosaurTextures.FirstOrDefault(x => x.Name == imageString);
             var width = dinosaur.polygon.particles[1].Position.X - dinosaur.polygon.particles[0].Position.X;
             var height = dinosaur.polygon.particles[3].Position.Y - dinosaur.polygon.particles[0].Position.Y;
-            var centerView = camera.TranslateToView(new Vector2(dinosaur.formKeeper.Center.X * 1, dinosaur.formKeeper.Center.Y * 1));
+            var centerView = camera.TranslateToView(new Vector2(dinosaur.polygon.particles[0].Position.X, dinosaur.polygon.particles[0].Position.Y));
 
             SpriteEffects spriteEffect = dinosaur.Orientation == Orientation.Left ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
             
-            _spriteBatch.Draw(image, new Rectangle((int)centerView.X, (int)centerView.Y, (int)width, (int)height),
+            _spriteBatch.Draw(image, new Rectangle((int)centerView.X, (int)(centerView.Y + height - 10), (int)width, (int)height),
                                                         new Rectangle(0, 0, image.Width, image.Height), Color.White, 0, Vector2.Zero, spriteEffect, 1);
             
         }
@@ -349,29 +379,39 @@ namespace MonoDinoGrr
 
         private void DrawPolygon(Polygon polygon)
         {
-            for (int i = 0; i < polygon.particles.Count; i++)
+            for(int i = 0; i < polygon.sticks.Count; i++)
             {
-                Particle? particle = polygon.particles[i];
-                Particle? nextParticle = i == polygon.particles.Count - 1 ? polygon.particles[0] : polygon.particles[i + 1];
-                DrawLine(_spriteBatch, camera.TranslateToView(particle.Position), camera.TranslateToView(nextParticle.Position), Color.Orange, 5, 1);
+                Stick? stick = polygon.sticks[i];
+                var particleMass = Math.Max(stick.A.Mass, stick.B.Mass);
+                var vectorA = new Vector2(stick.A.Position.X, stick.A.Position.Y + 50);
+                var vectorB = new Vector2(stick.B.Position.X, stick.B.Position.Y + 50);
+                DrawLine(_spriteBatch, camera.TranslateToView(vectorA), camera.TranslateToView(vectorB), Color.Orange, particleMass, 1);
             }
         }
 
-        private void DrawMousePosAndStateString()
+        private void DrawCreatingPolygon(Polygon polygon)
         {
-            var mouse = Mouse.GetState();
-            var mousePosition = new Vector2(mouse.X, mouse.Y);
-            var mouseView = camera.TranslateToView(mousePosition);
-            _spriteBatch.DrawString(font, $"Mouse: {mouseView.X}, {mouseView.Y}", new Vector2(50, 100), Color.Black);
-            _spriteBatch.DrawString(font, $"Mouse State: {mouse.LeftButton}", new Vector2(50, 150), Color.Black);
+            for (int i = 0; i < polygon.sticks.Count; i++)
+            {
+                Stick? stick = polygon.sticks[i];
+                var particleMass = Math.Max(stick.A.Mass, stick.B.Mass);
+                var vectorA = new Vector2(stick.A.Position.X, stick.A.Position.Y);
+                var vectorB = new Vector2(stick.B.Position.X, stick.B.Position.Y);
+                DrawLine(_spriteBatch, camera.TranslateToView(vectorA), camera.TranslateToView(vectorB), Color.Orange, particleMass, 1);
+            }
         }
 
         private void DrawGameEnd(SpriteFont font, int width, int height, string message)
         {
             var textSize = font.MeasureString(message);
-            var x = width / 2 - textSize.X / 2;
-            var y = height / 2 - textSize.Y / 2;
-            _spriteBatch.DrawString(font, message, new Vector2(x, y), Color.Black);
+            var scale = 1;
+            var x = width / 2 - textSize.X / 2 * scale;
+            var y = height / 2 - textSize.Y / 2 * scale;
+
+            DrawFilledRectangle(_spriteBatch, new Rectangle((int)x, (int)y, (int)textSize.X, (int)textSize.Y), Color.White, 1);
+            DrawRectangleLines(_spriteBatch, new Rectangle((int)x, (int)y, (int)textSize.X, (int)textSize.Y), Color.Black, 5, 1);
+
+            _spriteBatch.DrawString(font, message, new Vector2(x, y), Color.Black, 0, Vector2.Zero, scale, SpriteEffects.None, 1);
         }
         #endregion
 

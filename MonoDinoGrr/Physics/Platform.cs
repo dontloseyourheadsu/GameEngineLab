@@ -1,4 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
+using System;
+using System.Collections.Generic;
+using System.Net.Sockets;
 
 namespace MonoDinoGrr.Physics
 {
@@ -7,12 +10,14 @@ namespace MonoDinoGrr.Physics
         public Vector2 Position { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
+        public Rectangle Rectangle { get; set; }
 
         public Platform(Vector2 position, int width, int height)
         {
             Position = position;
             Width = width;
             Height = height;
+            Rectangle = new Rectangle((int)Position.X, (int)Position.Y, Width, Height);
         }
 
         public void HandlePolygonCollision(Polygon polygon)
@@ -20,36 +25,42 @@ namespace MonoDinoGrr.Physics
             for (int i = 0; i < polygon.particles.Count; i++)
             {
                 Particle? particle = polygon.particles[i];
+                if (Rectangle.Contains(particle.Position))
+                {
+                    HandleParticleCollision(particle);
+                }
                 HandleParticleCollision(particle);
             }            
         }
 
         private void HandleParticleCollision(Particle particle)
         {
-            if ((particle.Position.X >= Position.X && particle.Position.X <= Position.X + Width) &&
-                (particle.Position.Y >= Position.Y && particle.Position.Y <= Position.Y + Height))
+            var hitBox = 10;
+            Rectangle top = new Rectangle((int)Position.X, (int)Position.Y, Width, hitBox);
+            Rectangle bottom = new Rectangle((int)Position.X, (int)Position.Y + Height - hitBox, Width, hitBox);
+            Rectangle left = new Rectangle((int)Position.X, (int)Position.Y, hitBox, Height);
+            Rectangle right = new Rectangle((int)Position.X + Width - hitBox, (int)Position.Y, hitBox, Height);
+
+            if (top.Contains(particle.Position))
             {
-                if (particle.Position.Y >= Position.Y)
-                {
-                    particle.Position = new Vector2(particle.Position.X, Position.Y);
-                    particle.IsInGround = true;
-                    return;
-                }
-                if (particle.Position.X >= Position.X)
-                {
-                    particle.Position = new Vector2(Position.X, particle.Position.Y);
-                    return;
-                }
-                if (particle.Position.X <= Position.X + Width)
-                {
-                    particle.Position = new Vector2(Position.X + Width, particle.Position.Y);
-                    return;
-                }
-                if (particle.Position.Y <= Position.Y + Height)
-                {
-                    particle.Position = new Vector2(particle.Position.X, Position.Y + Height);
-                    return;
-                }
+                particle.Position = new Vector2(particle.Position.X, Position.Y);
+                particle.IsInGround = true;
+                return;
+            }
+            if (bottom.Contains(particle.Position))
+            {
+                particle.Position = new Vector2(particle.Position.X, Position.Y + Height);
+                return;
+            }
+            if (left.Contains(particle.Position))
+            {
+                particle.Position = new Vector2(Position.X, particle.Position.Y);
+                return;
+            }
+            if (right.Contains(particle.Position))
+            {
+                particle.Position = new Vector2(Position.X + Width, particle.Position.Y);
+                return;
             }
         }
     }

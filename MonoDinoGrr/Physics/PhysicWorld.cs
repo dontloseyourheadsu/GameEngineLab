@@ -111,14 +111,18 @@ namespace MonoDinoGrr.Physics
             for (int i = 0; i < platforms.Count; i++)
             {
                 Platform? platform = platforms[i];
-                platform.HandlePolygonCollision(player.polygon);
-                for (int i1 = 0; i1 < dinosaurs.Count; i1++)
+                for (int j = 0; j < worldPolygons.Count; j++)
                 {
-                    Dinosaur? dinosaur = dinosaurs[i1];
-                    platform.HandlePolygonCollision(dinosaur.polygon);
+                    Polygon? polygon = worldPolygons[j];
+                    platform.HandlePolygonCollision(polygon);
+                }
+                for (int j = 0; j < player.dinoPencil.Polygons.Count; j++)
+                {
+                    Polygon? polygon = player.dinoPencil.Polygons[j];
+                    platform.HandlePolygonCollision(polygon);
                 }
             }
-            
+
             // ========================== GAME FINISHED
             if (Winned || Loose)
             {
