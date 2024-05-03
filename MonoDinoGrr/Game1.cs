@@ -39,7 +39,7 @@ namespace MonoDinoGrr
 
         int cntT = 0;
         int windowWidth;
-        int windowHeight;
+        int worldHeight;
 
         public Game1()
         {
@@ -65,7 +65,6 @@ namespace MonoDinoGrr
             var levelGoal = worldGenerator.GetLevelGoal();
             var levelPlayer = worldGenerator.GetLevelPlayer();
             var worldWidth = worldGenerator.GetLevelWidth();
-            var worldHeight = windowHeight;
 
             var platforms = new List<Platform>();
             for (int i = 0; i < levelPlatforms.Count; i++)
@@ -85,9 +84,9 @@ namespace MonoDinoGrr
                 dinosaurs.Add(new Dinosaur(levelDinosaur.X, levelDinosaur.Y, levelDinosaur.Width, levelDinosaur.Height, levelDinosaur.Dino, player));
             }
 
-            var background = new Background(windowWidth, windowHeight, Content);
+            var background = new Background(windowWidth, worldHeight, Content);
 
-            camera = new Camera(player, new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height), 1);
+            camera = new Camera(player, new Rectangle(0, 0, windowWidth, worldHeight), 1);
 
             worldGenerator.physicWorld = new PhysicWorld(worldWidth, worldHeight, dinosaurs, platforms, player, goal, background, camera);
         }
@@ -96,7 +95,7 @@ namespace MonoDinoGrr
         {
             // TODO: Add your initialization logic here
             windowWidth = GraphicsDevice.Viewport.Width;
-            windowHeight = GraphicsDevice.Viewport.Height;
+            worldHeight = 1080;
 
             worldGenerator = new WorldGenerator();
             
@@ -221,11 +220,11 @@ namespace MonoDinoGrr
 
             if (worldGenerator.physicWorld.Winned)
             {
-                DrawGameEnd(font, windowWidth, windowHeight, "You win!");
+                DrawGameEnd(font, windowWidth, worldHeight, "You win!");
             }
             if (worldGenerator.physicWorld.Loose)
             {
-                DrawGameEnd(font, windowWidth, windowHeight, "You loose!");
+                DrawGameEnd(font, windowWidth, worldHeight, "You loose!");
             }
 
             _spriteBatch.End();
@@ -238,12 +237,12 @@ namespace MonoDinoGrr
         {
             var background = worldGenerator.physicWorld.background;
             
-            var centerView0 = camera.TranslateToView(new Vector2(background.l1_X0, windowHeight / 2));
-            var centerView1 = camera.TranslateToView(new Vector2(background.l1_X1, windowHeight / 2));
-            var centerView2 = camera.TranslateToView(new Vector2(background.l1_X2, windowHeight / 2));
+            var centerView0 = camera.TranslateToView(new Vector2(background.l1_X0, worldHeight / 2));
+            var centerView1 = camera.TranslateToView(new Vector2(background.l1_X1, worldHeight / 2));
+            var centerView2 = camera.TranslateToView(new Vector2(background.l1_X2, worldHeight / 2));
 
-            var center2View0 = camera.TranslateToView(new Vector2(background.l2_X0, windowHeight / 2));
-            var center2View1 = camera.TranslateToView(new Vector2(background.l2_X1, windowHeight / 2));
+            var center2View0 = camera.TranslateToView(new Vector2(background.l2_X0, worldHeight / 2));
+            var center2View1 = camera.TranslateToView(new Vector2(background.l2_X1, worldHeight / 2));
 
             var mountainWidth = background.width;
             var mountainHeight = 700;
@@ -266,8 +265,8 @@ namespace MonoDinoGrr
         {
             var leftBound = camera.TranslateToView(new Vector2(0, 0));
             var rightBound = camera.TranslateToView(new Vector2(worldGenerator.GetLevelWidth(), 0));
-            var bottomBound = camera.TranslateToView(new Vector2(0, windowHeight + 50));
-            var rightBottomBound = camera.TranslateToView(new Vector2(worldGenerator.GetLevelWidth(), windowHeight + 50));
+            var bottomBound = camera.TranslateToView(new Vector2(0, worldHeight + 50));
+            var rightBottomBound = camera.TranslateToView(new Vector2(worldGenerator.GetLevelWidth(), worldHeight + 50));
 
             DrawLine(_spriteBatch, new Vector2(leftBound.X, leftBound.Y), new Vector2(rightBound.X, rightBound.Y), Color.Black, 5, 1);
             DrawLine(_spriteBatch, new Vector2(leftBound.X, leftBound.Y), new Vector2(bottomBound.X, bottomBound.Y), Color.Black, 5, 1);
@@ -281,10 +280,10 @@ namespace MonoDinoGrr
 
             var leftTopBound = camera.TranslateToView(new Vector2(-borderLimit, 0));
             var rightTopBound = camera.TranslateToView(new Vector2(worldGenerator.GetLevelWidth(), 0));
-            var leftBottomBound = camera.TranslateToView(new Vector2(0, windowHeight + 50));
+            var leftBottomBound = camera.TranslateToView(new Vector2(0, worldHeight + 50));
             
-            DrawFilledRectangle(_spriteBatch, new Rectangle((int)leftTopBound.X, (int)leftTopBound.Y, borderLimit, windowHeight + borderLimit), Color.White, 1);
-            DrawFilledRectangle(_spriteBatch, new Rectangle((int)rightTopBound.X, (int)rightTopBound.Y, borderLimit, windowHeight + borderLimit), Color.White, 1);
+            DrawFilledRectangle(_spriteBatch, new Rectangle((int)leftTopBound.X, (int)leftTopBound.Y, borderLimit, worldHeight + borderLimit), Color.White, 1);
+            DrawFilledRectangle(_spriteBatch, new Rectangle((int)rightTopBound.X, (int)rightTopBound.Y, borderLimit, worldHeight + borderLimit), Color.White, 1);
             DrawFilledRectangle(_spriteBatch, new Rectangle((int)leftBottomBound.X, (int)leftBottomBound.Y, worldGenerator.GetLevelWidth() + 2 * borderLimit, borderLimit), Color.White, 1);
         }
 

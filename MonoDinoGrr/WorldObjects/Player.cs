@@ -139,7 +139,7 @@ namespace MonoDinoGrr.WorldObjects
         private void HandleKeyBoard(Background background, List<Polygon> worldPolygons)
         {
             KeyboardState state = Keyboard.GetState();
-            if (state.IsKeyDown(Keys.Z))
+            if (state.IsKeyDown(Keys.E) || state.IsKeyDown(Keys.Q))
             {
                 dinoPencil.RemovePolygon();
             }
