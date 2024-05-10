@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Input;
 using MonoDinoGrr.Rendering;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MonoDinoGrr.Physics
 {
@@ -28,11 +29,33 @@ namespace MonoDinoGrr.Physics
 
         public void AddParticle(int mouseX, int mouseY, int mass)
         {
+            // if from previous particle to current particle is too long (more than 20 pixels)
+            // add a particle each 10 pixels from the previous particle to the current particle with the middleware
+            // and repeat the process until the distance is less than 20 pixels
+            var minimumSeparation = 20;
+            var distance = Vector2.Distance(CurrentParticle.Position, new Vector2(mouseX, mouseY));
+            if (distance > minimumSeparation)
+            {
+                var direction = new Vector2(mouseX, mouseY) - CurrentParticle.Position;
+                direction.Normalize();
+                var step = 10;
+                var steps = (int)(distance / step);
+                for (int i = 0; i < steps; i++)
+                {
+                    var posX = (int)(CurrentParticle.Position.X + direction.X * step * i);
+                    var posY = (int)(CurrentParticle.Position.Y + direction.Y * step * i);
+                    AddParticleMiddleware(posX, posY, mass);
+                }
+            }
+        }
+
+        private void AddParticleMiddleware(int posX, int posY, int mass)
+        {
             if (polygonPoints >= maxPolygonPoints)
             {
                 return;
             }
-            CurrentParticle = new Particle(new Vector2(mouseX, mouseY), mass, 'p');
+            CurrentParticle = new Particle(new Vector2(posX, posY), mass, 'p');
             NewPolygon.particles.Add(CurrentParticle);
             if (PreviousParticle != null)
             {
@@ -98,6 +121,7 @@ namespace MonoDinoGrr.Physics
                 {
                     NewPolygon = new Polygon(new List<Particle>(), new List<Stick>());
                     mouseDrawing = true;
+                    AddParticleMiddleware(mouseX, mouseY, 2);
                 }
 
                 if (previouseMousePosition.X != mouseX 
