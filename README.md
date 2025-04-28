@@ -1,6 +1,6 @@
 # LaboratorioDeVideojuegos
 
-Laboratorio de videojuegos UDLAP
+Laboratorio de videojuegos para probar mecánicas
 
 ## Índice
 
