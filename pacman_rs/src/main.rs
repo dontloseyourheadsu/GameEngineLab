@@ -9,8 +9,8 @@ use game::Game;
 use raylib::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    const WINDOW_WIDTH: i32 = 800;
-    const WINDOW_HEIGHT: i32 = 600;
+    const WINDOW_WIDTH: i32 = 1400;
+    const WINDOW_HEIGHT: i32 = 1200;
     
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_WIDTH, WINDOW_HEIGHT)

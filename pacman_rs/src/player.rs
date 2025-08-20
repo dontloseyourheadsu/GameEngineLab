@@ -158,19 +158,24 @@ impl Player {
         } {
             let scale = cell_size as f32 / texture.height as f32;
 
-            // For left movement, we flip by using negative width in destination
-            let (dest_width, dest_height) = if self.animation == AnimationType::LeftRun {
-                (
-                    -(texture.width as f32 * scale),
-                    texture.height as f32 * scale,
-                )
+            // Calculate the scaled dimensions
+            let scaled_width = texture.width as f32 * scale;
+            let scaled_height = texture.height as f32 * scale;
+
+            // Center the texture in the cell
+            let center_x = x as f32 + (cell_size as f32 - scaled_width) / 2.0;
+            let center_y = y as f32 + (cell_size as f32 - scaled_height) / 2.0;
+
+            let dest_rect = Rectangle::new(center_x, center_y, scaled_width, scaled_height);
+
+            // For mirror flip, we use negative width in the source rectangle
+            let source_rect = if self.animation == AnimationType::LeftRun {
+                // Mirror flip: negative width in source rectangle
+                Rectangle::new(texture.width as f32, 0.0, -(texture.width as f32), texture.height as f32)
             } else {
-                (texture.width as f32 * scale, texture.height as f32 * scale)
+                // Normal orientation
+                Rectangle::new(0.0, 0.0, texture.width as f32, texture.height as f32)
             };
-
-            let dest_rect = Rectangle::new(x as f32, y as f32, dest_width, dest_height);
-
-            let source_rect = Rectangle::new(0.0, 0.0, texture.width as f32, texture.height as f32);
 
             d.draw_texture_pro(
                 texture,
