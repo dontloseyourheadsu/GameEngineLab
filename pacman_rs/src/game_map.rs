@@ -33,7 +33,7 @@ impl GameMap {
         
         GameMap {
             level,
-            cell_size: 30,
+            cell_size: 75,
             map_size: 15,
             consumed_power_pill: false,
         }

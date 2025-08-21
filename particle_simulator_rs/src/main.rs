@@ -1,7 +1,6 @@
 use rand::{thread_rng, Rng};
 use raylib::prelude::*;
 use std::collections::HashMap;
-use std::panic;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ParticleColor {
