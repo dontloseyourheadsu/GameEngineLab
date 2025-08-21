@@ -8,7 +8,7 @@ use std::f32::consts::PI;
 pub struct Triangle {
     cell_size: f32,
     position: Vector2D,
-    points: [Vector2::new(f32, f32); 3],
+    points: [Vector2; 3],
     color: Color,
     width: f32,
     height: f32,
