@@ -1,6 +1,5 @@
 use raylib::prelude::*;
 use crate::vector::Vector2D;
-use crate::verlet::Verlet;
 use crate::map::Map;
 use crate::ball::Ball;
 

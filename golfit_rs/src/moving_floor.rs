@@ -59,7 +59,7 @@ impl MovingFloor {
 
     fn calculate_arrow_points(&mut self) {
         let cell_f = self.cell_size as f32;
-        let half_cell = cell_f / 2.0;
+        let _half_cell = cell_f / 2.0;
         let quarter_cell = cell_f / 4.0;
 
         match self.direction {

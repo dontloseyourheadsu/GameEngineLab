@@ -35,9 +35,9 @@ impl Ball {
 
     pub fn render(&self, d: &mut RaylibDrawHandle) {
         let border_radius = 2.0;
-        let x = self.position.x - self.cell_size as f32 / 2.0;
-        let y = self.position.y - self.cell_size as f32 / 2.0;
-        let size = self.cell_size as f32;
+        let _x = self.position.x - self.cell_size as f32 / 2.0;
+        let _y = self.position.y - self.cell_size as f32 / 2.0;
+        let _size = self.cell_size as f32;
 
         // Draw border (black circle)
         d.draw_circle(
@@ -154,17 +154,23 @@ impl Verlet for Ball {
             // Apply friction
             self.velocity = self.velocity * self.friction;
 
-            // Check canvas boundaries
-            if self.position.x < 8.0 + self.radius || self.position.x > (WINDOW_WIDTH - 8) as f32 - self.radius {
+            // Calculate map boundaries
+            let map_left = map.offset_x as f32 + self.radius;
+            let map_right = (map.offset_x + 40 * map.cell_size) as f32 - self.radius;
+            let map_top = map.offset_y as f32 + self.radius;
+            let map_bottom = (map.offset_y + 40 * map.cell_size) as f32 - self.radius;
+
+            // Check canvas boundaries (keep ball within map area)
+            if self.position.x < map_left || self.position.x > map_right {
                 self.velocity.x = -self.velocity.x;
             }
-            if self.position.y < 34.0 + self.radius || self.position.y > (WINDOW_HEIGHT - 8) as f32 - self.radius {
+            if self.position.y < map_top || self.position.y > map_bottom {
                 self.velocity.y = -self.velocity.y;
             }
 
             // Keep ball within bounds
-            self.position.x = self.position.x.clamp(8.0 + self.radius, (WINDOW_WIDTH - 8) as f32 - self.radius);
-            self.position.y = self.position.y.clamp(34.0 + self.radius, (WINDOW_HEIGHT - 8) as f32 - self.radius);
+            self.position.x = self.position.x.clamp(map_left, map_right);
+            self.position.y = self.position.y.clamp(map_top, map_bottom);
 
             // Check wall collisions
             let wall_collision = self.check_wall_collision(map);
@@ -194,6 +200,3 @@ impl Verlet for Ball {
         self.render(d);
     }
 }
-
-// Import constants from main.rs (we'll need to make these available)
-use crate::{WINDOW_WIDTH, WINDOW_HEIGHT};

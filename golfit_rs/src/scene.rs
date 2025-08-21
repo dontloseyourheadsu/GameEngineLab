@@ -1,7 +1,6 @@
 use raylib::prelude::*;
 use crate::map::Map;
 use crate::triangle::Triangle;
-use crate::moving_floor::MovingFloor;
 use crate::obstacle::Obstacle;
 use crate::vector::Vector2D;
 

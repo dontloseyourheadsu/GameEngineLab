@@ -1,5 +1,5 @@
 use raylib::prelude::*;
-use crate::vector::Vector2D;
+use crate::{WINDOW_WIDTH, WINDOW_HEIGHT};
 
 #[derive(Debug, Clone)]
 pub struct Map {
@@ -11,6 +11,8 @@ pub struct Map {
     pub obstacles: Vec<Vec<char>>,
     pub cell_size: i32,
     level: usize,
+    pub offset_x: i32,
+    pub offset_y: i32,
 }
 
 impl Map {
@@ -30,9 +32,19 @@ impl Map {
             obstacles: vec![],
             cell_size,
             level,
+            offset_x: 0,
+            offset_y: 0,
         };
         map.create_maps();
         map.set_map(level);
+        
+        // Calculate offsets to center the map
+        // Map is 40x20 cells (originally designed for ~800x400 canvas)
+        let map_width = 40 * cell_size;
+        let map_height = 40 * cell_size; // Using 40 for height to match the map data
+        map.offset_x = (WINDOW_WIDTH - map_width) / 2;
+        map.offset_y = (WINDOW_HEIGHT - map_height) / 2;
+        
         map
     }
 
@@ -51,8 +63,8 @@ impl Map {
 
         for i in 0..self.map.len() {
             for j in 0..self.map[i].len() {
-                let x = (i as i32) * self.cell_size + 8; // Add canvas offset
-                let y = (j as i32) * self.cell_size + 34; // Add canvas offset
+                let x = (i as i32) * self.cell_size + self.offset_x;
+                let y = (j as i32) * self.cell_size + self.offset_y;
                 
                 match self.map[i][j] {
                     Self::LIGHT_TILE => {
@@ -74,8 +86,8 @@ impl Map {
     }
 
     pub fn is_wall(&self, x: i32, y: i32) -> bool {
-        let grid_x = (x - 8) / self.cell_size; // Account for canvas offset
-        let grid_y = (y - 34) / self.cell_size;
+        let grid_x = (x - self.offset_x) / self.cell_size;
+        let grid_y = (y - self.offset_y) / self.cell_size;
 
         if grid_x < 0 || grid_x >= self.map.len() as i32 || grid_y < 0 || grid_y >= self.map[0].len() as i32 {
             return false;
@@ -85,8 +97,8 @@ impl Map {
     }
 
     pub fn is_sand(&self, x: i32, y: i32) -> bool {
-        let grid_x = (x - 8) / self.cell_size; // Account for canvas offset
-        let grid_y = (y - 34) / self.cell_size;
+        let grid_x = (x - self.offset_x) / self.cell_size;
+        let grid_y = (y - self.offset_y) / self.cell_size;
 
         if grid_x < 0 || grid_x >= self.map.len() as i32 || grid_y < 0 || grid_y >= self.map[0].len() as i32 {
             return false;
@@ -98,7 +110,7 @@ impl Map {
     pub fn get_ball_position(&self) -> (i32, i32) {
         if self.level < self.ball_level_positions.len() {
             let pos = self.ball_level_positions[self.level];
-            ((pos.0 as i32) * self.cell_size + 8, (pos.1 as i32) * self.cell_size + 34)
+            ((pos.0 as i32) * self.cell_size + self.offset_x, (pos.1 as i32) * self.cell_size + self.offset_y)
         } else {
             (100, 100) // Default position
         }
@@ -107,7 +119,7 @@ impl Map {
     pub fn get_goal_position(&self) -> (i32, i32) {
         if self.level < self.goal_level_positions.len() {
             let pos = self.goal_level_positions[self.level];
-            ((pos.1 as i32) * self.cell_size + 8, (pos.0 as i32) * self.cell_size + 34) // Note: swapped in C# version
+            ((pos.1 as i32) * self.cell_size + self.offset_x, (pos.0 as i32) * self.cell_size + self.offset_y) // Note: swapped in C# version
         } else {
             (200, 200) // Default position
         }
