@@ -1,157 +1,55 @@
 use raylib::prelude::*;
+mod scenes;
+mod constants;
+use scenes::home::draw_home_menu;
+use constants::game_details::*;
 
-mod ball;
-mod collision;
-mod goal;
-mod map;
-mod moving_floor;
-mod obstacle;
-mod scene;
-mod triangle;
-mod vector;
-mod verlet;
+enum Scene {
+    Home,
+    Levels,
+    Game,
+}
 
-use ball::Ball;
-use goal::Goal;
-use scene::Scene;
-use vector::Vector2D;
-use verlet::Verlet; // Add this import
-
-pub const WINDOW_WIDTH: i32 = 1024; // Increased window width for better visibility
-pub const WINDOW_HEIGHT: i32 = 768; // Increased window height for better visibility
+pub const GAME_NAME: &str = "GolfRs";
 
 fn main() {
-    let (mut rl, thread) = raylib::init()
-        .size(WINDOW_WIDTH, WINDOW_HEIGHT)
-        .title("GolfIt - Rust")
-        .build();
+    let (mut handler, thread) = raylib::init().size(10, 10).title(GAME_NAME).build();
 
-    rl.set_target_fps(100); // Similar to 10ms timer in C#
+    let monitor = get_current_monitor();
 
-    let mut level = 0;
-    let mut scene = Scene::new(level);
-    let ball_pos = scene.map.get_ball_position();
-    let goal_pos = scene.map.get_goal_position();
+    if let Ok(monitor_info) = get_monitor_info(monitor) {
+        let (window_width, window_height) = (monitor_info.width / 2, monitor_info.height / 2);
 
-    let mut ball = Ball::new(
-        scene.cell_size,
-        Vector2D::new(ball_pos.0 as f32, ball_pos.1 as f32),
-        Vector2D::new(0.0, 0.0),
-    );
-    let mut goal = Goal::new(
-        scene.cell_size,
-        Vector2D::new(goal_pos.0 as f32, goal_pos.1 as f32),
-        &ball,
-    );
+        handler.set_window_size(window_width, window_height);
 
-    let mut is_dragging = false;
-    let mut start_point = Vector2::new(0.0, 0.0);
-    let mut end_point = Vector2::new(0.0, 0.0);
-    let force_limit = 8.0;
-    let mut turn = 0;
-    let mut is_menu_active = true;
-    let mut cnt_t = 0u32;
+        // Try to load a custom font, fall back to default font if not found
+        
+        let data: &[u8] = include_bytes!("./resources/chewy.ttf"); // path is compile-time
+        let custom_font = handler.load_font_from_memory(&thread, ".ttf", data, 64, None)
+            .expect("Failed to load embedded font");
 
-    while !rl.window_should_close() {
-        let mut d = rl.begin_drawing(&thread);
-        d.clear_background(Color::BLACK);
+        let scene = Scene::Home; // The starting scene, during dev it can change, in prod it should be Scene::Home.
 
-        // Handle input
-        if !is_menu_active {
-            handle_input(
-                &mut d,
-                &mut ball,
-                &mut is_dragging,
-                &mut start_point,
-                &mut end_point,
-                force_limit,
-            );
+        while !handler.window_should_close() {
+            let smallest_orientation = window_width.min(window_height); // Get the smallest window orientation
 
-            // Update game logic
-            if goal.is_ball_in_goal {
-                // Handle level completion
-            }
+            let mut drawing = handler.begin_drawing(&thread);
 
-            if !ball.is_moving() {
-                if is_dragging {
-                    // Draw trajectory line
-                    let force =
-                        Vector2D::new(end_point.x - start_point.x, end_point.y - start_point.y);
-                    let force_magnitude = (force.x * force.x + force.y * force.y).sqrt();
-                    if force_magnitude <= force_limit {
-                        d.draw_line_v(start_point, end_point, Color::WHITE);
-                    }
+            drawing.clear_background(Color::BLACK);
+
+            match scene {
+                Scene::Home => {
+                    draw_home_menu(
+                        &mut drawing,
+                        window_width,
+                        window_height,
+                        smallest_orientation,
+                        &custom_font,
+                    );
                 }
-            } else {
-                turn += 1;
+                Scene::Levels => {}
+                Scene::Game => {}
             }
-
-            // Update objects
-            scene.update(&mut d, cnt_t);
-            ball.update(&mut d, &scene.map);
-            goal.update(&mut d, &scene.map, &ball);
-        } else {
-            // Handle menu input
-            if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) || d.is_key_pressed(KeyboardKey::KEY_SPACE) || d.is_key_pressed(KeyboardKey::KEY_ENTER) {
-                is_menu_active = false;
-            }
-            draw_menu(&mut d);
-        }
-
-        // Update counter
-        if cnt_t < u32::MAX {
-            cnt_t += 1;
-        } else {
-            cnt_t = 0;
         }
     }
-}
-
-fn handle_input(
-    d: &mut RaylibDrawHandle,
-    ball: &mut Ball,
-    is_dragging: &mut bool,
-    start_point: &mut Vector2,
-    end_point: &mut Vector2,
-    force_limit: f32,
-) {
-    if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) && !ball.is_moving() {
-        let mouse_pos = d.get_mouse_position();
-        let ball_bounds = 2.0; // Similar to C# version
-
-        if mouse_pos.x < ball.position.x - ball.radius - ball_bounds
-            || mouse_pos.x > ball.position.x + ball.radius + ball_bounds
-            || mouse_pos.y < ball.position.y - ball.radius - ball_bounds
-            || mouse_pos.y > ball.position.y + ball.radius + ball_bounds
-        {
-            return;
-        }
-
-        *is_dragging = true;
-        *start_point = mouse_pos;
-    }
-
-    if d.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) && *is_dragging && !ball.is_moving() {
-        *end_point = d.get_mouse_position();
-    }
-
-    if d.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) && *is_dragging {
-        let force = Vector2D::new(end_point.x - start_point.x, end_point.y - start_point.y);
-        let force_magnitude = (force.x * force.x + force.y * force.y).sqrt();
-
-        if force_magnitude <= force_limit {
-            ball.push_ball(force);
-        }
-
-        *is_dragging = false;
-    }
-}
-
-fn draw_menu(d: &mut RaylibDrawHandle) {
-    let center_x = WINDOW_WIDTH / 2;
-    let center_y = WINDOW_HEIGHT / 2;
-    
-    d.draw_text("GolfIt - Rust Edition", center_x - 150, center_y - 100, 32, Color::WHITE);
-    d.draw_text("Click anywhere, press SPACE or ENTER to start", center_x - 200, center_y - 50, 20, Color::LIGHTGRAY);
-    d.draw_text("Drag from ball to aim and shoot", center_x - 140, center_y, 16, Color::GRAY);
 }
