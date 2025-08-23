@@ -1,16 +1,6 @@
 use raylib::prelude::*;
-use raylib::ffi;
-use std::ffi::CString;
-use crate::{constants::game_details::*};
-
-
-fn measure_text_ex_safe(font: &Font, text: &str, font_size: f32, spacing: f32) -> Vector2 {
-    let c_text = CString::new(text).unwrap();
-    unsafe {
-        let ffi_vector2 = ffi::MeasureTextEx(**font, c_text.as_ptr(), font_size, spacing);
-        Vector2::new(ffi_vector2.x, ffi_vector2.y)
-    }
-}
+use crate::constants::game_details::*;
+use crate::utilities::wrappers::*;
 
 /// Draws a checkerboard pattern of tiles to fill the entire window.
 ///
@@ -95,7 +85,9 @@ pub fn draw_change_scene_button(
     drawing: &mut RaylibDrawHandle,
     rectangle: Vector4,
     label: &str,
-    custom_font: &Font
+    custom_font: &Font,
+    mouse_click: bool,
+    mouse_pos: Option<Vector2>
 ) {
     let x = rectangle.x as i32;
     let y = rectangle.y as i32;
@@ -126,6 +118,16 @@ pub fn draw_change_scene_button(
         gap,
         Color::GOLD,
     );
+
+    if mouse_click {
+        if let Some(mouse_position) = mouse_pos {
+            if mouse_position.x >= x as f32 && mouse_position.x <= (x + width) as f32 &&
+               mouse_position.y >= y as f32 && mouse_position.y <= (y + height) as f32 {
+                println!("Button '{}' clicked!", label);
+                // Here you would change the scene based on the button clicked
+            }
+        }
+    }
 }
 
 /// Draws the action buttons for the menu.
@@ -137,10 +139,12 @@ pub fn draw_change_scene_button(
 /// * `handler` - The Raylib input handler
 /// * `scene` - The current game scene
 /// * `level` - The current game level
-pub fn draw_menu_action_buttons(
+pub fn handle_menu_action_buttons(
     drawing: &mut RaylibDrawHandle,
     card_menu: Vector4,
-    custom_font: &Font
+    custom_font: &Font,
+    mouse_click: bool,
+    mouse_pos: Option<Vector2>
 ) -> Vector4 {
     let menu_card_width = card_menu.z;
     let menu_card_height = card_menu.w;
@@ -160,9 +164,9 @@ pub fn draw_menu_action_buttons(
     let levels_button = Vector4::new(center_x, center_y - button_height - bottom_margin, button_width, button_height);
     let continue_button = Vector4::new(center_x, center_y - 2.0 * button_height - 2.0 * bottom_margin, button_width, button_height);
 
-    draw_change_scene_button(drawing, continue_button, "Continue", custom_font);
-    draw_change_scene_button(drawing, levels_button, "Levels", custom_font);
-    draw_change_scene_button(drawing, options_button, "Options", custom_font);
+    draw_change_scene_button(drawing, continue_button, "Continue", custom_font, mouse_click, mouse_pos);
+    draw_change_scene_button(drawing, levels_button, "Levels", custom_font, mouse_click, mouse_pos);
+    draw_change_scene_button(drawing, options_button, "Options", custom_font, mouse_click, mouse_pos);
 
     Vector4::new(card_menu.x, center_y - 2.0 * button_height - 2.0 * bottom_margin, menu_card_width, 3.0 * button_height + 2.0 * bottom_margin)
 }
