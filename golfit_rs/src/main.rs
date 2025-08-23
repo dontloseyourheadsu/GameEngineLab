@@ -15,7 +15,7 @@ enum Scene {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ButtonAction {
+pub enum HomeButtonAction {
     Continue,
     Levels,
     Options,
@@ -79,16 +79,16 @@ fn main() {
 
                     // Handle scene changes based on button clicks
                     match button_action {
-                        ButtonAction::Continue => {
+                        HomeButtonAction::Continue => {
                             scene = Scene::Game(1); // Start at level 1
                         }
-                        ButtonAction::Levels => {
+                        HomeButtonAction::Levels => {
                             scene = Scene::Levels;
                         }
-                        ButtonAction::Options => {
+                        HomeButtonAction::Options => {
                             scene = Scene::Options;
                         }
-                        ButtonAction::None => {} // No button was clicked
+                        HomeButtonAction::None => {} // No button was clicked
                     }
                 }
                 Scene::Levels => {

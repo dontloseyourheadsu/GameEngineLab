@@ -1,6 +1,7 @@
 use raylib::prelude::*;
 use crate::constants::game_details::*;
 use crate::utilities::wrappers::*;
+use crate::HomeButtonAction;
 
 /// Draws a checkerboard pattern of tiles to fill the entire window.
 ///
@@ -88,7 +89,7 @@ pub fn draw_change_scene_button(
     custom_font: &Font,
     mouse_click: bool,
     mouse_pos: Option<Vector2>
-) {
+) -> bool {
     let x = rectangle.x as i32;
     let y = rectangle.y as i32;
     let width = rectangle.z as i32;
@@ -124,10 +125,12 @@ pub fn draw_change_scene_button(
             if mouse_position.x >= x as f32 && mouse_position.x <= (x + width) as f32 &&
                mouse_position.y >= y as f32 && mouse_position.y <= (y + height) as f32 {
                 println!("Button '{}' clicked!", label);
-                // Here you would change the scene based on the button clicked
+                return true;
             }
         }
     }
+    
+    false
 }
 
 /// Draws the action buttons for the menu.
@@ -145,7 +148,7 @@ pub fn handle_menu_action_buttons(
     custom_font: &Font,
     mouse_click: bool,
     mouse_pos: Option<Vector2>
-) -> Vector4 {
+) -> (Vector4, HomeButtonAction) {
     let menu_card_width = card_menu.z;
     let menu_card_height = card_menu.w;
     
@@ -164,11 +167,17 @@ pub fn handle_menu_action_buttons(
     let levels_button = Vector4::new(center_x, center_y - button_height - bottom_margin, button_width, button_height);
     let continue_button = Vector4::new(center_x, center_y - 2.0 * button_height - 2.0 * bottom_margin, button_width, button_height);
 
-    draw_change_scene_button(drawing, continue_button, "Continue", custom_font, mouse_click, mouse_pos);
-    draw_change_scene_button(drawing, levels_button, "Levels", custom_font, mouse_click, mouse_pos);
-    draw_change_scene_button(drawing, options_button, "Options", custom_font, mouse_click, mouse_pos);
+    let mut action = HomeButtonAction::None;
 
-    Vector4::new(card_menu.x, center_y - 2.0 * button_height - 2.0 * bottom_margin, menu_card_width, 3.0 * button_height + 2.0 * bottom_margin)
+    if draw_change_scene_button(drawing, continue_button, "Continue", custom_font, mouse_click, mouse_pos) {
+        action = HomeButtonAction::Continue;
+    } else if draw_change_scene_button(drawing, levels_button, "Levels", custom_font, mouse_click, mouse_pos) {
+        action = HomeButtonAction::Levels;
+    } else if draw_change_scene_button(drawing, options_button, "Options", custom_font, mouse_click, mouse_pos) {
+        action = HomeButtonAction::Options;
+    }
+
+    (Vector4::new(card_menu.x, center_y - 2.0 * button_height - 2.0 * bottom_margin, menu_card_width, 3.0 * button_height + 2.0 * bottom_margin), action)
 }
 
 /// Draws the name of the game with custom font in card menu above the buttons.
