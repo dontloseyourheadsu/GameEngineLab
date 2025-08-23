@@ -49,6 +49,12 @@ fn main() {
         let level = Level::new(1); // Start at level 1
 
         while !handler.window_should_close() {
+            let mouse_pos = if handler.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+                Some(handler.get_mouse_position())
+            } else {
+                None
+            };
+
             let mut drawing = handler.begin_drawing(&thread);
 
             drawing.clear_background(Color::BLACK);
