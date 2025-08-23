@@ -1,25 +1,11 @@
 use raylib::prelude::*;
 mod constants;
-mod utilities;
 mod scenes;
+mod utilities;
 use constants::game_details::*;
 use scenes::home::{
     draw_checkerboard_tiles, draw_menu_card_background, draw_menu_title, handle_menu_action_buttons,
 };
-
-struct Level {
-    level: i32,
-}
-
-impl Level {
-    fn new(level: i32) -> Self {
-        Level { level }
-    }
-
-    fn set_last_played_level(&mut self) {
-        self.level = 1; // For simplicity, always set to level 1
-    }
-}
 
 enum Scene {
     Home,
@@ -28,8 +14,13 @@ enum Scene {
     Options,
 }
 
-// The starting scene, during dev it can change, in prod it should be Scene::Home.
-pub static SCENE: Scene = Scene::Home;
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ButtonAction {
+    Continue,
+    Levels,
+    Options,
+    None,
+}
 
 fn main() {
     let (mut handler, thread) = raylib::init().size(10, 10).title(GAME_NAME).build();
@@ -47,6 +38,9 @@ fn main() {
             .load_font_from_memory(&thread, ".ttf", data, 64, None)
             .expect("Failed to load embedded font");
 
+        // The starting scene, during dev it can change, in prod it should be Scene::Home.
+        let mut scene = Scene::Home;
+
         while !handler.window_should_close() {
             let mouse_pressed = handler.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
             let mouse_pos = if mouse_pressed {
@@ -59,7 +53,7 @@ fn main() {
 
             drawing.clear_background(Color::BLACK);
 
-            match SCENE {
+            match scene {
                 Scene::Home => {
                     // Draw the background green tiles
                     draw_checkerboard_tiles(&mut drawing, window_width, window_height);
@@ -71,16 +65,65 @@ fn main() {
                         window_height as f32,
                     );
 
-                    // Draw the action buttons
-                    let button_section =
-                        handle_menu_action_buttons(&mut drawing, card_menu, &custom_font, mouse_pressed, mouse_pos);
+                    // Draw the action buttons and get which button was clicked
+                    let (button_section, button_action) = handle_menu_action_buttons(
+                        &mut drawing,
+                        card_menu,
+                        &custom_font,
+                        mouse_pressed,
+                        mouse_pos,
+                    );
 
                     // Draw the title
                     draw_menu_title(&mut drawing, card_menu, button_section, &custom_font);
+
+                    // Handle scene changes based on button clicks
+                    match button_action {
+                        ButtonAction::Continue => {
+                            scene = Scene::Game(1); // Start at level 1
+                        }
+                        ButtonAction::Levels => {
+                            scene = Scene::Levels;
+                        }
+                        ButtonAction::Options => {
+                            scene = Scene::Options;
+                        }
+                        ButtonAction::None => {} // No button was clicked
+                    }
                 }
-                Scene::Levels => {}
-                Scene::Options => {}
-                Scene::Game(level) => {}
+                Scene::Levels => {
+                    // Add some basic content for the Levels scene
+                    drawing.draw_text(
+                        "Levels Scene - Press ESC to go back to home",
+                        10,
+                        10,
+                        20,
+                        Color::WHITE,
+                    );
+                }
+                Scene::Options => {
+                    // Add some basic content for the Options scene
+                    drawing.draw_text(
+                        "Options Scene - Press ESC to go back to home",
+                        10,
+                        10,
+                        20,
+                        Color::WHITE,
+                    );
+                }
+                Scene::Game(level) => {
+                    // Add some basic content for the Game scene
+                    drawing.draw_text(
+                        &format!(
+                            "Game Scene - Level {} - Press ESC to go back to home",
+                            level
+                        ),
+                        10,
+                        10,
+                        20,
+                        Color::WHITE,
+                    );
+                }
             }
         }
     }
