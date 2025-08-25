@@ -30,12 +30,25 @@ impl VerletPoint {
         }
     }
 
-    pub fn update(&mut self, delta_time: f32) {
+    pub fn update(&mut self, delta_time: f32, world_bounds: Rectangle) {
         let temp = self.position;
         self.position +=
             self.position - self.previous + self.acceleration * delta_time * delta_time;
         self.previous = temp;
         self.acceleration = Vector2::zero();
+
+        // Apply world bounds constraints
+        if self.position.x - self.size < world_bounds.x {
+            self.position.x = world_bounds.x + self.size;
+        } else if self.position.x + self.size > world_bounds.x + world_bounds.width {
+            self.position.x = world_bounds.x + world_bounds.width - self.size;
+        }
+
+        if self.position.y - self.size < world_bounds.y {
+            self.position.y = world_bounds.y + self.size;
+        } else if self.position.y + self.size > world_bounds.y + world_bounds.height {
+            self.position.y = world_bounds.y + world_bounds.height - self.size;
+        }
     }
 
     pub fn apply_force(&mut self, force: Vector2) {

@@ -24,12 +24,15 @@ fn main() {
         point.apply_force(Vector2::new(0.0, 10.0));
     }
 
+    let world_bounds = Rectangle::new(0.0, 0.0, 600.0, 600.0);
+
     while !handler.window_should_close() {
         let mut drawing = handler.begin_drawing(&thread);
         drawing.clear_background(Color::BLACK);
 
+
         for point in &mut points {
-            point.update(1.0 / 60.0);
+            point.update(1.0 / 60.0, world_bounds);
             let pos = point.position();
             drawing.draw_circle(pos.x as i32, pos.y as i32, point.size(), Color::WHITE);
         }
