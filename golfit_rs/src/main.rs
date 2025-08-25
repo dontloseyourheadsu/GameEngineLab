@@ -112,17 +112,7 @@ fn main() {
                     );
                 }
                 Scene::Game(level) => {
-                    // Add some basic content for the Game scene
-                    drawing.draw_text(
-                        &format!(
-                            "Game Scene - Level {} - Press ESC to go back to home",
-                            level
-                        ),
-                        10,
-                        10,
-                        20,
-                        Color::WHITE,
-                    );
+                    
                 }
             }
         }
