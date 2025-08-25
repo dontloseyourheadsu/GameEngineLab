@@ -5,6 +5,8 @@ pub struct VerletPoint {
     position: Vector2,
     previous: Vector2,
     acceleration: Vector2,
+    mass: f32,
+    size: f32,
 }
 
 impl VerletPoint {
@@ -13,6 +15,18 @@ impl VerletPoint {
             position,
             previous: position,
             acceleration: Vector2::zero(),
+            mass: 1.0,
+            size: 5.0,
+        }
+    }
+
+    pub fn new_with_properties(position: Vector2, mass: f32, size: f32) -> Self {
+        VerletPoint {
+            position,
+            previous: position,
+            acceleration: Vector2::zero(),
+            mass,
+            size,
         }
     }
 
@@ -25,10 +39,27 @@ impl VerletPoint {
     }
 
     pub fn apply_force(&mut self, force: Vector2) {
-        self.acceleration += force;
+        // F = ma, so a = F/m
+        self.acceleration += force / self.mass;
     }
 
     pub fn position(&self) -> Vector2 {
         self.position
+    }
+
+    pub fn mass(&self) -> f32 {
+        self.mass
+    }
+
+    pub fn size(&self) -> f32 {
+        self.size
+    }
+
+    pub fn set_mass(&mut self, mass: f32) {
+        self.mass = mass;
+    }
+
+    pub fn set_size(&mut self, size: f32) {
+        self.size = size;
     }
 }

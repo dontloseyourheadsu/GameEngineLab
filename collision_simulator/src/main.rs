@@ -11,11 +11,17 @@ fn main() {
     for _ in 0..50 {
         let x = rand::random::<f32>() * 600.0;
         let y = rand::random::<f32>() * 600.0;
-        points.push(VerletPoint::new(Vector2::new(x, y)));
+        let mass = rand::random::<f32>() * 5.0 + 0.5; // Mass between 0.5 and 5.5
+        let size = rand::random::<f32>() * 10.0 + 3.0; // Size between 3.0 and 13.0
+        points.push(VerletPoint::new_with_properties(
+            Vector2::new(x, y),
+            mass,
+            size,
+        ));
     }
 
     for point in &mut points {
-        point.apply_force(Vector2::new(0.0, 9.81));
+        point.apply_force(Vector2::new(0.0, 10.0));
     }
 
     while !handler.window_should_close() {
@@ -25,7 +31,7 @@ fn main() {
         for point in &mut points {
             point.update(1.0 / 60.0);
             let pos = point.position();
-            drawing.draw_circle(pos.x as i32, pos.y as i32, 5.0, Color::WHITE);
+            drawing.draw_circle(pos.x as i32, pos.y as i32, point.size(), Color::WHITE);
         }
     }
 }
