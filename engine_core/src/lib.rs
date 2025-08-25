@@ -7,6 +7,7 @@ pub struct VerletPoint {
     acceleration: Vector2,
     mass: f32,
     size: f32,
+    color: Color,
 }
 
 impl VerletPoint {
@@ -17,6 +18,7 @@ impl VerletPoint {
             acceleration: Vector2::zero(),
             mass: 1.0,
             size: 5.0,
+            color: Color::WHITE,
         }
     }
 
@@ -27,6 +29,18 @@ impl VerletPoint {
             acceleration: Vector2::zero(),
             mass,
             size,
+            color: Color::WHITE,
+        }
+    }
+
+    pub fn new_full(position: Vector2, mass: f32, size: f32, color: Color) -> Self {
+        VerletPoint {
+            position,
+            previous: position,
+            acceleration: Vector2::zero(),
+            mass,
+            size,
+            color,
         }
     }
 
@@ -68,11 +82,19 @@ impl VerletPoint {
         self.size
     }
 
+    pub fn color(&self) -> Color {
+        self.color
+    }
+
     pub fn set_mass(&mut self, mass: f32) {
         self.mass = mass;
     }
 
     pub fn set_size(&mut self, size: f32) {
         self.size = size;
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
     }
 }
