@@ -1,14 +1,4 @@
-[package]
-name = "LaboratorioDeVideojuegos"
-version = "0.1.0"
-edition = "2021"
-
 [workspace]
-members = [ 
-    "collision_simulator",
-    "engine_core",
-    "golfit_rs",
-]
+members = ["engine_core", "collision_simulator", "golfit_rs"]
 
-[dependencies]
-raylib = "0.9"  # Adjust the version as necessary based on your requirements.
+resolver = "2"
