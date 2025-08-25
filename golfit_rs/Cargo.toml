@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 raylib = "5.5.1"
 fastrand = "2.0"
+engine_core = { path = "../engine_core" }
