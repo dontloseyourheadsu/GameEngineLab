@@ -65,7 +65,7 @@ fn main() {
     background.add_layer(layer3);
 
     // Create player as a VerletPoint with integrated RenderMesh
-    let player_position = Vector2::new(285.0, 140.0);
+    let player_position = Vector2::new(285.0, 230.0);
     let mut player_render_mesh = RenderMesh::new();
     player_render_mesh.set_scale(Vector2::new(50.0, 80.0));
     
