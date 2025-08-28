@@ -1,4 +1,5 @@
 use crate::collision::CollisionMesh;
+use crate::physics::PhysicsObject;
 use crate::rendering::RenderMesh;
 use raylib::prelude::*;
 
@@ -112,7 +113,80 @@ impl VerletPoint {
         }
     }
 
-    pub fn update(&mut self, delta_time: f32, world_bounds: Rectangle) {
+    pub fn apply_impulse_to_previous(&mut self, impulse: Vector2) {
+        self.previous.x += impulse.x;
+        self.previous.y += impulse.y;
+    }
+
+    // RenderMesh related methods
+    pub fn size(&self) -> f32 {
+        self.size
+    }
+
+    pub fn color(&self) -> Color {
+        self.color
+    }
+
+    pub fn set_size(&mut self, size: f32) {
+        self.size = size;
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
+    }
+
+    pub fn set_collision_mesh(&mut self, collision_mesh: Option<CollisionMesh>) {
+        self.collision_mesh = collision_mesh;
+    }
+    pub fn render_mesh(&self) -> Option<&RenderMesh> {
+        self.render_mesh.as_ref()
+    }
+
+    pub fn render_mesh_mut(&mut self) -> Option<&mut RenderMesh> {
+        self.render_mesh.as_mut()
+    }
+
+    pub fn set_render_mesh(&mut self, render_mesh: Option<RenderMesh>) {
+        self.render_mesh = render_mesh;
+    }
+
+    pub fn has_render_mesh(&self) -> bool {
+        self.render_mesh.is_some()
+    }
+}
+
+impl PhysicsObject for VerletPoint {
+    fn position(&self) -> Vector2 {
+        self.position
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        self.position = position;
+    }
+
+    fn previous_position(&self) -> Vector2 {
+        self.previous
+    }
+
+    fn mass(&self) -> f32 {
+        self.mass
+    }
+
+    fn set_mass(&mut self, mass: f32) {
+        self.mass = mass;
+    }
+
+    fn apply_force(&mut self, force: Vector2) {
+        // F = ma, so a = F/m
+        self.acceleration += force / self.mass;
+    }
+
+    fn apply_impulse_to_previous(&mut self, impulse: Vector2) {
+        self.previous.x += impulse.x;
+        self.previous.y += impulse.y;
+    }
+
+    fn update(&mut self, delta_time: f32, world_bounds: Rectangle) {
         let temp = self.position;
         self.position +=
             self.position - self.previous + self.acceleration * delta_time * delta_time;
@@ -133,83 +207,19 @@ impl VerletPoint {
         }
     }
 
-    pub fn apply_force(&mut self, force: Vector2) {
-        // F = ma, so a = F/m
-        self.acceleration += force / self.mass;
-    }
-
-    pub fn position(&self) -> Vector2 {
-        self.position
-    }
-
-    pub fn set_position(&mut self, position: Vector2) {
-        self.position = position;
-    }
-
-    pub fn mass(&self) -> f32 {
-        self.mass
-    }
-
-    pub fn size(&self) -> f32 {
-        self.size
-    }
-
-    pub fn color(&self) -> Color {
-        self.color
-    }
-
-    pub fn set_mass(&mut self, mass: f32) {
-        self.mass = mass;
-    }
-
-    pub fn set_size(&mut self, size: f32) {
-        self.size = size;
-    }
-
-    pub fn set_color(&mut self, color: Color) {
-        self.color = color;
-    }
-
-    pub fn collision_mesh(&self) -> Option<&CollisionMesh> {
+    fn collision_mesh(&self) -> Option<&CollisionMesh> {
         self.collision_mesh.as_ref()
     }
 
-    pub fn set_collision_mesh(&mut self, collision_mesh: Option<CollisionMesh>) {
-        self.collision_mesh = collision_mesh;
+    fn collision_mesh_mut(&mut self) -> Option<&mut CollisionMesh> {
+        self.collision_mesh.as_mut()
     }
 
-    pub fn has_collision(&self) -> bool {
-        self.collision_mesh.is_some() && self.collision_mesh.unwrap().enabled
+    fn has_collision(&self) -> bool {
+        self.collision_mesh.is_some() && self.collision_mesh.as_ref().unwrap().is_enabled()
     }
 
-    pub fn previous_position(&self) -> Vector2 {
-        self.previous
-    }
-
-    pub fn apply_impulse_to_previous(&mut self, impulse: Vector2) {
-        self.previous.x += impulse.x;
-        self.previous.y += impulse.y;
-    }
-
-    // RenderMesh related methods
-    pub fn render_mesh(&self) -> Option<&RenderMesh> {
-        self.render_mesh.as_ref()
-    }
-
-    pub fn render_mesh_mut(&mut self) -> Option<&mut RenderMesh> {
-        self.render_mesh.as_mut()
-    }
-
-    pub fn set_render_mesh(&mut self, render_mesh: Option<RenderMesh>) {
-        self.render_mesh = render_mesh;
-    }
-
-    pub fn has_render_mesh(&self) -> bool {
-        self.render_mesh.is_some()
-    }
-
-    // Drawing method - integrates color fallback with RenderMesh
-    pub fn draw(&self, d: &mut RaylibDrawHandle, texture: Option<&Texture2D>) {
+    fn draw(&self, d: &mut RaylibDrawHandle, texture: Option<&Texture2D>) {
         if let Some(render_mesh) = &self.render_mesh {
             if !render_mesh.visible {
                 return; // Don't draw if render mesh exists but is not visible
@@ -246,8 +256,7 @@ impl VerletPoint {
         }
     }
 
-    // Convenience method for drawing without texture
-    pub fn draw_simple(&self, d: &mut RaylibDrawHandle) {
+    fn draw_simple(&self, d: &mut RaylibDrawHandle) {
         self.draw(d, None);
     }
 }
