@@ -318,6 +318,12 @@ fn resolve_rectangle_rectangle_collision<T: PhysicsObject, U: PhysicsObject>(
         let proj1 = project_onto_axis(&corners1, *axis);
         let proj2 = project_onto_axis(&corners2, *axis);
 
+        // Check for separation on this axis
+        if proj1.1 < proj2.0 || proj2.1 < proj1.0 {
+            return; // No collision - objects are separated on this axis
+        }
+
+        // Calculate overlap
         let overlap = (proj1.1 - proj2.0).min(proj2.1 - proj1.0);
         if overlap < min_overlap {
             min_overlap = overlap;
@@ -325,8 +331,9 @@ fn resolve_rectangle_rectangle_collision<T: PhysicsObject, U: PhysicsObject>(
         }
     }
 
-    if min_overlap == f32::INFINITY {
-        return;
+    // If we get here, there is a collision
+    if min_overlap <= 0.0 || min_overlap == f32::INFINITY {
+        return; // Invalid overlap
     }
 
     // Ensure MTV points from obj1 to obj2
@@ -339,10 +346,10 @@ fn resolve_rectangle_rectangle_collision<T: PhysicsObject, U: PhysicsObject>(
         mtv.y = -mtv.y;
     }
 
-    // Separate objects
+    // Separate objects (with bounds checking)
     let total_mass = obj1.mass() + obj2.mass();
-    let separation1 = min_overlap * (obj2.mass() / total_mass);
-    let separation2 = min_overlap * (obj1.mass() / total_mass);
+    let separation1 = (min_overlap * (obj2.mass() / total_mass)).min(50.0); // Cap separation
+    let separation2 = (min_overlap * (obj1.mass() / total_mass)).min(50.0); // Cap separation
 
     let mut pos1 = obj1.position();
     let mut pos2 = obj2.position();
@@ -357,8 +364,8 @@ fn resolve_rectangle_rectangle_collision<T: PhysicsObject, U: PhysicsObject>(
     obj1.set_position(pos1);
     obj2.set_position(pos2);
 
-    // Apply impulse
-    let restitution = (r1.restitution + r2.restitution) * 0.5;
+    // Apply gentler impulse
+    let restitution = (r1.restitution + r2.restitution) * 0.3; // Reduced restitution
     apply_collision_impulse(obj1, obj2, normal, restitution);
 }
 
