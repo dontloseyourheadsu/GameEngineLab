@@ -1,4 +1,10 @@
 [workspace]
-members = ["engine_core", "collision_simulator", "golfit_rs", "parallax_rs", "pacman_rs"]
+members = [
+    "engine_core",
+    "collision_simulator",
+    "golfit_rs",
+    "parallax_rs",
+    "pacman_rs",
+]
 
 resolver = "2"
