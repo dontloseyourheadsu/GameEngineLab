@@ -3,7 +3,7 @@ pub use rapier2d::prelude::*;
 
 #[derive(Clone)]
 pub struct SolidBody {
-    body: RigidBody,
+    pub(crate) body: RigidBody,
 }
 
 impl SolidBody {
