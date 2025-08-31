@@ -1,5 +1,5 @@
-use raylib::prelude::*;
 use engine_core::*;
+use raylib::prelude::*;
 
 fn main() {
     const SCREEN_WIDTH: i32 = 650;
@@ -64,29 +64,18 @@ fn main() {
     background.add_layer(layer2);
     background.add_layer(layer3);
 
-    // Create player as a VerletPoint with integrated RenderMesh
-    let player_position = Vector2::new(285.0, 230.0);
-    let mut player_render_mesh = RenderMesh::new();
-    player_render_mesh.set_scale(Vector2::new(50.0, 80.0));
-    
-    let mut player = VerletPoint::new_with_render_mesh(
-        player_position, 
-        1.0, 
-        50.0, 
-        Color::WHITE, 
-        player_render_mesh
-    );
+    // Create player as a simple point with position and scale
+    let player_position = Vector2::new(285.0, 150.0);
+    let player_scale = Vector2::new(50.0, 80.0);
 
     // Control state
     let mut was_right_pressed = false;
     let mut is_running = false;
 
     // World bounds (not really used since player doesn't move, but required for update)
-    let world_bounds = Rectangle::new(0.0, 0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32);
+    // let world_bounds = Rectangle::new(0.0, 0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32);
 
     while !rl.window_should_close() {
-        let delta_time = rl.get_frame_time();
-
         // Handle input
         let right_pressed = rl.is_key_down(KeyboardKey::KEY_RIGHT);
 
@@ -105,7 +94,7 @@ fn main() {
 
         // Update systems (player doesn't move, only background moves)
         background.update();
-        player.update(delta_time, world_bounds); // No forces applied, so position stays same
+        // player_position stays the same (no update needed)
 
         // Draw
         let mut d = rl.begin_drawing(&thread);
@@ -116,11 +105,15 @@ fn main() {
 
         // Draw player with appropriate texture
         let current_texture = if is_running {
-            Some(&player_running_texture)
+            &player_running_texture
         } else {
-            Some(&player_hold_texture)
+            &player_hold_texture
         };
-        
-        player.draw(&mut d, current_texture);
+        // Draw the player as a simple textured rectangle
+        // Use the average scale for uniform scaling
+        let scale_x = player_scale.x / current_texture.width() as f32;
+        let scale_y = player_scale.y / current_texture.height() as f32;
+        let scale = (scale_x + scale_y) / 2.0;
+        d.draw_texture_ex(current_texture, player_position, 0.0, scale, Color::WHITE);
     }
 }
