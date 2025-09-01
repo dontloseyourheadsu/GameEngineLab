@@ -37,8 +37,9 @@ impl PhysicsWorld {
 
         // Suelo en y=0 a lo largo del ancho del mundo
         let ground_collider = ColliderBuilder::cuboid(width as f32 / 2.0, 1.0)
-            .translation(vector![width as f32 / 2.0, 1.0])
+            .translation(vector![width as f32 / 2.0, -1.0])
             .restitution(0.7)
+            .friction(0.8) // Ground friction
             .build();
         collider_set.insert(ground_collider);
 
