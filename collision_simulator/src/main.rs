@@ -2,7 +2,7 @@ use engine_core::{
     physics_world::PhysicsWorld,
     rigid_bodies::{
         circle_rigid_body_builder::{CircleRigidBodyBuilder, RigidBodyType},
-        rectangle_rigid_body_builder::RectangleRigidBodyBuilder,
+        rectangle_rigid_body_builder::RectangleRigidBodyBuilder, triangle_rigid_body_builder::TriangleRigidBodyBuilder,
     },
     world_renderer,
 };
@@ -24,8 +24,17 @@ fn main() {
     )
     .with_friction(0.00001); // Low friction square
 
+    let triangle = TriangleRigidBodyBuilder::new(
+        RigidBodyType::Dynamic,
+        vector![50.0, 120.0], // position
+        vector![0.0, 10.0],  // vertex 1 (relative to center)
+        vector![-8.0, -5.0], // vertex 2 (relative to center)
+        vector![8.0, -5.0],  // vertex 3 (relative to center)
+    );
+
     physics_world.add_solid_body(ball);
     physics_world.add_solid_body(square);
+    physics_world.add_solid_body(triangle);
 
     world_renderer::render(
         "Collision Simulator",
