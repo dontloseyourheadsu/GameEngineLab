@@ -104,6 +104,43 @@ pub fn render(
                                 );
                             }
                         }
+                        ShapeType::Triangle => {
+                            if let Some(triangle) = collider.shape().as_triangle() {
+                                let vertices = triangle.vertices();
+                                let p1 = vertices[0];
+                                let p2 = vertices[1];
+                                let p3 = vertices[2];
+
+                                // Transform vertices to world coordinates
+                                let cos_r = rotation.cos();
+                                let sin_r = rotation.sin();
+
+                                // Apply rotation and translation to each vertex
+                                let world_p1 = nalgebra::Vector2::new(
+                                    x + p1.x * cos_r - p1.y * sin_r,
+                                    y + p1.x * sin_r + p1.y * cos_r,
+                                );
+                                let world_p2 = nalgebra::Vector2::new(
+                                    x + p2.x * cos_r - p2.y * sin_r,
+                                    y + p2.x * sin_r + p2.y * cos_r,
+                                );
+                                let world_p3 = nalgebra::Vector2::new(
+                                    x + p3.x * cos_r - p3.y * sin_r,
+                                    y + p3.x * sin_r + p3.y * cos_r,
+                                );
+
+                                let (sx1, sy1) = to_screen(world_p1.x, world_p1.y);
+                                let (sx2, sy2) = to_screen(world_p2.x, world_p2.y);
+                                let (sx3, sy3) = to_screen(world_p3.x, world_p3.y);
+
+                                d.draw_triangle(
+                                    Vector2::new(sx1 as f32, sy1 as f32),
+                                    Vector2::new(sx2 as f32, sy2 as f32),
+                                    Vector2::new(sx3 as f32, sy3 as f32),
+                                    Color::GREEN,
+                                );
+                            }
+                        }
                         _ => {
                             // Handle other shape types or draw a default representation
                             d.draw_circle(sx, sy, 5.0, Color::GRAY);
