@@ -1,3 +1,4 @@
+// physics_world.rs
 use crate::bodies::solid_body::SolidBody;
 use rapier2d::{
     na::{Vector2, vector},
@@ -17,9 +18,9 @@ pub struct PhysicsWorld {
     broad_phase: DefaultBroadPhase,
     ccd_solver: CCDSolver,
     event_handler: (),
-    gravity: Vector2<f32>,
+    pub gravity: Vector2<f32>,
     impulse_joint_set: ImpulseJointSet,
-    integration_parameters: IntegrationParameters,
+    pub integration_parameters: IntegrationParameters,
     island_manager: IslandManager,
     multibody_joint_set: MultibodyJointSet,
     narrow_phase: NarrowPhase,
@@ -33,43 +34,38 @@ impl PhysicsWorld {
         let mut collider_set = ColliderSet::new();
         let rigid_body_handles = Vec::new();
 
-        // Build ground collider at y = 0, spanning the world width
+        // Suelo en y=0 a lo largo del ancho del mundo
         let ground_collider = ColliderBuilder::cuboid(width as f32 / 2.0, 1.0)
             .translation(vector![width as f32 / 2.0, 1.0])
             .restitution(0.7)
             .build();
         collider_set.insert(ground_collider);
 
-        let integration_parameters = IntegrationParameters::default();
-        let physics_pipeline = PhysicsPipeline::new();
-        let island_manager = IslandManager::new();
-        let broad_phase = DefaultBroadPhase::new();
-        let narrow_phase = NarrowPhase::new();
-        let impulse_joint_set = ImpulseJointSet::new();
-        let multibody_joint_set = MultibodyJointSet::new();
-        let ccd_solver = CCDSolver::new();
-        let physics_hooks = ();
-        let event_handler = ();
+        // Importante: dt lo setearás por frame con step_with_dt
+        let mut integration_parameters = IntegrationParameters::default();
+        integration_parameters.dt = 1.0 / 60.0; // valor por defecto seguro
 
         Self {
             rigid_body_set,
             collider_set,
             gravity,
-            physics_pipeline,
-            island_manager,
-            broad_phase,
-            narrow_phase,
-            impulse_joint_set,
-            multibody_joint_set,
-            ccd_solver,
-            physics_hooks,
-            event_handler,
+            physics_pipeline: PhysicsPipeline::new(),
+            island_manager: IslandManager::new(),
+            broad_phase: DefaultBroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            impulse_joint_set: ImpulseJointSet::new(),
+            multibody_joint_set: MultibodyJointSet::new(),
+            ccd_solver: CCDSolver::new(),
+            physics_hooks: (),
+            event_handler: (),
             integration_parameters,
             rigid_body_handles,
         }
     }
 
-    pub fn step(&mut self) {
+    /// Step con dt explícito (segundos) para que Rapier integre a tiempo real.
+    pub fn step_with_dt(&mut self, dt: f32) {
+        self.integration_parameters.dt = dt;
         self.physics_pipeline.step(
             &self.gravity,
             &self.integration_parameters,
@@ -84,6 +80,11 @@ impl PhysicsWorld {
             &mut self.physics_hooks,
             &mut self.event_handler,
         );
+    }
+
+    // Conserva el step() simple si lo quieres, usa el dt actual en integration_parameters.
+    pub fn step(&mut self) {
+        self.step_with_dt(self.integration_parameters.dt);
     }
 
     pub fn add_ball(&mut self, position: Vector2<f32>, radius: f32, restitution: f32) {
