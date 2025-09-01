@@ -1,5 +1,4 @@
 // physics_world.rs
-use crate::bodies::solid_body::SolidBody;
 use rapier2d::{
     na::{Vector2, vector},
     prelude::{
@@ -8,6 +7,8 @@ use rapier2d::{
         RigidBodyHandle, RigidBodySet,
     },
 };
+
+use crate::rigid_bodies::solid_body_build::SolidBodyBuild;
 
 #[derive(Default)]
 pub struct PhysicsWorld {
@@ -87,18 +88,23 @@ impl PhysicsWorld {
         self.step_with_dt(self.integration_parameters.dt);
     }
 
-    pub fn add_ball(&mut self, position: Vector2<f32>, radius: f32, restitution: f32) {
-        let rigid_body =
-            SolidBody::new(rapier2d::prelude::RigidBodyType::Dynamic, position, 0.0).body;
+    pub fn add_solid_body<T: SolidBodyBuild>(&mut self, solid_body_build: T) {
+        let rigid_body = solid_body_build.body().clone();
+        let collider = Some(solid_body_build.collider().clone());
 
-        let collider = ColliderBuilder::ball(radius)
-            .restitution(restitution)
-            .build();
-
+        // Insert the rigid body into the world
         let ball_body_handle = self.rigid_body_set.insert(rigid_body);
+
+        // Insert handle into the list of rigid body handles to manipulate object
         self.rigid_body_handles.push(ball_body_handle);
 
-        self.collider_set
-            .insert_with_parent(collider, ball_body_handle, &mut self.rigid_body_set);
+        // Insert the collider into the world if it is present
+        if let Some(collider) = collider {
+            self.collider_set.insert_with_parent(
+                collider,
+                ball_body_handle,
+                &mut self.rigid_body_set,
+            );
+        }
     }
 }
