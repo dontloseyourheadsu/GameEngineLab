@@ -31,7 +31,9 @@ fn main() {
         vector![0.0, 10.0],  // vertex 1 (relative to center)
         vector![-8.0, -5.0], // vertex 2 (relative to center)
         vector![8.0, -5.0],  // vertex 3 (relative to center)
-    );
+    )
+    .with_friction(0.00001)
+    .with_rotation(18.0);
 
     physics_world.add_solid_body(ball);
     physics_world.add_solid_body(square);
