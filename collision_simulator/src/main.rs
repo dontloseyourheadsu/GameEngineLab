@@ -22,7 +22,8 @@ fn main() {
         vector![48.0, 80.0],
         vector![10.0, 10.0],
     )
-    .with_friction(0.00001); // Low friction square
+    .with_friction(0.00001)
+    .with_rotation(18.0); // Low friction square
 
     let triangle = TriangleRigidBodyBuilder::new(
         RigidBodyType::Dynamic,
