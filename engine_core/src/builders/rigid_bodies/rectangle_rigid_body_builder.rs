@@ -3,12 +3,12 @@ use rapier2d::na::Vector2;
 pub use rapier2d::prelude::*;
 
 #[derive(Clone)]
-pub struct CircleRigidBodyBuilder {
+pub struct RectangleRigidBodyBuilder {
     pub(crate) body: RigidBody,
     pub(crate) collider: Collider,
 }
 
-impl SolidBodyBuild for CircleRigidBodyBuilder {
+impl SolidBodyBuild for RectangleRigidBodyBuilder {
     fn body(&self) -> &RigidBody {
         &self.body
     }
@@ -18,17 +18,17 @@ impl SolidBodyBuild for CircleRigidBodyBuilder {
     }
 }
 
-impl CircleRigidBodyBuilder {
-    pub fn new(body_type: RigidBodyType, position: Vector2<f32>, radius: f32) -> Self {
+impl RectangleRigidBodyBuilder {
+    pub fn new(body_type: RigidBodyType, position: Vector2<f32>, size: Vector2<f32>) -> Self {
         let solid_body = RigidBodyBuilder::new(body_type)
             .translation(position)
             .build();
 
-        let collider = ColliderBuilder::ball(radius)
+        let collider = ColliderBuilder::cuboid(size.x / 2.0, size.y / 2.0)
             .friction(0.7) // Default friction coefficient
             .build();
 
-        CircleRigidBodyBuilder {
+        RectangleRigidBodyBuilder {
             body: solid_body,
             collider: collider,
         }
@@ -36,7 +36,9 @@ impl CircleRigidBodyBuilder {
 
     pub fn with_friction(mut self, friction: f32) -> Self {
         // Rebuild the collider with new friction
-        self.collider = ColliderBuilder::ball(self.collider.shape().as_ball().unwrap().radius)
+        let cuboid = self.collider.shape().as_cuboid().unwrap();
+        let half_extents = cuboid.half_extents;
+        self.collider = ColliderBuilder::cuboid(half_extents.x, half_extents.y)
             .friction(friction)
             .build();
         self
