@@ -51,6 +51,14 @@ impl TriangleRigidBodyBuilder {
         }
     }
 
+    pub fn with_rotation(mut self, rotation: f32) -> Self {
+        self.body = RigidBodyBuilder::new(self.body.body_type())
+            .translation(self.body.position().translation.vector)
+            .rotation(rotation)
+            .build();
+        self
+    }
+
     pub fn with_friction(mut self, friction: f32) -> Self {
         // Rebuild the collider with new friction, preserving the triangle shape
         if let Some(triangle) = self.collider.shape().as_triangle() {
