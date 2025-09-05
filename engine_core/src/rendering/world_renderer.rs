@@ -149,5 +149,77 @@ pub fn render(
                 }
             }
         }
+
+        // Render springs/joints
+        for joint_handle in &physics_world.joint_handles {
+            if let Some(joint) = physics_world.impulse_joint_set.get(*joint_handle) {
+                let body1_handle = joint.body1;
+                let body2_handle = joint.body2;
+                
+                if let (Some(body1), Some(body2)) = (
+                    physics_world.rigid_body_set.get(body1_handle),
+                    physics_world.rigid_body_set.get(body2_handle),
+                ) {
+                    let pos1 = body1.position();
+                    let pos2 = body2.position();
+                    
+                    let (sx1, sy1) = to_screen(pos1.translation.x, pos1.translation.y);
+                    let (sx2, sy2) = to_screen(pos2.translation.x, pos2.translation.y);
+                    
+                    // Draw spring as a zigzag line
+                    draw_spring_line(&mut d, sx1, sy1, sx2, sy2);
+                }
+            }
+        }
     }
+}
+
+// Helper function to draw a spring as a zigzag line
+fn draw_spring_line(d: &mut RaylibDrawHandle, x1: i32, y1: i32, x2: i32, y2: i32) {
+    let segments = 8; // Number of spring coils
+    let amplitude = 8.0; // How wide the spring coils are
+    
+    let dx = (x2 - x1) as f32;
+    let dy = (y2 - y1) as f32;
+    let length = (dx * dx + dy * dy).sqrt();
+    
+    if length < 1.0 {
+        return; // Too short to draw
+    }
+    
+    let unit_x = dx / length;
+    let unit_y = dy / length;
+    let perp_x = -unit_y; // Perpendicular vector
+    let perp_y = unit_x;
+    
+    let mut prev_x = x1 as f32;
+    let mut prev_y = y1 as f32;
+    
+    for i in 1..=segments {
+        let t = i as f32 / segments as f32;
+        let base_x = x1 as f32 + dx * t;
+        let base_y = y1 as f32 + dy * t;
+        
+        // Zigzag offset
+        let offset = if i % 2 == 0 { amplitude } else { -amplitude };
+        let spring_x = base_x + perp_x * offset;
+        let spring_y = base_y + perp_y * offset;
+        
+        // Draw line segment
+        d.draw_line(
+            prev_x as i32, prev_y as i32,
+            spring_x as i32, spring_y as i32,
+            Color::ORANGE,
+        );
+        
+        prev_x = spring_x;
+        prev_y = spring_y;
+    }
+    
+    // Draw final segment to end point
+    d.draw_line(
+        prev_x as i32, prev_y as i32,
+        x2, y2,
+        Color::ORANGE,
+    );
 }
