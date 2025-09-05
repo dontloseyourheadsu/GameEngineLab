@@ -4,23 +4,25 @@ use rapier2d::{
     prelude::{
         CCDSolver, ColliderBuilder, ColliderSet, DefaultBroadPhase, ImpulseJointSet,
         IntegrationParameters, IslandManager, MultibodyJointSet, NarrowPhase, PhysicsPipeline,
-        RigidBodyHandle, RigidBodySet,
+        RigidBodyHandle, RigidBodySet, ImpulseJointHandle, RigidBody,
     },
 };
 
 use crate::rigid_bodies::solid_body_build::SolidBodyBuild;
+use crate::builders::rigid_bodies::spring_builder::SpringBuilder;
 
 #[derive(Default)]
 pub struct PhysicsWorld {
     pub rigid_body_set: RigidBodySet,
     pub rigid_body_handles: Vec<RigidBodyHandle>,
     pub collider_set: ColliderSet,
+    pub joint_handles: Vec<ImpulseJointHandle>,
 
     broad_phase: DefaultBroadPhase,
     ccd_solver: CCDSolver,
     event_handler: (),
     pub gravity: Vector2<f32>,
-    impulse_joint_set: ImpulseJointSet,
+    pub impulse_joint_set: ImpulseJointSet,
     pub integration_parameters: IntegrationParameters,
     island_manager: IslandManager,
     multibody_joint_set: MultibodyJointSet,
@@ -62,6 +64,7 @@ impl PhysicsWorld {
             event_handler: (),
             integration_parameters,
             rigid_body_handles,
+            joint_handles: Vec::new(),
         }
     }
 
@@ -89,7 +92,7 @@ impl PhysicsWorld {
         self.step_with_dt(self.integration_parameters.dt);
     }
 
-    pub fn add_solid_body<T: SolidBodyBuild>(&mut self, solid_body_build: T) {
+    pub fn add_solid_body<T: SolidBodyBuild>(&mut self, solid_body_build: T) -> RigidBodyHandle {
         let rigid_body = solid_body_build.body().clone();
         let collider = Some(solid_body_build.collider().clone());
 
@@ -107,5 +110,54 @@ impl PhysicsWorld {
                 &mut self.rigid_body_set,
             );
         }
+
+        ball_body_handle
+    }
+
+    /// Add a spring joint between two rigid bodies
+    /// 
+    /// # Arguments
+    /// * `spring_builder` - The spring builder containing joint configuration
+    /// * `body1_handle` - Handle to the first rigid body
+    /// * `body2_handle` - Handle to the second rigid body
+    /// 
+    /// # Returns
+    /// The handle of the created joint
+    pub fn add_spring(
+        &mut self, 
+        spring_builder: SpringBuilder, 
+        body1_handle: RigidBodyHandle, 
+        body2_handle: RigidBodyHandle
+    ) -> ImpulseJointHandle {
+        let (joint, _spring_type) = spring_builder.build();
+        let joint_handle = self.impulse_joint_set.insert(
+            body1_handle,
+            body2_handle,
+            joint,
+            true, // wake up the bodies
+        );
+        
+        self.joint_handles.push(joint_handle);
+        joint_handle
+    }
+
+    /// Remove a spring joint from the physics world
+    pub fn remove_spring(&mut self, joint_handle: ImpulseJointHandle) -> bool {
+        if let Some(pos) = self.joint_handles.iter().position(|&h| h == joint_handle) {
+            self.joint_handles.remove(pos);
+            self.impulse_joint_set.remove(joint_handle, true).is_some()
+        } else {
+            false
+        }
+    }
+
+    /// Get a reference to a rigid body by its handle
+    pub fn get_rigid_body(&self, handle: RigidBodyHandle) -> Option<&RigidBody> {
+        self.rigid_body_set.get(handle)
+    }
+
+    /// Get a mutable reference to a rigid body by its handle
+    pub fn get_rigid_body_mut(&mut self, handle: RigidBodyHandle) -> Option<&mut RigidBody> {
+        self.rigid_body_set.get_mut(handle)
     }
 }
