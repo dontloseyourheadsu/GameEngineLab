@@ -150,6 +150,48 @@ pub fn render(
             }
         }
 
+        // Render soft rectangles (filled polygon using two triangles)
+        for soft in &physics_world.soft_rectangles {
+            let color = Color::new(soft.color.0, soft.color.1, soft.color.2, soft.color.3);
+            // Fetch positions of the 4 corners; if any missing, skip
+            if let (Some(b0), Some(b1), Some(b2), Some(b3)) = (
+                physics_world.rigid_body_set.get(soft.corners[0]),
+                physics_world.rigid_body_set.get(soft.corners[1]),
+                physics_world.rigid_body_set.get(soft.corners[2]),
+                physics_world.rigid_body_set.get(soft.corners[3]),
+            ) {
+                let p0 = b0.position().translation.vector;
+                let p1 = b1.position().translation.vector;
+                let p2 = b2.position().translation.vector;
+                let p3 = b3.position().translation.vector;
+
+                let (x0, y0) = to_screen(p0.x, p0.y);
+                let (x1, y1) = to_screen(p1.x, p1.y);
+                let (x2, y2) = to_screen(p2.x, p2.y);
+                let (x3, y3) = to_screen(p3.x, p3.y);
+
+                // Draw quad fill via two triangles: (0,1,2) and (0,2,3)
+                d.draw_triangle(
+                    Vector2::new(x0 as f32, y0 as f32),
+                    Vector2::new(x1 as f32, y1 as f32),
+                    Vector2::new(x2 as f32, y2 as f32),
+                    color,
+                );
+                d.draw_triangle(
+                    Vector2::new(x0 as f32, y0 as f32),
+                    Vector2::new(x2 as f32, y2 as f32),
+                    Vector2::new(x3 as f32, y3 as f32),
+                    color,
+                );
+
+                // Optional outline for clarity
+                d.draw_line(x0, y0, x1, y1, Color::BLACK);
+                d.draw_line(x1, y1, x2, y2, Color::BLACK);
+                d.draw_line(x2, y2, x3, y3, Color::BLACK);
+                d.draw_line(x3, y3, x0, y0, Color::BLACK);
+            }
+        }
+
         // Render springs/joints
         for joint_handle in &physics_world.joint_handles {
             if let Some(joint) = physics_world.impulse_joint_set.get(*joint_handle) {
