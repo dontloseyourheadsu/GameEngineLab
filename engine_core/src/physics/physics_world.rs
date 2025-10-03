@@ -2,14 +2,15 @@
 use rapier2d::{
     na::{Vector2, vector},
     prelude::{
-        CCDSolver, ColliderBuilder, ColliderSet, DefaultBroadPhase, ImpulseJointSet,
-        IntegrationParameters, IslandManager, MultibodyJointSet, NarrowPhase, PhysicsPipeline,
-        RigidBodyHandle, RigidBodySet, ImpulseJointHandle, RigidBody,
+        CCDSolver, ColliderBuilder, ColliderSet, DefaultBroadPhase, ImpulseJointHandle,
+        ImpulseJointSet, IntegrationParameters, IslandManager, MultibodyJointSet, NarrowPhase,
+        PhysicsPipeline, RigidBody, RigidBodyHandle, RigidBodySet,
     },
 };
 
-use crate::rigid_bodies::solid_body_build::SolidBodyBuild;
 use crate::builders::rigid_bodies::spring_builder::SpringBuilder;
+use crate::builders::soft_bodies::soft_rectangle_builder::SoftRectangleInstance;
+use crate::rigid_bodies::solid_body_build::SolidBodyBuild;
 
 #[derive(Default)]
 pub struct PhysicsWorld {
@@ -29,6 +30,8 @@ pub struct PhysicsWorld {
     narrow_phase: NarrowPhase,
     physics_hooks: (),
     physics_pipeline: PhysicsPipeline,
+    // Soft body instances for custom rendering
+    pub soft_rectangles: Vec<SoftRectangleInstance>,
 }
 
 impl PhysicsWorld {
@@ -65,6 +68,7 @@ impl PhysicsWorld {
             integration_parameters,
             rigid_body_handles,
             joint_handles: Vec::new(),
+            soft_rectangles: Vec::new(),
         }
     }
 
@@ -115,19 +119,19 @@ impl PhysicsWorld {
     }
 
     /// Add a spring joint between two rigid bodies
-    /// 
+    ///
     /// # Arguments
     /// * `spring_builder` - The spring builder containing joint configuration
     /// * `body1_handle` - Handle to the first rigid body
     /// * `body2_handle` - Handle to the second rigid body
-    /// 
+    ///
     /// # Returns
     /// The handle of the created joint
     pub fn add_spring(
-        &mut self, 
-        spring_builder: SpringBuilder, 
-        body1_handle: RigidBodyHandle, 
-        body2_handle: RigidBodyHandle
+        &mut self,
+        spring_builder: SpringBuilder,
+        body1_handle: RigidBodyHandle,
+        body2_handle: RigidBodyHandle,
     ) -> ImpulseJointHandle {
         let (joint, _spring_type) = spring_builder.build();
         let joint_handle = self.impulse_joint_set.insert(
@@ -136,7 +140,7 @@ impl PhysicsWorld {
             joint,
             true, // wake up the bodies
         );
-        
+
         self.joint_handles.push(joint_handle);
         joint_handle
     }
@@ -159,5 +163,33 @@ impl PhysicsWorld {
     /// Get a mutable reference to a rigid body by its handle
     pub fn get_rigid_body_mut(&mut self, handle: RigidBodyHandle) -> Option<&mut RigidBody> {
         self.rigid_body_set.get_mut(handle)
+    }
+
+    /// Register a SoftRectangle instance for rendering/management; returns index handle
+    pub fn register_soft_rectangle(&mut self, instance: SoftRectangleInstance) -> usize {
+        self.soft_rectangles.push(instance);
+        self.soft_rectangles.len() - 1
+    }
+
+    /// Convenience: add a distance spring between two bodies with given rest length.
+    /// This uses our SpringBuilder to approximate a distance joint.
+    pub fn add_distance_spring(
+        &mut self,
+        a: RigidBodyHandle,
+        b: RigidBodyHandle,
+        rest_length: f32,
+        stiffness: f32,
+        damping: f32,
+    ) -> ImpulseJointHandle {
+        // Use a linear spring with target position = rest length; axis is arbitrary, we rely on solver.
+        let spring = SpringBuilder::new_linear(
+            vector![1.0, 0.0],
+            rapier2d::na::Point2::origin(),
+            rapier2d::na::Point2::origin(),
+            stiffness,
+            damping,
+        )
+        .with_target_position(rest_length);
+        self.add_spring(spring, a, b)
     }
 }
