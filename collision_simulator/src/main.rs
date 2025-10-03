@@ -9,6 +9,7 @@ use engine_core::{
     world_renderer,
 };
 use nalgebra::{vector, Point2};
+use engine_core::builders::soft_bodies::soft_rectangle_builder::SoftRectangleBuilder;
 
 fn main() {
     // World size 100x100, gravity downwards
@@ -78,6 +79,15 @@ fn main() {
 
         physics_world.add_spring(spring, net_handles[i], net_handles[i + 1]);
     }
+
+    // Add a soft rectangle using the new builder
+    // Position near top-center, size 12x8, medium stiffness, custom color
+    let _soft_rect = SoftRectangleBuilder::new(vector![50.0, 75.0], vector![12.0, 8.0])
+        .with_stiffness(900.0) // stiffer
+        .with_damping(40.0)
+        .with_mass_radius(0.6)
+        .with_color(200, 100, 240, 200) // RGBA
+        .build(&mut physics_world);
 
     world_renderer::render(
         "Spring Line Catching Falling Shapes",
