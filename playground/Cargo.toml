@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 engine_core = { path = "../engine_core" }
-raylib = "4.5.0"
+raylib = "5.5.1"
