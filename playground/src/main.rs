@@ -1,5 +1,6 @@
 use engine_core::collision_body::circle_collision_body::CircleCollisionBody;
 use engine_core::rigid_body::rigid_body::RigidBody;
+use engine_core::spring::spring::Spring;
 use engine_core::textures::sprite2d::{Shape, Sprite2D};
 use raylib::prelude::*;
 
@@ -81,7 +82,30 @@ fn main() {
         },
     );
 
-    let mut balls = vec![ball1, ball2, ball3, ball4, ball5];
+    // 4. Spring Connected (Orange & Pink)
+    let pos6 = Vector2::new(100.0, 100.0);
+    let body6 = CircleCollisionBody::new(pos6, radius, damping, true, true);
+    let ball6 = RigidBody::new(
+        body6,
+        Sprite2D {
+            color: Color::ORANGE,
+            shape: Shape::Circle { radius },
+        },
+    );
+
+    let pos7 = Vector2::new(101.0, 250.0);
+    let body7 = CircleCollisionBody::new(pos7, radius, damping, true, true);
+    let ball7 = RigidBody::new(
+        body7,
+        Sprite2D {
+            color: Color::PINK,
+            shape: Shape::Circle { radius },
+        },
+    );
+
+    let spring = Spring::new(100.0, 25.0, 0.5);
+
+    let mut balls = vec![ball1, ball2, ball3, ball4, ball5, ball6, ball7];
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time();
@@ -90,6 +114,12 @@ fn main() {
         for ball in &mut balls {
             ball.update(dt, gravity, friction, screen_width, screen_height);
         }
+
+        // Apply Spring
+        let (left, right) = balls.split_at_mut(6);
+        let b6 = &mut left[5];
+        let b7 = &mut right[0];
+        spring.update(&mut b6.collision_body, &mut b7.collision_body, dt);
 
         // Resolve collisions
         for i in 0..balls.len() {
@@ -110,6 +140,10 @@ fn main() {
         d.draw_text("Colliding", 220, 250, 20, Color::BLACK);
         d.draw_text("Non-Colliding", 520, 250, 20, Color::BLACK);
         d.draw_text("No Bounds", 350, 50, 20, Color::BLACK);
+        d.draw_text("Spring", 50, 50, 20, Color::BLACK);
+
+        // Draw spring line
+        spring.draw(&mut d, &balls[5].collision_body, &balls[6].collision_body);
 
         for ball in &balls {
             ball.draw(&mut d);
