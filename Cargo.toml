@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "engine_core", "playground",
+    "engine_core", "pacman-rs", "playground",
 ]
 
 resolver = "2"
