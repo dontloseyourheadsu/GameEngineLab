@@ -1,6 +1,0 @@
-[workspace]
-members = [
-    "engine_core", "pacman-rs", "playground",
-]
-
-resolver = "2"
