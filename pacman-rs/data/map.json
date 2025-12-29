@@ -8,6 +8,16 @@
     "pill": "*",
     "empty": " "
   },
+  "textures_path": "assets/textures/",
+  "textures": {
+    "wall": "wall.jpg",
+    "path": "path.jpg",
+    "ghost": "homura.jpg",
+    "pacman": "madoka.jpg",
+    "food": "food.jpg",
+    "pill": "pill.jpg",
+    "empty": ""
+  },
   "tile_size": {
     "width": 32,
     "height": 32

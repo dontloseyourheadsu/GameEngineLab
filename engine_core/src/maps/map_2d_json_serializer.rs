@@ -22,12 +22,16 @@ pub fn map_2d_json_serializer_system(mut commands: Commands, path: Option<Res<Pa
             .collect();
 
         let symbols: HashMap<String, String> = map_json.symbols; // Parse symbols mapping
+        let textures_path = map_json.textures_path; // Parse textures path
+        let textures = map_json.textures; // Parse textures mapping
 
         let map = Map2DModel {
-            width,
-            height,
+            tile_width: width,
+            tile_height: height,
             data,
             symbols,
+            textures_path,
+            textures,
         };
 
         commands.insert_resource(Map2DResource { map });
