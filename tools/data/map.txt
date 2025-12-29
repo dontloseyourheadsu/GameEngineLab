@@ -1,13 +1,3 @@
-wall_char=#
-path_char=.
-ghost_char=G
-pacman_char=P
-food_char=o
-pill_char=*
-empty_char= 
-map_width=28
-map_height=31
-map=
 ############################
 #............##............#
 #.####.#####.##.#####.####.#
