@@ -1,4 +1,4 @@
-use bevy::ecs::resource::Resource;
+use bevy::ecs::system::Resource;
 
 use crate::maps::map_2d_model::Map2DModel;
 
