@@ -1,1 +1,1 @@
-pub(crate) mod path_resource;
+pub mod file_asset;

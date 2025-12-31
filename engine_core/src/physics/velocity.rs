@@ -1,4 +1,9 @@
-use bevy::prelude::*;
+use raylib::math::Vector2;
 
-#[derive(Component, Default)]
-pub struct Velocity(pub Vec2);
+pub struct Velocity(pub Vector2);
+
+impl Default for Velocity {
+    fn default() -> Self {
+        Self(Vector2::zero())
+    }
+}
