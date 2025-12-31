@@ -12,7 +12,7 @@
   "textures": {
     "wall": "wall.jpg",
     "path": "path.jpg",
-    "ghost": "homura.jpg",
+    "ghost": "homura.png",
     "pacman": "madoka.png",
     "food": "food.jpg",
     "pill": "pill.jpg",
