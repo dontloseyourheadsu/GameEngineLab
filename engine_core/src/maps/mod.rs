@@ -1,6 +1,3 @@
-pub mod map_2d_loader_plugin;
+pub mod map_2d_loader;
 pub mod map_2d_model;
-pub mod map_2d_resource;
-pub mod map_2d_json_serializer;
-mod map_json;
-mod tile_size;
+pub mod map_json;

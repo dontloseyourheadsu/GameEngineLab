@@ -1,7 +1,6 @@
-use bevy::prelude::*;
 use std::collections::HashMap;
 
-#[derive(Component, Clone)]
+#[derive(Clone)]
 pub struct Sprite2D {
     pub animation_state: String,
     pub animation_frame: usize,
