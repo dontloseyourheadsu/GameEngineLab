@@ -1,7 +1,7 @@
 use raylib::prelude::*;
 use engine_core::{
     character::character_2d::Character2D,
-    maps::map_2d_loader::load_map_from_json,
+    maps::{map_2d_loader::load_map_from_json, map_2d_model::Map2DModel},
     physics::{
         collisions_2d::simple_collision_body::SimpleCollisionBody,
         velocity::Velocity,
@@ -56,6 +56,9 @@ fn main() {
         row.replace_range(x..x+1, ".");
     }
     
+    let mut pacman_animation_mapper = HashMap::new();
+    pacman_animation_mapper.insert("walk".to_string(), vec![0, 1, 2, 3]);
+
     let mut pacman = Pacman {
         character: Character2D {
             position: pacman_start_pos,
@@ -64,15 +67,17 @@ fn main() {
                 width: map.tile_size as f32,
                 height: map.tile_size as f32,
             },
-            sprite: Sprite2D {
-                animation_state: "idle".to_string(),
-                animation_frame: 0,
-                animation_mapper: HashMap::new(),
-            },
+            sprite: Sprite2D::new(
+                256.0,
+                256.0,
+                Duration::from_millis(100),
+                pacman_animation_mapper,
+            ),
         },
         current_direction: Vector2::zero(),
         desired_direction: Vector2::zero(),
     };
+    pacman.character.sprite.animation_state = "walk".to_string();
 
     let mut last_move_time = Instant::now();
     let move_interval = Duration::from_millis(200);
@@ -85,49 +90,62 @@ fn main() {
             last_move_time = Instant::now();
         }
 
+        pacman.character.sprite.update();
+        
+        if pacman.current_direction.x > 0.0 { // Right
+            pacman.character.sprite.flip_horizontal = false;
+            pacman.character.sprite.rotation = 0.0;
+        } else if pacman.current_direction.x < 0.0 { // Left
+            pacman.character.sprite.flip_horizontal = true;
+            pacman.character.sprite.rotation = 0.0;
+        } else if pacman.current_direction.y < 0.0 { // Up
+            pacman.character.sprite.flip_horizontal = false;
+            pacman.character.sprite.rotation = -90.0;
+        } else if pacman.current_direction.y > 0.0 { // Down
+            pacman.character.sprite.flip_horizontal = false;
+            pacman.character.sprite.rotation = 90.0;
+        }
+
+
         let mut d = rl.begin_drawing(&thread);
 
         d.clear_background(Color::BLACK);
 
-        for (y, row) in map.data.iter().enumerate() {
-            for (x, char) in row.chars().enumerate() {
-                let char_str = char.to_string();
-                if let Some(texture) = textures.get(&char_str) {
-                    let source_rec = Rectangle::new(0.0, 0.0, texture.width() as f32, texture.height() as f32);
-                    let dest_rec = Rectangle::new(
-                        (x as i32 * map.tile_size as i32) as f32,
-                        (y as i32 * map.tile_size as i32) as f32,
-                        map.tile_size as f32,
-                        map.tile_size as f32,
-                    );
-                    d.draw_texture_pro(
-                        texture,
-                        source_rec,
-                        dest_rec,
-                        Vector2::new(0.0, 0.0), // origin
-                        0.0, // rotation
-                        Color::WHITE,
-                    );
-                }
-            }
-        }
+        draw_map(&mut d, &map, &textures);
 
         let pacman_symbol = map.symbols.get("pacman").unwrap();
         let pacman_texture = textures.get(pacman_symbol).unwrap();
-        let source_rec = Rectangle::new(0.0, 0.0, pacman_texture.width() as f32, pacman_texture.height() as f32);
-        let dest_rec = Rectangle::new(
-            pacman.character.position.x,
-            pacman.character.position.y,
-            map.tile_size as f32,
-            map.tile_size as f32,
-        );
-        d.draw_texture_pro(
+        
+        pacman.character.sprite.draw(
+            &mut d,
             pacman_texture,
-            source_rec,
-            dest_rec,
-            Vector2::new(0.0, 0.0), // origin
-            0.0, // rotation
-            Color::WHITE,
+            pacman.character.position,
+            map.tile_size as f32,
         );
+    }
+}
+
+fn draw_map(d: &mut RaylibDrawHandle, map: &Map2DModel, textures: &HashMap<String, Texture2D>) {
+    for (y, row) in map.data.iter().enumerate() {
+        for (x, char) in row.chars().enumerate() {
+            let char_str = char.to_string();
+            if let Some(texture) = textures.get(&char_str) {
+                let source_rec = Rectangle::new(0.0, 0.0, texture.width() as f32, texture.height() as f32);
+                let dest_rec = Rectangle::new(
+                    (x as i32 * map.tile_size as i32) as f32,
+                    (y as i32 * map.tile_size as i32) as f32,
+                    map.tile_size as f32,
+                    map.tile_size as f32,
+                );
+                d.draw_texture_pro(
+                    texture,
+                    source_rec,
+                    dest_rec,
+                    Vector2::new(0.0, 0.0), // origin
+                    0.0, // rotation
+                    Color::WHITE,
+                );
+            }
+        }
     }
 }

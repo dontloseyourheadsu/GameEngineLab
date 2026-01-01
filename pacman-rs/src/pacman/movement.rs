@@ -1,6 +1,5 @@
 use crate::pacman::pacman::Pacman;
 use engine_core::maps::map_2d_model::Map2DModel;
-use raylib::math::Vector2;
 
 pub fn move_pacman(pacman: &mut Pacman, map: &Map2DModel) {
     let tile_size = map.tile_size as f32;
