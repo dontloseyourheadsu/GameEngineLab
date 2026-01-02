@@ -9,11 +9,15 @@ use raylib::prelude::*;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+mod clay_filter;
+use clay_filter::apply_clay_filter;
+
 mod ghosts;
 mod pacman;
 
 use crate::ghosts::ghost_spawner::GhostSpawner;
-use crate::pacman::{controller::handle_input, movement::move_pacman, pacman::Pacman};
+use crate::ghosts::ghost::GhostState;
+use crate::pacman::{controller::handle_input, movement::{move_pacman, PacmanEvent}, pacman::Pacman};
 
 const MAP_PATH: &str = "data/map.json";
 
@@ -33,8 +37,29 @@ fn main() {
         if !filename.is_empty() {
             if let Some(symbol) = map.symbols.get(name) {
                 let full_path = format!("{}{}", map.textures_path, filename);
-                let texture = rl.load_texture(&thread, &full_path).unwrap();
+                
+                // Load with image crate
+                let img = image::open(&full_path).expect("Failed to load image").to_rgb8();
+                
+                // Load normal texture
+                let mut buffer = std::io::Cursor::new(Vec::new());
+                img.write_to(&mut buffer, image::ImageOutputFormat::Png).unwrap();
+                let data = buffer.into_inner();
+                let file_extension = ".png";
+                let image = Image::load_image_from_mem(file_extension, &data).expect("Failed to load image from memory");
+                let texture = rl.load_texture_from_image(&thread, &image).expect("Failed to create texture");
                 textures.insert(symbol.clone(), texture);
+
+                // If it's a ghost, also create a filtered version
+                if name == "ghost" {
+                    let processed_img = apply_clay_filter(&img);
+                    let mut buffer = std::io::Cursor::new(Vec::new());
+                    processed_img.write_to(&mut buffer, image::ImageOutputFormat::Png).unwrap();
+                    let data = buffer.into_inner();
+                    let image = Image::load_image_from_mem(file_extension, &data).expect("Failed to load image from memory");
+                    let texture = rl.load_texture_from_image(&thread, &image).expect("Failed to create texture");
+                    textures.insert(format!("{}_frightened", symbol), texture);
+                }
             }
         }
     }
@@ -122,18 +147,31 @@ fn main() {
 
     let mut last_move_time = Instant::now();
     let move_interval = Duration::from_millis(200);
-    
+    let mut previous_time = Instant::now();
+
     while !rl.window_should_close() {
+        let current_time = Instant::now();
+        let delta_time = (current_time - previous_time).as_secs_f32();
+
         handle_input(&rl, &mut pacman);
 
         // Handle movement on tick
         if last_move_time.elapsed() >= move_interval {
-            move_pacman(&mut pacman, &mut map);
+            let event = move_pacman(&mut pacman, &mut map);
+
+            if let PacmanEvent::EatenPill = event {
+                for spawner in ghost_spawners.iter_mut() {
+                    if let Some(ref mut ghost) = spawner.ghost {
+                        ghost.state = GhostState::Frightened;
+                        ghost.frightened_timer = 10.0;
+                    }
+                }
+            }
 
             // Update ghosts
             for spawner in ghost_spawners.iter_mut() {
                 if let Some(ref mut ghost) = spawner.ghost {
-                    ghost.update(pacman.character.position, map.tile_size as f32, &mut map);
+                    ghost.update(delta_time, pacman.character.position, map.tile_size as f32, &mut map);
                 }
             }
 
@@ -178,15 +216,31 @@ fn main() {
 
         // Draw ghosts
         let ghost_symbol = map.symbols.get("ghost").unwrap();
-        let ghost_texture = textures.get(ghost_symbol).unwrap();
+        let ghost_texture_normal = textures.get(ghost_symbol).unwrap();
+        let ghost_texture_frightened = textures.get(&format!("{}_frightened", ghost_symbol)).unwrap_or(ghost_texture_normal);
+
         for spawner in &ghost_spawners {
             if let Some(ref ghost) = spawner.ghost {
                 if ghost.is_active {
+                    let mut current_texture = ghost_texture_normal;
+
+                    if ghost.state == GhostState::Frightened {
+                        if ghost.frightened_timer > 3.0 {
+                            current_texture = ghost_texture_frightened;
+                        } else {
+                            // Blink in the last 3 seconds
+                            // Blink frequency: every 0.2 seconds (5 times per second)
+                            if (ghost.frightened_timer * 5.0) as i32 % 2 == 0 {
+                                current_texture = ghost_texture_frightened;
+                            }
+                        }
+                    }
+
                     let source_rec = Rectangle::new(
                         0.0,
                         0.0,
-                        ghost_texture.width() as f32,
-                        ghost_texture.height() as f32,
+                        current_texture.width() as f32,
+                        current_texture.height() as f32,
                     );
                     let dest_rec = Rectangle::new(
                         ghost.character.position.x,
@@ -195,7 +249,7 @@ fn main() {
                         map.tile_size as f32,
                     );
                     d.draw_texture_pro(
-                        ghost_texture,
+                        current_texture,
                         source_rec,
                         dest_rec,
                         Vector2::new(0.0, 0.0),
@@ -205,6 +259,7 @@ fn main() {
                 }
             }
         }
+        previous_time = current_time;
     }
 }
 

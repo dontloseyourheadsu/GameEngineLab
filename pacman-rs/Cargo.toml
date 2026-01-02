@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 engine_core = { path = "../engine_core" }
 raylib = "5.5.1"
+image = "0.24"
+rand = "0.8"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

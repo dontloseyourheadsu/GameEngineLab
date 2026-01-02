@@ -2,22 +2,50 @@ use engine_core::character::character_2d::Character2D;
 use engine_core::maps::map_2d_model::Map2DModel;
 use raylib::math::Vector2;
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum GhostState {
+    Chase,
+    Scatter,
+    Frightened,
+}
+
 pub struct Ghost {
     pub character: Character2D,
     pub target_position: Vector2,
     pub is_active: bool,
     pub grid_position: (usize, usize),
     pub stored_tile: char,
+    pub state: GhostState,
+    pub frightened_timer: f32,
 }
 
 impl Ghost {
-    pub fn update(&mut self, pacman_pos: Vector2, tile_size: f32, map: &mut Map2DModel) {
+    pub fn update(
+        &mut self,
+        delta_time: f32,
+        pacman_pos: Vector2,
+        tile_size: f32,
+        map: &mut Map2DModel,
+    ) {
         if !self.is_active {
             return;
         }
 
-        // Update target position
-        self.target_position = pacman_pos;
+        // Update state timers
+        if self.state == GhostState::Frightened {
+            self.frightened_timer -= delta_time;
+            if self.frightened_timer <= 0.0 {
+                self.state = GhostState::Chase;
+            }
+        }
+
+        // Update target position based on state
+        match self.state {
+            GhostState::Chase => self.target_position = pacman_pos,
+            GhostState::Frightened | GhostState::Scatter => {
+                self.target_position = Vector2::zero();
+            }
+        }
 
         // Move towards target
         self.move_towards_target(tile_size, map);
