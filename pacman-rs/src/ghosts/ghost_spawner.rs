@@ -1,4 +1,4 @@
-use super::ghost::Ghost;
+use super::ghost::{Ghost, GhostState};
 use engine_core::{
     character::character_2d::Character2D,
     physics::{collisions_2d::simple_collision_body::SimpleCollisionBody, velocity::Velocity},
@@ -51,6 +51,8 @@ impl GhostSpawner {
                 (self.spawn_position.y / tile_size) as usize,
             ),
             stored_tile: '.', // Default assumption, will be corrected on spawn if needed
+            state: GhostState::Chase,
+            frightened_timer: 0.0,
         };
 
         self.ghost = Some(ghost);
