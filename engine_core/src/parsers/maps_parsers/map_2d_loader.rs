@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 
-use crate::maps::{map_2d_model::Map2DModel, map_json::MapJson};
+use crate::{maps::map_2d_model::Map2DModel, parsers::maps_parsers::map_json::MapJson};
 
 pub fn load_map_from_json(path: &str) -> Map2DModel {
     let content = fs::read_to_string(path).expect("Failed to read map file");
