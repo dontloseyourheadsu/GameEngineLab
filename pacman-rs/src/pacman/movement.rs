@@ -1,9 +1,16 @@
 use crate::pacman::pacman::Pacman;
 use engine_core::maps::map_2d_model::Map2DModel;
 
-pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) {
+pub enum PacmanEvent {
+    None,
+    EatenFood,
+    EatenPill,
+}
+
+pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) -> PacmanEvent {
     let tile_size = map.tile_size as f32;
     let (current_x, current_y) = pacman.grid_position;
+    let mut event = PacmanEvent::None;
 
     // Check if desired direction is valid
     let desired_x = current_x as i32 + pacman.desired_direction.x as i32;
@@ -24,6 +31,17 @@ pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) {
         let next_y_usize = next_y as usize;
 
         if is_tile_walkable(next_x_usize, next_y_usize, map) {
+            // Check for food or pills
+            if let Some(row) = map.data.get(next_y_usize) {
+                if let Some(tile) = row.chars().nth(next_x_usize) {
+                    if tile == '.' {
+                        event = PacmanEvent::EatenFood;
+                    } else if tile == 'o' {
+                        event = PacmanEvent::EatenPill;
+                    }
+                }
+            }
+
             // Update Map: Clear old position
             if let Some(row) = map.data.get_mut(current_y) {
                 row.replace_range(current_x..current_x + 1, " ");
@@ -39,6 +57,7 @@ pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) {
             pacman.character.position.y = (next_y_usize as f32) * tile_size;
         }
     }
+    event
 }
 
 fn is_tile_walkable(x: usize, y: usize, map: &Map2DModel) -> bool {
