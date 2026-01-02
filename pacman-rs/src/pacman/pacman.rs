@@ -5,4 +5,5 @@ pub struct Pacman {
     pub character: Character2D,
     pub current_direction: Vector2,
     pub desired_direction: Vector2,
+    pub grid_position: (usize, usize),
 }
