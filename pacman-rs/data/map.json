@@ -11,7 +11,7 @@
   },
   "textures_path": "assets/textures/",
   "textures": {
-    "wall": "wall.jpg",
+    "wall": "wall.png",
     "path": "path.jpg",
     "ghost": "homura.png",
     "pacman": "madoka.png",
