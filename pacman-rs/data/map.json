@@ -12,12 +12,12 @@
   "textures_path": "assets/textures/",
   "textures": {
     "wall": "wall.png",
-    "path": "path.jpg",
+    "path": "ffffff",
     "ghost": "homura.png",
     "pacman": "madoka.png",
-    "food": "food.jpg",
+    "food": "food.png",
     "pill": "pill.jpg",
-    "empty": "",
+    "empty": "#ffffff",
     "spawner": ""
   },
   "tile_size": 64,
