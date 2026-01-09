@@ -3,7 +3,7 @@ use engine_core::{
     maps::map_2d_model::Map2DModel,
     parsers::maps_parsers::map_2d_loader::load_map_from_json,
     physics::{collisions_2d::simple_collision_body::SimpleCollisionBody, velocity::Velocity},
-    rendering::sprites_2d::sprite_2d::Sprite2D,
+    rendering::{coloring::texture_source::TextureSource, sprites_2d::sprite_2d::Sprite2D},
 };
 use raylib::prelude::*;
 use std::collections::HashMap;
@@ -15,9 +15,13 @@ use clay_filter::apply_clay_filter;
 mod ghosts;
 mod pacman;
 
-use crate::ghosts::ghost_spawner::GhostSpawner;
 use crate::ghosts::ghost::GhostState;
-use crate::pacman::{controller::handle_input, movement::{move_pacman, PacmanEvent}, pacman::Pacman};
+use crate::ghosts::ghost_spawner::GhostSpawner;
+use crate::pacman::{
+    controller::handle_input,
+    movement::{PacmanEvent, move_pacman},
+    pacman::Pacman,
+};
 
 const MAP_PATH: &str = "data/map.json";
 
@@ -33,32 +37,60 @@ fn main() {
         .build();
 
     let mut textures = HashMap::new();
-    for (name, filename) in &map.textures {
-        if !filename.is_empty() {
-            if let Some(symbol) = map.symbols.get(name) {
-                let full_path = format!("{}{}", map.textures_path, filename);
-                
-                // Load with image crate
-                let img = image::open(&full_path).expect("Failed to load image").to_rgb8();
-                
-                // Load normal texture
-                let mut buffer = std::io::Cursor::new(Vec::new());
-                img.write_to(&mut buffer, image::ImageOutputFormat::Png).unwrap();
-                let data = buffer.into_inner();
-                let file_extension = ".png";
-                let image = Image::load_image_from_mem(file_extension, &data).expect("Failed to load image from memory");
-                let texture = rl.load_texture_from_image(&thread, &image).expect("Failed to create texture");
-                textures.insert(symbol.clone(), texture);
+    for (name, source) in &map.textures {
+        match source {
+            TextureSource::File(filename) => {
+                if !filename.is_empty() {
+                    if let Some(symbol) = map.symbols.get(name) {
+                        let full_path = format!("{}{}", map.textures_path, filename);
 
-                // If it's a ghost, also create a filtered version
-                if name == "ghost" {
-                    let processed_img = apply_clay_filter(&img);
-                    let mut buffer = std::io::Cursor::new(Vec::new());
-                    processed_img.write_to(&mut buffer, image::ImageOutputFormat::Png).unwrap();
-                    let data = buffer.into_inner();
-                    let image = Image::load_image_from_mem(file_extension, &data).expect("Failed to load image from memory");
-                    let texture = rl.load_texture_from_image(&thread, &image).expect("Failed to create texture");
-                    textures.insert(format!("{}_frightened", symbol), texture);
+                        // Load with image crate
+                        let img = image::open(&full_path)
+                            .expect("Failed to load image")
+                            .to_rgb8();
+
+                        // Load normal texture
+                        let mut buffer = std::io::Cursor::new(Vec::new());
+                        img.write_to(&mut buffer, image::ImageOutputFormat::Png)
+                            .unwrap();
+                        let data = buffer.into_inner();
+                        let file_extension = ".png";
+                        let image = Image::load_image_from_mem(file_extension, &data)
+                            .expect("Failed to load image from memory");
+                        let texture = rl
+                            .load_texture_from_image(&thread, &image)
+                            .expect("Failed to create texture");
+                        textures.insert(symbol.clone(), texture);
+
+                        // If it's a ghost, also create a filtered version
+                        if name == "ghost" {
+                            let processed_img = apply_clay_filter(&img);
+                            let mut buffer = std::io::Cursor::new(Vec::new());
+                            processed_img
+                                .write_to(&mut buffer, image::ImageOutputFormat::Png)
+                                .unwrap();
+                            let data = buffer.into_inner();
+                            let image = Image::load_image_from_mem(file_extension, &data)
+                                .expect("Failed to load image from memory");
+                            let texture = rl
+                                .load_texture_from_image(&thread, &image)
+                                .expect("Failed to create texture");
+                            textures.insert(format!("{}_frightened", symbol), texture);
+                        }
+                    }
+                }
+            }
+            TextureSource::Color(color_tile) => {
+                if let Some(symbol) = map.symbols.get(name) {
+                    let image = Image::gen_image_color(
+                        map.tile_size as i32,
+                        map.tile_size as i32,
+                        color_tile.color,
+                    );
+                    let texture = rl
+                        .load_texture_from_image(&thread, &image)
+                        .expect("Failed to create texture");
+                    textures.insert(symbol.clone(), texture);
                 }
             }
         }
@@ -134,7 +166,7 @@ fn main() {
         if let Some(ref mut ghost) = spawner.ghost {
             // Replace 'S' with ' ' (empty space) effectively, but store it as ' '
             // We assume 'S' is just a spawn point and becomes empty.
-            ghost.stored_tile = ' ';
+            ghost.stored_tile = 'S';
 
             // Update map to 'G'
             if let Some(row) = map.data.get_mut(y) {
@@ -171,7 +203,12 @@ fn main() {
             // Update ghosts
             for spawner in ghost_spawners.iter_mut() {
                 if let Some(ref mut ghost) = spawner.ghost {
-                    ghost.update(delta_time, pacman.character.position, map.tile_size as f32, &mut map);
+                    ghost.update(
+                        delta_time,
+                        pacman.character.position,
+                        map.tile_size as f32,
+                        &mut map,
+                    );
                 }
             }
 
@@ -217,7 +254,9 @@ fn main() {
         // Draw ghosts
         let ghost_symbol = map.symbols.get("ghost").unwrap();
         let ghost_texture_normal = textures.get(ghost_symbol).unwrap();
-        let ghost_texture_frightened = textures.get(&format!("{}_frightened", ghost_symbol)).unwrap_or(ghost_texture_normal);
+        let ghost_texture_frightened = textures
+            .get(&format!("{}_frightened", ghost_symbol))
+            .unwrap_or(ghost_texture_normal);
 
         for spawner in &ghost_spawners {
             if let Some(ref ghost) = spawner.ghost {
