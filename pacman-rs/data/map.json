@@ -1,22 +1,20 @@
 {
   "symbols": {
     "wall": "#",
-    "path": ".",
+    "food": ".",
+    "pill": "o",
     "ghost": "G",
     "pacman": "P",
-    "food": "o",
-    "pill": "*",
     "empty": " ",
     "spawner": "S"
   },
   "textures_path": "assets/textures/",
   "textures": {
     "wall": "wall.png",
-    "path": "rgba(199,0,57, .25)",
-    "ghost": "homura.png",
-    "pacman": "madoka.png",
     "food": "food.png",
     "pill": "pill.png",
+    "ghost": "homura.png",
+    "pacman": "madoka.png",
     "empty": "rgba(199,0,57, .25)",
     "spawner": "rgba(199,0,57, .25)"
   },
