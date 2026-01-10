@@ -1,5 +1,6 @@
 use engine_core::character::character_2d::Character2D;
 use engine_core::maps::map_2d_model::Map2DModel;
+use engine_core::physics::collisions_2d::simple_collision_body::SimpleCollisionBody;
 use raylib::math::Vector2;
 
 #[derive(PartialEq, Clone, Copy)]
@@ -14,9 +15,9 @@ pub struct Ghost {
     pub target_position: Vector2,
     pub is_active: bool,
     pub grid_position: (usize, usize),
-    pub stored_tile: char,
     pub state: GhostState,
     pub frightened_timer: f32,
+    pub spawn_position: Vector2,
 }
 
 impl Ghost {
@@ -43,12 +44,36 @@ impl Ghost {
         match self.state {
             GhostState::Chase => self.target_position = pacman_pos,
             GhostState::Frightened | GhostState::Scatter => {
+                // In a real game, scatter targets are corners.
+                // Frightened usually means random movement.
+                // For now, keep as zero or implement random logic if I can.
+                // But the previous code had zero, so I'll keep it simple for now,
+                // but zero target with greedy movement creates weird behavior (always top-left).
+                // Let's stick to previous behavior first to avoid breaking changes, then improve.
                 self.target_position = Vector2::zero();
             }
         }
 
         // Move towards target
         self.move_towards_target(tile_size, map);
+    }
+
+    pub fn respawn(&mut self) {
+        self.character.position = self.spawn_position;
+
+        // We can extract from collision body if it's a Box and set to tile size.
+        let tile_size = match self.character.collision_body {
+            SimpleCollisionBody::Box { width, .. } => width,
+            SimpleCollisionBody::Circle { radius } => radius * 2.0,
+        };
+
+        self.grid_position = (
+            (self.spawn_position.x / tile_size) as usize,
+            (self.spawn_position.y / tile_size) as usize,
+        );
+        self.state = GhostState::Chase;
+        self.frightened_timer = 0.0;
+        // Optionally set is_active = true if we manage that
     }
 
     fn move_towards_target(&mut self, tile_size: f32, map: &mut Map2DModel) {
@@ -62,7 +87,10 @@ impl Ghost {
         let mut best_move = None;
         let mut min_dist = f32::MAX;
 
-        // Simple greedy approach: pick the valid neighbor closest to target
+        // Frightened mode: Invert distance check or pick random?
+        // Existing code: greedy approach.
+        // If Frightened, target is 0,0. It will run to top-left.
+
         for (dir_x, dir_y) in directions.iter() {
             let next_x = current_x as i32 + dir_x;
             let next_y = current_y as i32 + dir_y;
@@ -77,8 +105,6 @@ impl Ghost {
                         + (ny as i32 - target_y as i32).pow(2))
                         as f32;
 
-                    // Add a small penalty for reversing direction? (Not implemented yet)
-
                     if dist_sq < min_dist {
                         min_dist = dist_sq;
                         best_move = Some((nx, ny));
@@ -88,21 +114,6 @@ impl Ghost {
         }
 
         if let Some((next_x, next_y)) = best_move {
-            // Restore old tile
-            if let Some(row) = map.data.get_mut(current_y) {
-                row.replace_range(current_x..current_x + 1, &self.stored_tile.to_string());
-            }
-
-            // Store new tile
-            if let Some(row) = map.data.get(next_y) {
-                self.stored_tile = row.chars().nth(next_x).unwrap_or(' ');
-            }
-
-            // Place Ghost on map
-            if let Some(row) = map.data.get_mut(next_y) {
-                row.replace_range(next_x..next_x + 1, "G");
-            }
-
             // Update position
             self.grid_position = (next_x, next_y);
             self.character.position.x = (next_x as f32) * tile_size;
@@ -121,8 +132,9 @@ impl Ghost {
 
         let tile = row.chars().nth(x).unwrap_or('#');
 
-        // Can move on paths, food, pills, empty spaces, Pacman
-        // Cannot move on Walls '#', other Ghosts 'G'
-        matches!(tile, '.' | 'o' | '*' | ' ' | 'P')
+        // Can move on paths, food, pills, empty spaces
+        // Cannot move on Walls '#'.
+        // Removed 'P' and 'G' as we stop writing them.
+        matches!(tile, '.' | 'o' | '*' | ' ')
     }
 }

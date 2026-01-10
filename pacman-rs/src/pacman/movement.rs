@@ -36,21 +36,21 @@ pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) -> PacmanEvent {
                 if let Some(tile) = row.chars().nth(next_x_usize) {
                     if tile == '.' {
                         event = PacmanEvent::EatenFood;
+                        // Replace with space
+                        if let Some(row_mut) = map.data.get_mut(next_y_usize) {
+                            row_mut.replace_range(next_x_usize..next_x_usize + 1, " ");
+                        }
                     } else if tile == 'o' {
                         event = PacmanEvent::EatenPill;
+                        // Replace with space
+                        if let Some(row_mut) = map.data.get_mut(next_y_usize) {
+                            row_mut.replace_range(next_x_usize..next_x_usize + 1, " ");
+                        }
                     }
                 }
             }
 
-            // Update Map: Clear old position
-            if let Some(row) = map.data.get_mut(current_y) {
-                row.replace_range(current_x..current_x + 1, " ");
-            }
-
-            // Update Map: Set new position
-            if let Some(row) = map.data.get_mut(next_y_usize) {
-                row.replace_range(next_x_usize..next_x_usize + 1, "P");
-            }
+            // Move Pacman
 
             pacman.grid_position = (next_x_usize, next_y_usize);
             pacman.character.position.x = (next_x_usize as f32) * tile_size;

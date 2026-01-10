@@ -137,11 +137,6 @@ fn main() {
     };
     pacman.character.sprite.animation_state = "walk".to_string();
 
-    // Set Pacman on map
-    if let Some(row) = map.data.get_mut(pacman.grid_position.1) {
-        row.replace_range(pacman.grid_position.0..pacman.grid_position.0 + 1, "P");
-    }
-
     // Initialize ghost spawners
     let mut ghost_spawners: Vec<GhostSpawner> = Vec::new();
     let mut s_positions = Vec::new();
@@ -162,16 +157,9 @@ fn main() {
         let mut spawner = GhostSpawner::new(spawn_pos);
         spawner.spawn_ghost(map.tile_size as f32);
 
-        // Initialize ghost on map
-        if let Some(ref mut ghost) = spawner.ghost {
-            // Replace 'S' with ' ' (empty space) effectively, but store it as ' '
-            // We assume 'S' is just a spawn point and becomes empty.
-            ghost.stored_tile = 'S';
-
-            // Update map to 'G'
-            if let Some(row) = map.data.get_mut(y) {
-                row.replace_range(x..x + 1, "G");
-            }
+        // Replace 'S' with ' ' (empty space) so it is walkable
+        if let Some(row) = map.data.get_mut(y) {
+            row.replace_range(x..x + 1, " ");
         }
 
         ghost_spawners.push(spawner);
@@ -200,6 +188,20 @@ fn main() {
                 }
             }
 
+            // Check collision after Pacman moves
+            for spawner in ghost_spawners.iter_mut() {
+                if let Some(ref mut ghost) = spawner.ghost {
+                    if ghost.is_active && ghost.grid_position == pacman.grid_position {
+                        if ghost.state == GhostState::Frightened {
+                            ghost.respawn();
+                        } else {
+                            println!("Game Over! Pacman died.");
+                            // ideally reset game
+                        }
+                    }
+                }
+            }
+
             // Update ghosts
             for spawner in ghost_spawners.iter_mut() {
                 if let Some(ref mut ghost) = spawner.ghost {
@@ -209,6 +211,20 @@ fn main() {
                         map.tile_size as f32,
                         &mut map,
                     );
+                }
+            }
+
+            // Check collision after Ghosts move
+            for spawner in ghost_spawners.iter_mut() {
+                if let Some(ref mut ghost) = spawner.ghost {
+                    if ghost.is_active && ghost.grid_position == pacman.grid_position {
+                        if ghost.state == GhostState::Frightened {
+                            ghost.respawn();
+                        } else {
+                            println!("Game Over! Pacman died.");
+                            // ideally reset game
+                        }
+                    }
                 }
             }
 
