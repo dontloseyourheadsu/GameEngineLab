@@ -24,12 +24,13 @@ use crate::pacman::{
 };
 
 const MAP_PATH: &str = "data/map.json";
+const UI_HEIGHT: i32 = 60;
 
 fn main() {
     let mut map = load_map_from_json(MAP_PATH);
 
     let screen_width = map.data[0].len() as i32 * map.tile_size as i32;
-    let screen_height = map.data.len() as i32 * map.tile_size as i32;
+    let screen_height = (map.data.len() as i32 * map.tile_size as i32) + UI_HEIGHT;
 
     let (mut rl, thread) = raylib::init()
         .size(screen_width, screen_height)
@@ -45,13 +46,14 @@ fn main() {
                         let full_path = format!("{}{}", map.textures_path, filename);
 
                         // Load with image crate
-                        let img = image::open(&full_path)
-                            .expect("Failed to load image")
-                            .to_rgb8();
+                        let img = image::open(&full_path).expect("Failed to load image");
 
-                        // Load normal texture
+                        let img_rgba = img.clone().to_rgba8();
+
+                        // Load normal texture (RGBA)
                         let mut buffer = std::io::Cursor::new(Vec::new());
-                        img.write_to(&mut buffer, image::ImageOutputFormat::Png)
+                        img_rgba
+                            .write_to(&mut buffer, image::ImageOutputFormat::Png)
                             .unwrap();
                         let data = buffer.into_inner();
                         let file_extension = ".png";
@@ -64,7 +66,9 @@ fn main() {
 
                         // If it's a ghost, also create a filtered version
                         if name == "ghost" {
-                            let processed_img = apply_clay_filter(&img);
+                            // Filter works on RGB
+                            let img_rgb = img.to_rgb8();
+                            let processed_img = apply_clay_filter(&img_rgb);
                             let mut buffer = std::io::Cursor::new(Vec::new());
                             processed_img
                                 .write_to(&mut buffer, image::ImageOutputFormat::Png)
@@ -157,13 +161,30 @@ fn main() {
         let mut spawner = GhostSpawner::new(spawn_pos);
         spawner.spawn_ghost(map.tile_size as f32);
 
-        // Replace 'S' with ' ' (empty space) so it is walkable
         if let Some(row) = map.data.get_mut(y) {
-            row.replace_range(x..x + 1, " ");
+            row.replace_range(x..x + 1, "S"); // Modified: Keeping S for display logic
         }
 
         ghost_spawners.push(spawner);
     }
+
+    // Initialize Game State
+    let mut score = 0;
+    let mut lives = 3;
+    let mut game_over = false;
+    let mut win = false;
+
+    // Count total items
+    let mut total_items = 0;
+    for row in &map.data {
+        for ch in row.chars() {
+            if ch == '.' || ch == 'o' {
+                total_items += 1;
+            }
+        }
+    }
+    let mut items_eaten = 0;
+    let map_offset = Vector2::new(0.0, UI_HEIGHT as f32);
 
     let mut last_move_time = Instant::now();
     let move_interval = Duration::from_millis(200);
@@ -173,63 +194,106 @@ fn main() {
         let current_time = Instant::now();
         let delta_time = (current_time - previous_time).as_secs_f32();
 
-        handle_input(&rl, &mut pacman);
+        if !game_over && !win {
+            handle_input(&rl, &mut pacman);
 
-        // Handle movement on tick
-        if last_move_time.elapsed() >= move_interval {
-            let event = move_pacman(&mut pacman, &mut map);
+            // Handle movement on tick
+            if last_move_time.elapsed() >= move_interval {
+                let mut reset_needed = false;
+                let event = move_pacman(&mut pacman, &mut map);
 
-            if let PacmanEvent::EatenPill = event {
+                match event {
+                    PacmanEvent::EatenFood => {
+                        score += 10;
+                        items_eaten += 1;
+                    }
+                    PacmanEvent::EatenPill => {
+                        score += 50;
+                        items_eaten += 1;
+                        for spawner in ghost_spawners.iter_mut() {
+                            if let Some(ref mut ghost) = spawner.ghost {
+                                ghost.state = GhostState::Frightened;
+                                ghost.frightened_timer = 10.0;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+
+                if items_eaten >= total_items {
+                    win = true;
+                }
+
+                // Check collision after Pacman moves
                 for spawner in ghost_spawners.iter_mut() {
                     if let Some(ref mut ghost) = spawner.ghost {
-                        ghost.state = GhostState::Frightened;
-                        ghost.frightened_timer = 10.0;
-                    }
-                }
-            }
-
-            // Check collision after Pacman moves
-            for spawner in ghost_spawners.iter_mut() {
-                if let Some(ref mut ghost) = spawner.ghost {
-                    if ghost.is_active && ghost.grid_position == pacman.grid_position {
-                        if ghost.state == GhostState::Frightened {
-                            ghost.respawn();
-                        } else {
-                            println!("Game Over! Pacman died.");
-                            // ideally reset game
+                        if ghost.is_active && ghost.grid_position == pacman.grid_position {
+                            if ghost.state == GhostState::Frightened {
+                                ghost.respawn();
+                                score += 200;
+                            } else {
+                                lives -= 1;
+                                reset_needed = true;
+                            }
                         }
                     }
                 }
-            }
 
-            // Update ghosts
-            for spawner in ghost_spawners.iter_mut() {
-                if let Some(ref mut ghost) = spawner.ghost {
-                    ghost.update(
-                        delta_time,
-                        pacman.character.position,
-                        map.tile_size as f32,
-                        &mut map,
-                    );
-                }
-            }
+                // Only move ghosts if we didn't just die
+                if !reset_needed && !game_over && !win {
+                    // Update ghosts
+                    for spawner in ghost_spawners.iter_mut() {
+                        if let Some(ref mut ghost) = spawner.ghost {
+                            ghost.update(
+                                delta_time,
+                                pacman.character.position,
+                                map.tile_size as f32,
+                                &mut map,
+                            );
+                        }
+                    }
 
-            // Check collision after Ghosts move
-            for spawner in ghost_spawners.iter_mut() {
-                if let Some(ref mut ghost) = spawner.ghost {
-                    if ghost.is_active && ghost.grid_position == pacman.grid_position {
-                        if ghost.state == GhostState::Frightened {
-                            ghost.respawn();
-                        } else {
-                            println!("Game Over! Pacman died.");
-                            // ideally reset game
+                    // Check collision after Ghosts move
+                    for spawner in ghost_spawners.iter_mut() {
+                        if let Some(ref mut ghost) = spawner.ghost {
+                            if ghost.is_active && ghost.grid_position == pacman.grid_position {
+                                if ghost.state == GhostState::Frightened {
+                                    ghost.respawn();
+                                    score += 200;
+                                } else {
+                                    lives -= 1;
+                                    reset_needed = true;
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            last_move_time = Instant::now();
+                if reset_needed {
+                    if lives <= 0 {
+                        game_over = true;
+                    } else {
+                        // Reset Pacman
+                        pacman.grid_position =
+                            (pacman_map_pos.0 as usize, pacman_map_pos.1 as usize);
+                        pacman.character.position = pacman_start_pos;
+                        pacman.current_direction = Vector2::zero();
+                        pacman.desired_direction = Vector2::zero();
+
+                        // Reset All Ghosts
+                        for spawner in ghost_spawners.iter_mut() {
+                            if let Some(ref mut ghost) = spawner.ghost {
+                                ghost.respawn();
+                            }
+                        }
+                    }
+                }
+
+                last_move_time = Instant::now();
+            }
         }
+
+        // (This block replaces specific section, I need to be careful with matching)
 
         pacman.character.sprite.update();
 
@@ -251,11 +315,40 @@ fn main() {
             pacman.character.sprite.rotation = 90.0;
         }
 
+        // Handle Reset if collision occurred
+        // Since we modified logic inside the loop above (in previous edit), we need to ensure ghosts are reset if lives > 0
+        // But in previous edit I didn't fully implement "Reset All Ghosts" inside the collision block because of borrow checker complexity potentially.
+        // Let's implement a check here: if we detect Pacman is at start pos AND lives < 3 (and not game over), maybe we should reset ghosts?
+        // Actually, let's just do it properly in the drawing loop or a separate logic block.
+        // For now, let's fix the Drawing first as requested.
+
         let mut d = rl.begin_drawing(&thread);
 
         d.clear_background(Color::BLACK);
 
-        draw_map(&mut d, &map, &textures);
+        // Draw UI
+        d.draw_text(&format!("SCORE: {}", score), 10, 10, 20, Color::WHITE);
+        d.draw_text(&format!("LIVES: {}", lives), 200, 10, 20, Color::WHITE);
+
+        if game_over {
+            d.draw_text(
+                "GAME OVER",
+                screen_width / 2 - 100,
+                screen_height / 2,
+                40,
+                Color::RED,
+            );
+        } else if win {
+            d.draw_text(
+                "YOU WIN!",
+                screen_width / 2 - 100,
+                screen_height / 2,
+                40,
+                Color::GREEN,
+            );
+        }
+
+        draw_map(&mut d, &map, &textures, map_offset);
 
         let pacman_symbol = map.symbols.get("pacman").unwrap();
         let pacman_texture = textures.get(pacman_symbol).unwrap();
@@ -263,7 +356,7 @@ fn main() {
         pacman.character.sprite.draw(
             &mut d,
             pacman_texture,
-            pacman.character.position,
+            pacman.character.position + map_offset,
             map.tile_size as f32,
         );
 
@@ -298,8 +391,8 @@ fn main() {
                         current_texture.height() as f32,
                     );
                     let dest_rec = Rectangle::new(
-                        ghost.character.position.x,
-                        ghost.character.position.y,
+                        ghost.character.position.x + map_offset.x,
+                        ghost.character.position.y + map_offset.y,
                         map.tile_size as f32,
                         map.tile_size as f32,
                     );
@@ -318,31 +411,112 @@ fn main() {
     }
 }
 
-fn draw_map(d: &mut RaylibDrawHandle, map: &Map2DModel, textures: &HashMap<String, Texture2D>) {
-    for (y, row) in map.data.iter().enumerate() {
-        for (x, char) in row.chars().enumerate() {
-            if char == 'P' || char == 'G' {
-                continue;
-            }
-            let char_str = char.to_string();
-            if let Some(texture) = textures.get(&char_str) {
-                let source_rec =
-                    Rectangle::new(0.0, 0.0, texture.width() as f32, texture.height() as f32);
+fn draw_map(
+    d: &mut RaylibDrawHandle,
+    map: &Map2DModel,
+    textures: &HashMap<String, Texture2D>,
+    offset: Vector2,
+) {
+    let empty_symbol = map
+        .symbols
+        .get("empty")
+        .unwrap_or(&" ".to_string())
+        .to_string();
+    let wall_symbol = map
+        .symbols
+        .get("wall")
+        .unwrap_or(&"#".to_string())
+        .to_string();
+    let spawner_symbol = map
+        .symbols
+        .get("spawner")
+        .unwrap_or(&"S".to_string())
+        .to_string();
+
+    // Layer 0: Draw Empty everywhere to handle background transparency
+    if let Some(empty_texture) = textures.get(&empty_symbol) {
+        for y in 0..map.data.len() {
+            let row_len = map.data[y].len();
+            for x in 0..row_len {
+                let source_rec = Rectangle::new(
+                    0.0,
+                    0.0,
+                    empty_texture.width() as f32,
+                    empty_texture.height() as f32,
+                );
                 let dest_rec = Rectangle::new(
-                    (x as i32 * map.tile_size as i32) as f32,
-                    (y as i32 * map.tile_size as i32) as f32,
+                    offset.x + (x as i32 * map.tile_size as i32) as f32,
+                    offset.y + (y as i32 * map.tile_size as i32) as f32,
                     map.tile_size as f32,
                     map.tile_size as f32,
                 );
                 d.draw_texture_pro(
-                    texture,
+                    empty_texture,
                     source_rec,
                     dest_rec,
-                    Vector2::new(0.0, 0.0), // origin
-                    0.0,                    // rotation
+                    Vector2::new(0.0, 0.0),
+                    0.0,
                     Color::WHITE,
                 );
             }
         }
     }
+
+    // Iterate map data for logic layers
+    for (y, row) in map.data.iter().enumerate() {
+        for (x, char) in row.chars().enumerate() {
+            let char_str = char.to_string();
+
+            // Skip P, G as they are entities.
+            if char == 'P' || char == 'G' {
+                continue;
+            }
+
+            // Layer 1: Wall
+            if char_str == wall_symbol {
+                if let Some(texture) = textures.get(&char_str) {
+                    draw_tile(d, texture, x, y, map.tile_size, offset);
+                }
+            }
+            // Layer 2: Spawner
+            else if char_str == spawner_symbol {
+                if let Some(texture) = textures.get(&char_str) {
+                    draw_tile(d, texture, x, y, map.tile_size, offset);
+                }
+            }
+            // Layer 3: Items (Food, Pill, etc) - basically everything else that is not empty/wall/spawner
+            // map.json says food is 'o', pill is '*', path is '.'
+            // But logic calls '.' -> Food. 'o' -> Pill.
+            else if char_str != empty_symbol {
+                if let Some(texture) = textures.get(&char_str) {
+                    draw_tile(d, texture, x, y, map.tile_size, offset);
+                }
+            }
+        }
+    }
+}
+
+fn draw_tile(
+    d: &mut RaylibDrawHandle,
+    texture: &Texture2D,
+    x: usize,
+    y: usize,
+    tile_size: u8,
+    offset: Vector2,
+) {
+    let source_rec = Rectangle::new(0.0, 0.0, texture.width() as f32, texture.height() as f32);
+    let dest_rec = Rectangle::new(
+        offset.x + (x as i32 * tile_size as i32) as f32,
+        offset.y + (y as i32 * tile_size as i32) as f32,
+        tile_size as f32,
+        tile_size as f32,
+    );
+    d.draw_texture_pro(
+        texture,
+        source_rec,
+        dest_rec,
+        Vector2::new(0.0, 0.0),
+        0.0,
+        Color::WHITE,
+    );
 }
