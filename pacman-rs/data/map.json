@@ -16,7 +16,7 @@
     "ghost": "homura.png",
     "pacman": "madoka.png",
     "food": "food.png",
-    "pill": "pill.jpg",
+    "pill": "pill.png",
     "empty": "rgba(199,0,57, .25)",
     "spawner": "rgba(199,0,57, .25)"
   },
