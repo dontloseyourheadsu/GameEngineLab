@@ -50,9 +50,9 @@ impl GhostSpawner {
                 (self.spawn_position.x / tile_size) as usize,
                 (self.spawn_position.y / tile_size) as usize,
             ),
-            stored_tile: '.', // Default assumption, will be corrected on spawn if needed
             state: GhostState::Chase,
             frightened_timer: 0.0,
+            spawn_position: self.spawn_position,
         };
 
         self.ghost = Some(ghost);
