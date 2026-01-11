@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct GameSettings {
     pub music_volume: f32, // 0.0 to 1.0
     pub sfx_volume: f32,   // 0.0 to 1.0

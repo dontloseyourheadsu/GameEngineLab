@@ -4,14 +4,17 @@ use raylib::prelude::*;
 pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut GameSettings) {
     let base_width = 800;
     let base_height = 600;
-    // Track initial scale to manage window resizing within this loop if needed
-    // But main loop handles resize usually. Here we might resize dynamically.
 
-    // Ensure window size is correct upon entry
-    let mut current_scale = settings.scale;
+    // Track pending changes
+    let mut pending_settings = *settings;
+
+    // We use the *current* acting settings for the UI scale/window size
+    // until the user hits "Apply".
+    let mut current_ui_scale = settings.scale;
+
     rl.set_window_size(
-        (base_width as f32 * current_scale) as i32,
-        (base_height as f32 * current_scale) as i32,
+        (base_width as f32 * current_ui_scale) as i32,
+        (base_height as f32 * current_ui_scale) as i32,
     );
     rl.set_window_title(thread, "Pacman-rs - Options");
 
@@ -33,6 +36,14 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
         slider_height,
     );
 
+    // Apply Button
+    let apply_btn = Rectangle::new(
+        start_x + (slider_width - 100.0) / 2.0,
+        start_y + y_spacing * 3.0,
+        100.0,
+        40.0,
+    );
+
     let mut dragging_music = false;
     let mut dragging_sfx = false;
     let mut dragging_scale = false;
@@ -43,7 +54,8 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
         }
 
         let mouse_pos_screen = rl.get_mouse_position();
-        let mouse_pos = mouse_pos_screen / current_scale;
+        // Mouse logic is based on current UI scale
+        let mouse_pos = mouse_pos_screen / current_ui_scale;
 
         // --- Update Logic ---
 
@@ -54,7 +66,7 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
             }
         }
 
-        // Handle Mouse Down for Dragging
+        // Handle Mouse Down
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
             let extended_music_rec = Rectangle::new(
                 music_slider_rec.x - 10.0,
@@ -85,6 +97,20 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
             if extended_scale_rec.check_collision_point_rec(mouse_pos) {
                 dragging_scale = true;
             }
+
+            // Apply Button Click
+            if apply_btn.check_collision_point_rec(mouse_pos) {
+                // Update the actual settings
+                *settings = pending_settings;
+
+                // Apply Scale Effect
+                current_ui_scale = settings.scale;
+                let target_w = (base_width as f32 * current_ui_scale) as i32;
+                let target_h = (base_height as f32 * current_ui_scale) as i32;
+                if rl.get_screen_width() != target_w || rl.get_screen_height() != target_h {
+                    rl.set_window_size(target_w, target_h);
+                }
+            }
         }
 
         if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
@@ -93,33 +119,24 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
             dragging_scale = false;
         }
 
-        // Apply Dragging
+        // Apply Dragging to Pending Settings
         if dragging_music {
             let mut val = (mouse_pos.x - music_slider_rec.x) / music_slider_rec.width;
             val = val.clamp(0.0, 1.0);
-            settings.music_volume = val;
+            pending_settings.music_volume = val;
         }
 
         if dragging_sfx {
             let mut val = (mouse_pos.x - sfx_slider_rec.x) / sfx_slider_rec.width;
             val = val.clamp(0.0, 1.0);
-            settings.sfx_volume = val;
+            pending_settings.sfx_volume = val;
         }
 
         if dragging_scale {
             let mut val = (mouse_pos.x - scale_slider_rec.x) / scale_slider_rec.width;
             val = val.clamp(0.0, 1.0);
-            // Map 0.0-1.0 to 0.25-2.0
-            let new_scale = 0.25 + (val * 1.75);
-            settings.scale = new_scale;
-            current_scale = new_scale;
-
-            // Resize window immediately for dynamic feedback
-            let target_w = (base_width as f32 * current_scale) as i32;
-            let target_h = (base_height as f32 * current_scale) as i32;
-            if rl.get_screen_width() != target_w || rl.get_screen_height() != target_h {
-                rl.set_window_size(target_w, target_h);
-            }
+            pending_settings.scale = 0.25 + (val * 1.75);
+            // NOTE: We do NOT update current_ui_scale here. The window size remains same until Apply.
         }
 
         // --- Drawing ---
@@ -131,7 +148,7 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
                 offset: Vector2::zero(),
                 target: Vector2::zero(),
                 rotation: 0.0,
-                zoom: current_scale,
+                zoom: current_ui_scale,
             });
 
             d.draw_text("Options", base_width / 2 - 60, 50, 40, Color::DARKBLUE);
@@ -152,6 +169,23 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
                 Color::BLACK,
             );
 
+            // Apply Button
+            let apply_hover = apply_btn.check_collision_point_rec(mouse_pos);
+            let apply_color = if apply_hover {
+                Color::GREEN
+            } else {
+                Color::LIGHTGRAY
+            };
+            d.draw_rectangle_rec(apply_btn, apply_color);
+            d.draw_rectangle_lines_ex(apply_btn, 2.0, Color::DARKGRAY);
+            d.draw_text(
+                "APPLY",
+                apply_btn.x as i32 + 20,
+                apply_btn.y as i32 + 10,
+                20,
+                Color::BLACK,
+            );
+
             // Sliders Helper
             let draw_slider = |d: &mut RaylibDrawHandle,
                                label: &str,
@@ -168,9 +202,7 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
                 d.draw_rectangle_rec(rec, Color::LIGHTGRAY);
                 d.draw_rectangle_lines_ex(rec, 1.0, Color::GRAY);
 
-                // Filled part
-                // For scale, value (0.25-2.0) needs to be normalized back to 0-1 for drawing width
-                // For volume, value is 0-1
+                // Filled part logic
                 let normalized = if label.contains("Scale") {
                     (value - 0.25) / 1.75
                 } else {
@@ -204,26 +236,27 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
                 );
             };
 
+            // We draw the PENDING settings, so user can see what they are setting
             draw_slider(
                 &mut d,
                 "Music Volume",
                 music_slider_rec,
-                settings.music_volume,
-                format!("{:.0}%", settings.music_volume * 100.0),
+                pending_settings.music_volume,
+                format!("{:.0}%", pending_settings.music_volume * 100.0),
             );
             draw_slider(
                 &mut d,
                 "SFX Volume",
                 sfx_slider_rec,
-                settings.sfx_volume,
-                format!("{:.0}%", settings.sfx_volume * 100.0),
+                pending_settings.sfx_volume,
+                format!("{:.0}%", pending_settings.sfx_volume * 100.0),
             );
             draw_slider(
                 &mut d,
                 "Scale",
                 scale_slider_rec,
-                settings.scale,
-                format!("{:.2}x", settings.scale),
+                pending_settings.scale,
+                format!("{:.2}x", pending_settings.scale),
             );
         }
     }
