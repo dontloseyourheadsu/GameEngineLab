@@ -1,65 +1,83 @@
-use raylib::prelude::*;
-
 mod asset_editor;
 mod clay_filter;
 mod game;
 mod ghosts;
+mod options_menu;
 mod pacman;
+mod settings;
+
+use raylib::prelude::*;
+use settings::GameSettings;
 
 fn main() {
-    let screen_width = 800;
-    let screen_height = 600;
+    let base_width = 800;
+    let base_height = 600;
 
     let (mut rl, thread) = raylib::init()
-        .size(screen_width, screen_height)
+        .size(base_width, base_height)
         .title("Pacman-rs - Main Menu")
         .build();
 
     rl.set_target_fps(60);
 
+    // Initialize default settings
+    let mut settings = GameSettings::default();
+
     while !rl.window_should_close() {
-        // Ensure window is menu-sized
-        if rl.get_screen_width() != screen_width || rl.get_screen_height() != screen_height {
-            rl.set_window_size(screen_width, screen_height);
+        let scale = settings.scale;
+
+        // Ensure window is size correctly according to scale
+        let target_width = (base_width as f32 * scale) as i32;
+        let target_height = (base_height as f32 * scale) as i32;
+        if rl.get_screen_width() != target_width || rl.get_screen_height() != target_height {
+            rl.set_window_size(target_width, target_height);
             rl.set_window_title(&thread, "Pacman-rs - Main Menu");
         }
 
-        let mouse_pos = rl.get_mouse_position();
-        let play_btn = Rectangle::new(300.0, 200.0, 200.0, 50.0);
-        let asset_btn = Rectangle::new(300.0, 280.0, 200.0, 50.0);
-        let map_btn = Rectangle::new(300.0, 360.0, 200.0, 50.0);
+        let mouse_pos_screen = rl.get_mouse_position();
+        let mouse_pos = mouse_pos_screen / scale;
+
+        let play_btn = Rectangle::new(300.0, 150.0, 200.0, 50.0);
+        let asset_btn = Rectangle::new(300.0, 220.0, 200.0, 50.0);
+        let map_btn = Rectangle::new(300.0, 290.0, 200.0, 50.0);
+        let options_btn = Rectangle::new(300.0, 360.0, 200.0, 50.0);
 
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
             if play_btn.check_collision_point_rec(mouse_pos) {
                 game::run_game(&mut rl, &thread);
-                // Skip the rest of the loop to avoid drawing menu frame immediately
-                // and allow window resize logic to run at top of loop next time
                 continue;
             }
             if asset_btn.check_collision_point_rec(mouse_pos) {
-                asset_editor::run_editor(&mut rl, &thread);
+                asset_editor::run_editor(&mut rl, &thread, &settings);
                 continue;
             }
-            // Other buttons do nothing for now
+            if options_btn.check_collision_point_rec(mouse_pos) {
+                options_menu::run_options(&mut rl, &thread, &mut settings);
+                continue;
+            }
         }
 
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::RAYWHITE);
 
-        let title = "PACMAN-RS";
-        let title_w = d.measure_text(title, 50);
-        d.draw_text(
-            title,
-            (screen_width - title_w) / 2,
-            100,
-            50,
-            Color::DARKBLUE,
-        );
+        {
+            let mut d = d.begin_mode2D(Camera2D {
+                offset: Vector2::zero(),
+                target: Vector2::zero(),
+                rotation: 0.0,
+                zoom: scale,
+            });
 
-        // Menu Buttons
-        draw_button(&mut d, "Play", play_btn, mouse_pos);
-        draw_button(&mut d, "Asset Editor", asset_btn, mouse_pos);
-        draw_button(&mut d, "Map Editor", map_btn, mouse_pos);
+            let title = "PACMAN-RS";
+            let title_w = d.measure_text(title, 50);
+            d.draw_text(title, (base_width - title_w) / 2, 50, 50, Color::DARKBLUE);
+
+            // Menu Buttons
+            draw_button(&mut d, "Play", play_btn, mouse_pos);
+            draw_button(&mut d, "Asset Editor", asset_btn, mouse_pos);
+            draw_button(&mut d, "Map Editor", map_btn, mouse_pos);
+            draw_button(&mut d, "Options", options_btn, mouse_pos);
+        }
     }
 }
 
