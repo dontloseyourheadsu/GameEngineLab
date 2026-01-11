@@ -1,5 +1,6 @@
 use raylib::prelude::*;
 
+mod asset_editor;
 mod clay_filter;
 mod game;
 mod ghosts;
@@ -33,6 +34,10 @@ fn main() {
                 game::run_game(&mut rl, &thread);
                 // Skip the rest of the loop to avoid drawing menu frame immediately
                 // and allow window resize logic to run at top of loop next time
+                continue;
+            }
+            if asset_btn.check_collision_point_rec(mouse_pos) {
+                asset_editor::run_editor(&mut rl, &thread);
                 continue;
             }
             // Other buttons do nothing for now
