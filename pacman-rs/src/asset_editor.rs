@@ -1,16 +1,21 @@
+use crate::settings::GameSettings;
 use raylib::prelude::*;
 
-pub fn run_editor(rl: &mut RaylibHandle, thread: &RaylibThread) {
-    let screen_width = 800;
-    let screen_height = 600;
+pub fn run_editor(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSettings) {
+    let base_width = 800;
+    let base_height = 600;
+    let scale = settings.scale;
 
-    // Set window for editor
-    rl.set_window_size(screen_width, screen_height);
+    // Set initial window size
+    rl.set_window_size(
+        (base_width as f32 * scale) as i32,
+        (base_height as f32 * scale) as i32,
+    );
     rl.set_window_title(thread, "Pacman-rs - Asset Editor");
 
     let canvas_size = 256;
-    let canvas_x = (screen_width - canvas_size) / 2;
-    let canvas_y = (screen_height - canvas_size) / 2;
+    let canvas_x = (base_width - canvas_size) / 2;
+    let canvas_y = (base_height - canvas_size) / 2;
     let canvas_rect = Rectangle::new(
         canvas_x as f32,
         canvas_y as f32,
@@ -51,12 +56,23 @@ pub fn run_editor(rl: &mut RaylibHandle, thread: &RaylibThread) {
 
     let back_btn = Rectangle::new(20.0, 20.0, 100.0, 40.0);
 
+    let mut last_mouse_pos: Option<Vector2> = None;
+
     while !rl.window_should_close() {
         if rl.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
             break;
         }
 
-        let mouse_pos = rl.get_mouse_position();
+        // Handle Scaling Resizes logic if scale changed outside (not likely here)
+        // or just enforce it
+        let target_width = (base_width as f32 * scale) as i32;
+        let target_height = (base_height as f32 * scale) as i32;
+        if rl.get_screen_width() != target_width || rl.get_screen_height() != target_height {
+            rl.set_window_size(target_width, target_height);
+        }
+
+        let mouse_pos_screen = rl.get_mouse_position();
+        let mouse_pos = mouse_pos_screen / scale; // Logic coordinates
 
         // Handle Back Button
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
@@ -82,145 +98,159 @@ pub fn run_editor(rl: &mut RaylibHandle, thread: &RaylibThread) {
         if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
             if canvas_rect.check_collision_point_rec(mouse_pos) {
                 // Calculate position relative to canvas top-left
-                let rel_x = (mouse_pos.x - canvas_rect.x) as i32;
-                let rel_y = (mouse_pos.y - canvas_rect.y) as i32;
+                let rel_pos = mouse_pos - Vector2::new(canvas_rect.x, canvas_rect.y);
 
                 // Draw onto the render texture
-                // Note: RenderTexture origin is Top-Left (0,0) as well for drawing commands
                 let mut d = rl.begin_texture_mode(thread, &mut target);
-                // Draw a small circle for the brush
-                d.draw_circle(rel_x, rel_y, 2.0, selected_color);
+
+                if let Some(last) = last_mouse_pos {
+                    // Draw Line for continuity
+                    d.draw_line_ex(last, rel_pos, 4.0, selected_color);
+                    d.draw_circle_v(rel_pos, 2.0, selected_color); // Cap
+                } else {
+                    d.draw_circle_v(rel_pos, 2.0, selected_color);
+                }
+
+                last_mouse_pos = Some(rel_pos);
+            } else {
+                last_mouse_pos = None;
             }
+        } else {
+            last_mouse_pos = None;
         }
 
         // --- Drawing to Screen ---
         let mut d = rl.begin_drawing(thread);
         d.clear_background(Color::RAYWHITE);
 
-        // Draw Header
-        d.draw_text(
-            "Asset Editor",
-            screen_width / 2 - 60,
-            20,
-            20,
-            Color::DARKGRAY,
-        );
+        {
+            let mut d = d.begin_mode2D(Camera2D {
+                offset: Vector2::zero(),
+                target: Vector2::zero(),
+                rotation: 0.0,
+                zoom: scale,
+            });
 
-        // Draw Back Button
-        let btn_color = if back_btn.check_collision_point_rec(mouse_pos) {
-            Color::SKYBLUE
-        } else {
-            Color::LIGHTGRAY
-        };
-        d.draw_rectangle_rec(back_btn, btn_color);
-        d.draw_rectangle_lines_ex(back_btn, 2.0, Color::DARKGRAY);
-        d.draw_text(
-            "BACK",
-            back_btn.x as i32 + 25,
-            back_btn.y as i32 + 10,
-            20,
-            Color::BLACK,
-        );
+            // Draw Header
+            d.draw_text("Asset Editor", base_width / 2 - 60, 20, 20, Color::DARKGRAY);
 
-        // Draw Transparency Grid (Checkerboard)
-        let check_size = 16.0;
-        let cols = (canvas_size as f32 / check_size).ceil() as i32;
-        let rows = (canvas_size as f32 / check_size).ceil() as i32;
-
-        for x in 0..cols {
-            for y in 0..rows {
-                // Check bounds to not draw outside canvas area if not divisible (it is 256/16=16 though)
-                let px = canvas_rect.x + x as f32 * check_size;
-                let py = canvas_rect.y + y as f32 * check_size;
-
-                let color = if (x + y) % 2 == 0 {
-                    Color::LIGHTGRAY
-                } else {
-                    Color::DARKGRAY
-                };
-                d.draw_rectangle(
-                    px as i32,
-                    py as i32,
-                    check_size as i32,
-                    check_size as i32,
-                    color,
-                );
-            }
-        }
-
-        // Draw the Canvas Texture
-        // Essential: Flip vertically because OpenGL textures are inverted
-        let texture = target.texture();
-        let source_rec = Rectangle::new(0.0, 0.0, texture.width() as f32, -texture.height() as f32);
-        d.draw_texture_pro(
-            texture,
-            source_rec,
-            canvas_rect,
-            Vector2::zero(),
-            0.0,
-            Color::WHITE,
-        );
-
-        // Draw Canvas Border
-        d.draw_rectangle_lines_ex(canvas_rect, 2.0, Color::BLACK);
-
-        // Draw Palette
-        for (i, &color) in palette_colors.iter().enumerate() {
-            let box_rec = Rectangle::new(
-                palette_x,
-                palette_y + (i as f32 * (color_box_size + box_spacing)),
-                color_box_size,
-                color_box_size,
+            // Draw Back Button
+            let btn_color = if back_btn.check_collision_point_rec(mouse_pos) {
+                Color::SKYBLUE
+            } else {
+                Color::LIGHTGRAY
+            };
+            d.draw_rectangle_rec(back_btn, btn_color);
+            d.draw_rectangle_lines_ex(back_btn, 2.0, Color::DARKGRAY);
+            d.draw_text(
+                "BACK",
+                back_btn.x as i32 + 25,
+                back_btn.y as i32 + 10,
+                20,
+                Color::BLACK,
             );
 
-            d.draw_rectangle_rec(box_rec, color);
-            d.draw_rectangle_lines_ex(box_rec, 1.0, Color::BLACK);
+            // Draw Transparency Grid (Checkerboard)
+            let check_size = 16.0;
+            let cols = (canvas_size as f32 / check_size).ceil() as i32;
+            let rows = (canvas_size as f32 / check_size).ceil() as i32;
 
-            // Highlight selected
-            // Simple color equality check
-            let is_selected = color.r == selected_color.r
-                && color.g == selected_color.g
-                && color.b == selected_color.b
-                && color.a == selected_color.a;
+            for x in 0..cols {
+                for y in 0..rows {
+                    // Check bounds to not draw outside canvas area if not divisible (it is 256/16=16 though)
+                    let px = canvas_rect.x + x as f32 * check_size;
+                    let py = canvas_rect.y + y as f32 * check_size;
 
-            if is_selected {
-                d.draw_rectangle_lines_ex(
-                    Rectangle::new(
-                        box_rec.x - 3.0,
-                        box_rec.y - 3.0,
-                        box_rec.width + 6.0,
-                        box_rec.height + 6.0,
-                    ),
-                    3.0,
-                    Color::GOLD, // Gold outline for selection
-                );
+                    let color = if (x + y) % 2 == 0 {
+                        Color::LIGHTGRAY
+                    } else {
+                        Color::DARKGRAY
+                    };
+                    d.draw_rectangle(
+                        px as i32,
+                        py as i32,
+                        check_size as i32,
+                        check_size as i32,
+                        color,
+                    );
+                }
             }
-        }
 
-        // Draw current color indicator below palette
-        d.draw_text(
-            "Color:",
-            palette_x as i32,
-            (palette_y + (palette_colors.len() as f32 * (color_box_size + box_spacing))) as i32
-                + 10,
-            10,
-            Color::BLACK,
-        );
-        d.draw_rectangle(
-            palette_x as i32,
-            (palette_y + (palette_colors.len() as f32 * (color_box_size + box_spacing))) as i32
-                + 25,
-            color_box_size as i32,
-            color_box_size as i32,
-            selected_color,
-        );
-        d.draw_rectangle_lines(
-            palette_x as i32,
-            (palette_y + (palette_colors.len() as f32 * (color_box_size + box_spacing))) as i32
-                + 25,
-            color_box_size as i32,
-            color_box_size as i32,
-            Color::BLACK,
-        );
+            // Draw the Canvas Texture
+            // Essential: Flip vertically because OpenGL textures are inverted
+            let texture = target.texture();
+            let source_rec =
+                Rectangle::new(0.0, 0.0, texture.width() as f32, -texture.height() as f32);
+            d.draw_texture_pro(
+                texture,
+                source_rec,
+                canvas_rect,
+                Vector2::zero(),
+                0.0,
+                Color::WHITE,
+            );
+
+            // Draw Canvas Border
+            d.draw_rectangle_lines_ex(canvas_rect, 2.0, Color::BLACK);
+
+            // Draw Palette
+            for (i, &color) in palette_colors.iter().enumerate() {
+                let box_rec = Rectangle::new(
+                    palette_x,
+                    palette_y + (i as f32 * (color_box_size + box_spacing)),
+                    color_box_size,
+                    color_box_size,
+                );
+
+                d.draw_rectangle_rec(box_rec, color);
+                d.draw_rectangle_lines_ex(box_rec, 1.0, Color::BLACK);
+
+                // Highlight selected
+                // Simple color equality check
+                let is_selected = color.r == selected_color.r
+                    && color.g == selected_color.g
+                    && color.b == selected_color.b
+                    && color.a == selected_color.a;
+
+                if is_selected {
+                    d.draw_rectangle_lines_ex(
+                        Rectangle::new(
+                            box_rec.x - 3.0,
+                            box_rec.y - 3.0,
+                            box_rec.width + 6.0,
+                            box_rec.height + 6.0,
+                        ),
+                        3.0,
+                        Color::GOLD, // Gold outline for selection
+                    );
+                }
+            }
+
+            // Draw current color indicator below palette
+            d.draw_text(
+                "Color:",
+                palette_x as i32,
+                (palette_y + (palette_colors.len() as f32 * (color_box_size + box_spacing))) as i32
+                    + 10,
+                10,
+                Color::BLACK,
+            );
+            d.draw_rectangle(
+                palette_x as i32,
+                (palette_y + (palette_colors.len() as f32 * (color_box_size + box_spacing))) as i32
+                    + 25,
+                color_box_size as i32,
+                color_box_size as i32,
+                selected_color,
+            );
+            d.draw_rectangle_lines(
+                palette_x as i32,
+                (palette_y + (palette_colors.len() as f32 * (color_box_size + box_spacing))) as i32
+                    + 25,
+                color_box_size as i32,
+                color_box_size as i32,
+                Color::BLACK,
+            );
+        } // End Camera Mode
     }
 }
