@@ -67,10 +67,11 @@ impl Ghost {
                         self.target_position = pacman_pos + offset;
                     }
                     GhostBehavior::Inky => {
-                        // Simplify Inky: 2 tiles ahead + random offset or just 2 tiles ahead
-                        // Doing 2 tiles ahead for now.
+                        // Inky Targets "Behind" relative to Pacman's facing to contrast Pinky
+                        // vector = (PacmanPos - (PacmanDir * 2))
+                        // Note: Real Inky uses Blinky position, but this is a good approximation for distinct behavior without querying Blinky
                         let offset = pacman_dir * (tile_size * 2.0);
-                        self.target_position = pacman_pos + offset;
+                        self.target_position = pacman_pos - offset;
                     }
                     GhostBehavior::Clyde => {
                         // If dist > 8 tiles, chase. Else scatter (to bottom left 0, map_height)
@@ -80,8 +81,6 @@ impl Ghost {
                             self.target_position = pacman_pos;
                         } else {
                             // Scatter target: Bottom Left (0, Height)
-                            // We don't implement corners yet conveniently.
-                            // Just 0,0 for now as "home" or some fixed point.
                             self.target_position =
                                 Vector2::new(0.0, (map.data.len() as f32) * tile_size);
                         }
