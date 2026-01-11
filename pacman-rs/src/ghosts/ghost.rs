@@ -3,11 +3,19 @@ use engine_core::maps::map_2d_model::Map2DModel;
 use engine_core::physics::collisions_2d::simple_collision_body::SimpleCollisionBody;
 use raylib::math::Vector2;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum GhostState {
     Chase,
     Scatter,
     Frightened,
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum GhostBehavior {
+    Blinky, // Chases directly
+    Pinky,  // Ambushes (ahead of pacman)
+    Inky,   // Flanks (uses pivot - simulated)
+    Clyde,  // Feigns ignorance (chases if far, scatters if close)
 }
 
 pub struct Ghost {
@@ -18,6 +26,8 @@ pub struct Ghost {
     pub state: GhostState,
     pub frightened_timer: f32,
     pub spawn_position: Vector2,
+    pub behavior: GhostBehavior,
+    pub current_direction: (i32, i32),
 }
 
 impl Ghost {
@@ -25,12 +35,16 @@ impl Ghost {
         &mut self,
         delta_time: f32,
         pacman_pos: Vector2,
+        pacman_dir: Vector2,
         tile_size: f32,
         map: &mut Map2DModel,
     ) {
         if !self.is_active {
             return;
         }
+
+        // Ensure animation updates
+        self.character.sprite.update();
 
         // Update state timers
         if self.state == GhostState::Frightened {
@@ -40,17 +54,65 @@ impl Ghost {
             }
         }
 
-        // Update target position based on state
+        // Update target position based on state and behavior
         match self.state {
-            GhostState::Chase => self.target_position = pacman_pos,
-            GhostState::Frightened | GhostState::Scatter => {
-                // In a real game, scatter targets are corners.
-                // Frightened usually means random movement.
-                // For now, keep as zero or implement random logic if I can.
-                // But the previous code had zero, so I'll keep it simple for now,
-                // but zero target with greedy movement creates weird behavior (always top-left).
-                // Let's stick to previous behavior first to avoid breaking changes, then improve.
+            GhostState::Chase => {
+                match self.behavior {
+                    GhostBehavior::Blinky => {
+                        self.target_position = pacman_pos;
+                    }
+                    GhostBehavior::Pinky => {
+                        // 4 tiles ahead
+                        let offset = pacman_dir * (tile_size * 4.0);
+                        self.target_position = pacman_pos + offset;
+                    }
+                    GhostBehavior::Inky => {
+                        // Simplify Inky: 2 tiles ahead + random offset or just 2 tiles ahead
+                        // Doing 2 tiles ahead for now.
+                        let offset = pacman_dir * (tile_size * 2.0);
+                        self.target_position = pacman_pos + offset;
+                    }
+                    GhostBehavior::Clyde => {
+                        // If dist > 8 tiles, chase. Else scatter (to bottom left 0, map_height)
+                        let dist_sq = (self.character.position - pacman_pos).length_sqr();
+                        let eight_tiles = 8.0 * tile_size;
+                        if dist_sq > eight_tiles * eight_tiles {
+                            self.target_position = pacman_pos;
+                        } else {
+                            // Scatter target: Bottom Left (0, Height)
+                            // We don't implement corners yet conveniently.
+                            // Just 0,0 for now as "home" or some fixed point.
+                            self.target_position =
+                                Vector2::new(0.0, (map.data.len() as f32) * tile_size);
+                        }
+                    }
+                }
+            }
+            GhostState::Frightened => {
+                // Random target logic handled in move_towards_target for frightened usually,
+                // or just set a random target here.
+                // For compatibility with existing logic which might rely on behavior inside move_towards_target:
+                // Existing logic: if Frightened, target is Zero (0,0).
+                // We should improve this to be random corner or random valid tile.
+                // For now, let's keep it simple or pick a random valid tile?
+                // Let's stick to 0,0 for Frightened to ensure they run away from Pacman generally if we invert logic?
+                // No, move_towards_target uses greedy approach to target.
+                // If target is 0,0 they all run to top-left.
+                // Let's leave it as is for Frightened for now to minimize scope creep,
+                // or maybe implement simple random walk in move_towards
                 self.target_position = Vector2::zero();
+            }
+            GhostState::Scatter => {
+                // Determine scatter corner based on behavior
+                let rows = map.data.len() as f32;
+                let cols = map.data[0].len() as f32;
+
+                self.target_position = match self.behavior {
+                    GhostBehavior::Blinky => Vector2::new(cols * tile_size, 0.0), // Top Right
+                    GhostBehavior::Pinky => Vector2::new(0.0, 0.0),               // Top Left
+                    GhostBehavior::Inky => Vector2::new(cols * tile_size, rows * tile_size), // Bottom Right
+                    GhostBehavior::Clyde => Vector2::new(0.0, rows * tile_size), // Bottom Left
+                };
             }
         }
 
@@ -73,7 +135,8 @@ impl Ghost {
         );
         self.state = GhostState::Chase;
         self.frightened_timer = 0.0;
-        // Optionally set is_active = true if we manage that
+        self.current_direction = (0, 0);
+        // is_active remains true
     }
 
     fn move_towards_target(&mut self, tile_size: f32, map: &mut Map2DModel) {
@@ -87,10 +150,10 @@ impl Ghost {
         let mut best_move = None;
         let mut min_dist = f32::MAX;
 
-        // Frightened mode: Invert distance check or pick random?
-        // Existing code: greedy approach.
-        // If Frightened, target is 0,0. It will run to top-left.
+        let reverse_dir = (-self.current_direction.0, -self.current_direction.1);
 
+        // Collect valid moves
+        let mut valid_moves = Vec::new();
         for (dir_x, dir_y) in directions.iter() {
             let next_x = current_x as i32 + dir_x;
             let next_y = current_y as i32 + dir_y;
@@ -100,15 +163,47 @@ impl Ghost {
                 let ny = next_y as usize;
 
                 if self.can_move_to(nx, ny, map) {
-                    // Calculate distance squared to target
-                    let dist_sq = ((nx as i32 - target_x as i32).pow(2)
-                        + (ny as i32 - target_y as i32).pow(2))
-                        as f32;
+                    valid_moves.push(((nx, ny), (*dir_x, *dir_y)));
+                }
+            }
+        }
 
-                    if dist_sq < min_dist {
-                        min_dist = dist_sq;
-                        best_move = Some((nx, ny));
-                    }
+        // Filter reverse direction unless it's a dead end (only 1 move available)
+        let candidates: Vec<_> = if valid_moves.len() > 1 && self.current_direction != (0, 0) {
+            valid_moves
+                .into_iter()
+                .filter(|(_, dir)| *dir != reverse_dir)
+                .collect()
+        } else {
+            valid_moves
+        };
+
+        // If Frightened, pick random
+        if self.state == GhostState::Frightened {
+            use rand::seq::SliceRandom;
+            let mut rng = rand::thread_rng();
+            if let Some(((next_x, next_y), dir)) = candidates.choose(&mut rng) {
+                best_move = Some((*next_x, *next_y));
+                self.current_direction = *dir;
+            }
+        } else {
+            // Pick closest to target
+            for ((nx, ny), dir) in candidates {
+                // Calculate distance squared to target
+                let dist_sq = ((nx as i32 - target_x as i32).pow(2)
+                    + (ny as i32 - target_y as i32).pow(2)) as f32;
+
+                // Priority: Up (-1 y) > Left (-1 x) > Down (+1 y) > Right (+1 x) ?
+                // Standard Pacman uses priority logic for ties.
+                // Simple strict less than handles ties by order of visiting.
+                // Our directions array is Right, Left, Down, Up.
+                // If we want standard priority (Up > Left > Down > Right), iterate in that order?
+                // For now, simple min_dist is fine, but helps to be consistent.
+
+                if dist_sq < min_dist {
+                    min_dist = dist_sq;
+                    best_move = Some((nx, ny));
+                    self.current_direction = dir;
                 }
             }
         }
@@ -132,9 +227,8 @@ impl Ghost {
 
         let tile = row.chars().nth(x).unwrap_or('#');
 
-        // Can move on paths, food, pills, empty spaces
+        // Can move on paths, food, pills, empty spaces, and spawners
         // Cannot move on Walls '#'.
-        // Removed 'P' and 'G' as we stop writing them.
-        matches!(tile, '.' | 'o' | '*' | ' ')
+        matches!(tile, '.' | 'o' | '*' | ' ' | 'S')
     }
 }

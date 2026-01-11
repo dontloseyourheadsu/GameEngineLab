@@ -1,4 +1,4 @@
-use super::ghost::{Ghost, GhostState};
+use super::ghost::{Ghost, GhostBehavior, GhostState};
 use engine_core::{
     character::character_2d::Character2D,
     physics::{collisions_2d::simple_collision_body::SimpleCollisionBody, velocity::Velocity},
@@ -21,7 +21,7 @@ impl GhostSpawner {
         }
     }
 
-    pub fn spawn_ghost(&mut self, tile_size: f32) {
+    pub fn spawn_ghost(&mut self, tile_size: f32, behavior: GhostBehavior) {
         if self.ghost.is_some() {
             return; // Already spawned
         }
@@ -53,6 +53,8 @@ impl GhostSpawner {
             state: GhostState::Chase,
             frightened_timer: 0.0,
             spawn_position: self.spawn_position,
+            behavior,
+            current_direction: (0, 0),
         };
 
         self.ghost = Some(ghost);

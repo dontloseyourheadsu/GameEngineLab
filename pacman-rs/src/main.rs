@@ -5,6 +5,8 @@ use engine_core::{
     physics::{collisions_2d::simple_collision_body::SimpleCollisionBody, velocity::Velocity},
     rendering::{coloring::texture_source::TextureSource, sprites_2d::sprite_2d::Sprite2D},
 };
+use rand::Rng;
+use rand::seq::SliceRandom;
 use raylib::prelude::*;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -15,7 +17,7 @@ use clay_filter::apply_clay_filter;
 mod ghosts;
 mod pacman;
 
-use crate::ghosts::ghost::GhostState;
+use crate::ghosts::ghost::{GhostBehavior, GhostState};
 use crate::ghosts::ghost_spawner::GhostSpawner;
 use crate::pacman::{
     controller::handle_input,
@@ -28,6 +30,14 @@ const UI_HEIGHT: i32 = 60;
 
 fn main() {
     let mut map = load_map_from_json(MAP_PATH);
+
+    // Limit map size to 50x50
+    if map.data.len() > 50 {
+        panic!("Map height exceeds 50 cells!");
+    }
+    if !map.data.is_empty() && map.data[0].len() > 50 {
+        panic!("Map width exceeds 50 cells!");
+    }
 
     let screen_width = map.data[0].len() as i32 * map.tile_size as i32;
     let screen_height = (map.data.len() as i32 * map.tile_size as i32) + UI_HEIGHT;
@@ -153,13 +163,61 @@ fn main() {
         }
     }
 
-    for (x, y) in s_positions {
+    // Limit to 8 ghosts and shuffle positions
+    let mut rng = rand::thread_rng();
+    s_positions.shuffle(&mut rng);
+    if s_positions.len() > 8 {
+        s_positions.truncate(8);
+    }
+
+    // Track behavior counts for weighted randomness
+    let mut behavior_counts = HashMap::new();
+    behavior_counts.insert(GhostBehavior::Blinky, 0);
+    behavior_counts.insert(GhostBehavior::Pinky, 0);
+    behavior_counts.insert(GhostBehavior::Inky, 0);
+    behavior_counts.insert(GhostBehavior::Clyde, 0);
+
+    let behaviors = [
+        GhostBehavior::Blinky,
+        GhostBehavior::Pinky,
+        GhostBehavior::Inky,
+        GhostBehavior::Clyde,
+    ];
+
+    for (i, (x, y)) in s_positions.into_iter().enumerate() {
         let spawn_pos = Vector2::new(
             (x as i32 * map.tile_size as i32) as f32,
             (y as i32 * map.tile_size as i32) as f32,
         );
         let mut spawner = GhostSpawner::new(spawn_pos);
-        spawner.spawn_ghost(map.tile_size as f32);
+
+        // Pick behavior with weighted probability
+        let mut best_behavior = GhostBehavior::Blinky; // Default
+        let mut _min_score = f32::MAX;
+
+        // Simple logic:
+        // Base weight = 1.0
+        // Weight = 1.0 / (count + 1)
+        // Pick based on random value
+
+        // Or simpler: Iterate and pick one with lowest count + random noise
+        let mut candidates = Vec::new();
+        for b in &behaviors {
+            let count = behavior_counts.get(b).unwrap_or(&0);
+            // Calculate a "score" -> lower is better (more likely to be picked)
+            // Score = count + random float (0.0 to 1.0)
+            let r: f32 = rng.r#gen();
+            let score = *count as f32 + r;
+            candidates.push((*b, score));
+        }
+
+        candidates.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        if let Some((b, _)) = candidates.first() {
+            best_behavior = *b;
+            *behavior_counts.get_mut(&best_behavior).unwrap() += 1;
+        }
+
+        spawner.spawn_ghost(map.tile_size as f32, best_behavior);
 
         if let Some(row) = map.data.get_mut(y) {
             row.replace_range(x..x + 1, "S"); // Modified: Keeping S for display logic
@@ -247,6 +305,7 @@ fn main() {
                             ghost.update(
                                 delta_time,
                                 pacman.character.position,
+                                pacman.current_direction,
                                 map.tile_size as f32,
                                 &mut map,
                             );
