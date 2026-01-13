@@ -21,7 +21,7 @@ fn main() {
     rl.set_target_fps(60);
 
     // Initialize default settings
-    let mut settings = GameSettings::default();
+    let mut settings = GameSettings::load();
 
     while !rl.window_should_close() {
         let scale = settings.scale;
@@ -44,7 +44,7 @@ fn main() {
 
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
             if play_btn.check_collision_point_rec(mouse_pos) {
-                game::run_game(&mut rl, &thread);
+                game::run_game(&mut rl, &thread, &settings);
                 continue;
             }
             if asset_btn.check_collision_point_rec(mouse_pos) {

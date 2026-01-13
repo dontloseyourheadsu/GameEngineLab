@@ -19,11 +19,12 @@ use crate::pacman::{
     movement::{PacmanEvent, move_pacman},
     pacman::Pacman,
 };
+use crate::settings::GameSettings;
 
 const MAP_PATH: &str = "data/map.json";
 const UI_HEIGHT: i32 = 60;
 
-pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread) {
+pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSettings) {
     let mut map = load_map_from_json(MAP_PATH);
 
     // Limit map size to 50x50
@@ -34,10 +35,14 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread) {
         panic!("Map width exceeds 50 cells!");
     }
 
+    let scale = settings.scale;
     let screen_width = map.data[0].len() as i32 * map.tile_size as i32;
     let screen_height = (map.data.len() as i32 * map.tile_size as i32) + UI_HEIGHT;
 
-    rl.set_window_size(screen_width, screen_height);
+    rl.set_window_size(
+        (screen_width as f32 * scale) as i32,
+        (screen_height as f32 * scale) as i32,
+    );
     rl.set_window_title(&thread, "Pacman-rs - Play");
 
     let mut textures = HashMap::new();
@@ -399,84 +404,93 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread) {
 
         d.clear_background(Color::BLACK);
 
-        // Draw UI
-        d.draw_text(&format!("SCORE: {}", score), 10, 10, 20, Color::WHITE);
-        d.draw_text(&format!("LIVES: {}", lives), 200, 10, 20, Color::WHITE);
+        {
+            let mut d = d.begin_mode2D(Camera2D {
+                offset: Vector2::zero(),
+                target: Vector2::zero(),
+                rotation: 0.0,
+                zoom: scale,
+            });
 
-        if game_over {
-            d.draw_text(
-                "GAME OVER",
-                screen_width / 2 - 100,
-                screen_height / 2,
-                40,
-                Color::RED,
+            // Draw UI
+            d.draw_text(&format!("SCORE: {}", score), 10, 10, 20, Color::WHITE);
+            d.draw_text(&format!("LIVES: {}", lives), 200, 10, 20, Color::WHITE);
+
+            if game_over {
+                d.draw_text(
+                    "GAME OVER",
+                    screen_width / 2 - 100,
+                    screen_height / 2,
+                    40,
+                    Color::RED,
+                );
+            } else if win {
+                d.draw_text(
+                    "YOU WIN!",
+                    screen_width / 2 - 100,
+                    screen_height / 2,
+                    40,
+                    Color::GREEN,
+                );
+            }
+
+            draw_map(&mut d, &map, &textures, map_offset);
+
+            let pacman_symbol = map.symbols.get("pacman").unwrap();
+            let pacman_texture = textures.get(pacman_symbol).unwrap();
+
+            pacman.character.sprite.draw(
+                &mut d,
+                pacman_texture,
+                pacman.character.position + map_offset,
+                map.tile_size as f32,
             );
-        } else if win {
-            d.draw_text(
-                "YOU WIN!",
-                screen_width / 2 - 100,
-                screen_height / 2,
-                40,
-                Color::GREEN,
-            );
-        }
 
-        draw_map(&mut d, &map, &textures, map_offset);
+            // Draw ghosts
+            let ghost_symbol = map.symbols.get("ghost").unwrap();
+            let ghost_texture_normal = textures.get(ghost_symbol).unwrap();
+            let ghost_texture_frightened = textures
+                .get(&format!("{}_frightened", ghost_symbol))
+                .unwrap_or(ghost_texture_normal);
 
-        let pacman_symbol = map.symbols.get("pacman").unwrap();
-        let pacman_texture = textures.get(pacman_symbol).unwrap();
+            for spawner in &ghost_spawners {
+                if let Some(ref ghost) = spawner.ghost {
+                    if ghost.is_active {
+                        let mut current_texture = ghost_texture_normal;
 
-        pacman.character.sprite.draw(
-            &mut d,
-            pacman_texture,
-            pacman.character.position + map_offset,
-            map.tile_size as f32,
-        );
-
-        // Draw ghosts
-        let ghost_symbol = map.symbols.get("ghost").unwrap();
-        let ghost_texture_normal = textures.get(ghost_symbol).unwrap();
-        let ghost_texture_frightened = textures
-            .get(&format!("{}_frightened", ghost_symbol))
-            .unwrap_or(ghost_texture_normal);
-
-        for spawner in &ghost_spawners {
-            if let Some(ref ghost) = spawner.ghost {
-                if ghost.is_active {
-                    let mut current_texture = ghost_texture_normal;
-
-                    if ghost.state == GhostState::Frightened {
-                        if ghost.frightened_timer > 3.0 {
-                            current_texture = ghost_texture_frightened;
-                        } else {
-                            // Blink in the last 3 seconds
-                            // Blink frequency: every 0.2 seconds (5 times per second)
-                            if (ghost.frightened_timer * 5.0) as i32 % 2 == 0 {
+                        if ghost.state == GhostState::Frightened {
+                            if ghost.frightened_timer > 3.0 {
                                 current_texture = ghost_texture_frightened;
+                            } else {
+                                // Blink in the last 3 seconds
+                                // Blink frequency: every 0.2 seconds (5 times per second)
+                                if (ghost.frightened_timer * 5.0) as i32 % 2 == 0 {
+                                    current_texture = ghost_texture_frightened;
+                                }
                             }
                         }
-                    }
 
-                    let source_rec = Rectangle::new(
-                        0.0,
-                        0.0,
-                        current_texture.width() as f32,
-                        current_texture.height() as f32,
-                    );
-                    let dest_rec = Rectangle::new(
-                        ghost.character.position.x + map_offset.x,
-                        ghost.character.position.y + map_offset.y,
-                        map.tile_size as f32,
-                        map.tile_size as f32,
-                    );
-                    d.draw_texture_pro(
-                        current_texture,
-                        source_rec,
-                        dest_rec,
-                        Vector2::new(0.0, 0.0),
-                        0.0,
-                        Color::WHITE,
-                    );
+                        let source_rec = Rectangle::new(
+                            0.0,
+                            0.0,
+                            current_texture.width() as f32,
+                            current_texture.height() as f32,
+                        );
+                        let dest_rec = Rectangle::new(
+                            ghost.character.position.x + map_offset.x,
+                            ghost.character.position.y + map_offset.y,
+                            map.tile_size as f32,
+                            map.tile_size as f32,
+                        );
+                        d.draw_texture_pro(
+                            current_texture,
+                            source_rec,
+                            dest_rec,
+                            Vector2::new(0.0, 0.0),
+                            0.0,
+                            Color::WHITE,
+                        );
+                    }
                 }
             }
         }
