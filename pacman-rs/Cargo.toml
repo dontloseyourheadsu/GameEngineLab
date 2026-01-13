@@ -8,6 +8,7 @@ engine_core = { path = "../engine_core" }
 raylib = "5.5.1"
 image = "0.24"
 rand = "0.8"
+serde = { version = "1.0", features = ["derive"] }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
