@@ -102,6 +102,7 @@ pub fn run_options(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &mut 
             if apply_btn.check_collision_point_rec(mouse_pos) {
                 // Update the actual settings
                 *settings = pending_settings;
+                settings.save();
 
                 // Apply Scale Effect
                 current_ui_scale = settings.scale;
