@@ -1,7 +1,53 @@
 use super::asset_editor::run_editor;
-use super::models::load_asset_groups;
+use super::models::{get_assets_definitions, AssetGroupSummary};
+use super::storage::{load_stored_asset_groups, AssetGroup};
 use crate::settings::GameSettings;
 use raylib::prelude::*;
+use raylib::ffi;
+
+pub fn load_asset_summaries(
+    rl: &mut RaylibHandle,
+    thread: &RaylibThread,
+) -> (Vec<AssetGroupSummary>, Vec<AssetGroup>) {
+    let stored_groups = load_stored_asset_groups();
+    let mut summaries = Vec::new();
+
+    for group in &stored_groups {
+        let mut thumbnails = Vec::new();
+        for asset in &group.assets {
+            // Get first frame
+            if let Some(frame_data) = asset.frames.first() {
+                let width = asset.width;
+                let height = asset.height;
+
+                // Create image from raw data
+                // Safety checks needed?
+                if !frame_data.is_empty() {
+                    unsafe {
+                        let raw_img = ffi::GenImageColor(width, height, ffi::Color { r:0, g:0, b:0, a:0 });
+                        if frame_data.len() == (width * height * 4) as usize {
+                            std::ptr::copy_nonoverlapping(frame_data.as_ptr(), raw_img.data as *mut u8, frame_data.len());
+                        }
+                        
+                        let img = Image::from_raw(raw_img);
+                        let tex = rl
+                            .load_texture_from_image(thread, &img)
+                            .expect("Failed thumb texture");
+                        thumbnails.push(tex);
+                    }
+                }
+            }
+        }
+
+        summaries.push(AssetGroupSummary {
+            name: group.name.clone(),
+            thumbnails,
+            is_done: group.is_done,
+        });
+    }
+
+    (summaries, stored_groups)
+}
 
 pub fn run_asset_group_selector(
     rl: &mut RaylibHandle,
@@ -19,7 +65,7 @@ pub fn run_asset_group_selector(
     rl.set_window_size(target_width, target_height);
     rl.set_window_title(thread, "Pacman-rs - Asset Group Selector");
 
-    let asset_groups = load_asset_groups();
+    let (mut asset_summaries, mut asset_groups_data) = load_asset_summaries(rl, thread);
     let mut selected_index: Option<usize> = None;
     let mut scroll_offset = 0.0;
 
@@ -40,7 +86,7 @@ pub fn run_asset_group_selector(
         }
 
         // Layout calc
-        let content_height = (asset_groups.len() as f32 * item_height).max(list_rect.height);
+        let content_height = (asset_summaries.len() as f32 * item_height).max(list_rect.height);
 
         // Input - Buttons
         let mouse_pos = rl.get_mouse_position() / current_scale;
@@ -65,17 +111,35 @@ pub fn run_asset_group_selector(
             }
             if new_btn.check_collision_point_rec(mouse_pos) {
                 // Open editor with new assets
-                run_editor(rl, thread, settings);
+                let name = format!("Group {}", asset_summaries.len() + 1);
+                let new_group = AssetGroup::new_empty(name, &get_assets_definitions());
+
+                run_editor(rl, thread, settings, new_group);
+
+                // Reload
+                let (new_summaries, new_data) = load_asset_summaries(rl, thread);
+                asset_summaries = new_summaries;
+                asset_groups_data = new_data;
+
                 // Restore window properties after returning
                 rl.set_window_size(t_w, t_h);
                 rl.set_window_title(thread, "Pacman-rs - Asset Group Selector");
             }
             if load_btn.check_collision_point_rec(mouse_pos) {
-                if let Some(_idx) = selected_index {
+                if let Some(idx) = selected_index {
                     // Logic to load would go here, currently just calling editor
-                    run_editor(rl, thread, settings);
-                    rl.set_window_size(t_w, t_h);
-                    rl.set_window_title(thread, "Pacman-rs - Asset Group Selector");
+                    if idx < asset_groups_data.len() {
+                        let group = asset_groups_data[idx].clone();
+                        run_editor(rl, thread, settings, group);
+
+                        // Reload
+                        let (new_summaries, new_data) = load_asset_summaries(rl, thread);
+                        asset_summaries = new_summaries;
+                        asset_groups_data = new_data;
+
+                        rl.set_window_size(t_w, t_h);
+                        rl.set_window_title(thread, "Pacman-rs - Asset Group Selector");
+                    }
                 }
             }
 
@@ -84,7 +148,7 @@ pub fn run_asset_group_selector(
                 let rel_y = mouse_pos.y - list_rect.y - scroll_offset;
                 if rel_y >= 0.0 && rel_y < content_height {
                     let idx = (rel_y / item_height) as usize;
-                    if idx < asset_groups.len() {
+                    if idx < asset_summaries.len() {
                         selected_index = Some(idx);
                     }
                 }
@@ -116,7 +180,7 @@ pub fn run_asset_group_selector(
                     (list_rect.height * current_scale) as i32,
                 );
 
-                for (i, group) in asset_groups.iter().enumerate() {
+                for (i, group) in asset_summaries.iter().enumerate() {
                     let item_y = list_rect.y + scroll_offset + (i as f32 * item_height);
                     let item_rect =
                         Rectangle::new(list_rect.x, item_y, list_rect.width, item_height);
@@ -129,8 +193,15 @@ pub fn run_asset_group_selector(
 
                     // Contrast background
                     d.draw_rectangle_rec(item_rect, bg_color);
+                    
+                    let label = if group.is_done {
+                        format!("{} (Done)", group.name)
+                    } else {
+                        format!("{} (WIP)", group.name)
+                    };
+                    
                     d.draw_text(
-                        &group.name,
+                        &label,
                         (item_rect.x + 10.0) as i32,
                         (item_rect.y + 20.0) as i32,
                         20,

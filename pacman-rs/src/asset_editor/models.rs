@@ -8,6 +8,7 @@ pub struct AssetDef {
 pub struct AssetGroupSummary {
     pub name: String,
     pub thumbnails: Vec<Texture2D>,
+    pub is_done: bool,
 }
 
 pub fn get_assets_definitions() -> Vec<AssetDef> {
@@ -33,9 +34,4 @@ pub fn get_assets_definitions() -> Vec<AssetDef> {
             frames: 1,
         },
     ]
-}
-
-pub fn load_asset_groups() -> Vec<AssetGroupSummary> {
-    // ToImplement: Currently returns 0 items
-    Vec::new()
 }
