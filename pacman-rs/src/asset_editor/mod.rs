@@ -1,5 +1,6 @@
 pub mod asset_editor;
 pub mod group_selector;
+pub mod storage;
 mod canvas;
 mod models;
 mod ui;
