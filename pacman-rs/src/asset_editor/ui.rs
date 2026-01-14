@@ -22,7 +22,8 @@ pub struct EditorLayout {
     pub palette_y: f32,
     pub color_box_size: f32,
     pub box_spacing: f32,
-    pub back_btn: Rectangle,
+    pub save_btn: Rectangle,
+    pub discard_btn: Rectangle,
     pub ui_base_y: f32,
     pub frame_box_size: f32,
     pub frame_box_spacing: f32,
@@ -50,7 +51,9 @@ impl EditorLayout {
         let color_box_size = 30.0;
         let box_spacing = 5.0;
 
-        let back_btn = Rectangle::new(20.0, 20.0, 100.0, 40.0);
+        let save_btn = Rectangle::new(20.0, 20.0, 100.0, 40.0);
+        let discard_btn = Rectangle::new(130.0, 20.0, 100.0, 40.0);
+
         let ui_base_y = canvas_rect.y + canvas_rect.height + 30.0;
         let frame_box_size = 50.0;
         let frame_box_spacing = 10.0;
@@ -64,7 +67,8 @@ impl EditorLayout {
             palette_y,
             color_box_size,
             box_spacing,
-            back_btn,
+            save_btn,
+            discard_btn,
             ui_base_y,
             frame_box_size,
             frame_box_spacing,
@@ -114,18 +118,36 @@ pub fn draw_ui(
         Color::DARKGRAY,
     );
 
-    // Back Button
-    let btn_color = if layout.back_btn.check_collision_point_rec(mouse_pos) {
+    // Save Button
+    let save_hover = layout.save_btn.check_collision_point_rec(mouse_pos);
+    let save_color = if save_hover {
         Color::SKYBLUE
     } else {
         Color::LIGHTGRAY
     };
-    d.draw_rectangle_rec(layout.back_btn, btn_color);
-    d.draw_rectangle_lines_ex(layout.back_btn, 2.0, Color::DARKGRAY);
+    d.draw_rectangle_rec(layout.save_btn, save_color);
+    d.draw_rectangle_lines_ex(layout.save_btn, 2.0, Color::DARKGRAY);
     d.draw_text(
-        "BACK",
-        layout.back_btn.x as i32 + 25,
-        layout.back_btn.y as i32 + 10,
+        "Save",
+        layout.save_btn.x as i32 + 25,
+        layout.save_btn.y as i32 + 10,
+        20,
+        Color::BLACK,
+    );
+
+    // Discard Button
+    let discard_hover = layout.discard_btn.check_collision_point_rec(mouse_pos);
+    let discard_color = if discard_hover {
+        Color::RED
+    } else {
+        Color::LIGHTGRAY
+    };
+    d.draw_rectangle_rec(layout.discard_btn, discard_color);
+    d.draw_rectangle_lines_ex(layout.discard_btn, 2.0, Color::DARKGRAY);
+    d.draw_text(
+        "Discard",
+        layout.discard_btn.x as i32 + 10,
+        layout.discard_btn.y as i32 + 10,
         20,
         Color::BLACK,
     );
