@@ -60,7 +60,11 @@ pub fn run_editor(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameS
 
         // Input Handling
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-            if layout.back_btn.check_collision_point_rec(mouse_pos) {
+            if layout.save_btn.check_collision_point_rec(mouse_pos) {
+                println!("TODO: Save Asset Group");
+                break;
+            }
+            if layout.discard_btn.check_collision_point_rec(mouse_pos) {
                 break;
             }
 

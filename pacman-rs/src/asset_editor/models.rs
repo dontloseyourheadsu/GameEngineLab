@@ -1,6 +1,13 @@
+use raylib::prelude::*;
+
 pub struct AssetDef {
     pub name: &'static str,
     pub frames: usize,
+}
+
+pub struct AssetGroupSummary {
+    pub name: String,
+    pub thumbnails: Vec<Texture2D>,
 }
 
 pub fn get_assets_definitions() -> Vec<AssetDef> {
@@ -26,4 +33,9 @@ pub fn get_assets_definitions() -> Vec<AssetDef> {
             frames: 1,
         },
     ]
+}
+
+pub fn load_asset_groups() -> Vec<AssetGroupSummary> {
+    // ToImplement: Currently returns 0 items
+    Vec::new()
 }

@@ -48,7 +48,7 @@ fn main() {
                 continue;
             }
             if asset_btn.check_collision_point_rec(mouse_pos) {
-                asset_editor::run_editor(&mut rl, &thread, &settings);
+                asset_editor::run_asset_group_selector(&mut rl, &thread, &settings);
                 continue;
             }
             if options_btn.check_collision_point_rec(mouse_pos) {
