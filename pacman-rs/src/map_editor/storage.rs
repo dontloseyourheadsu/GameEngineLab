@@ -113,7 +113,9 @@ pub fn save_map_groups(groups: &[MapGroup]) {
         {
             use engine_core::storage::wasm_storage::web_utils::save_file_to_local_storage;
             let key = "maps.bin";
-            if let Err(_) = save_file_to_local_storage(key, &data) {}
+            if let Err(e) = save_file_to_local_storage(key, &data) {
+                eprintln!("Failed to save map groups: {:?}", e);
+            }
         }
     }
 }

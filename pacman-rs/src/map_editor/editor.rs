@@ -5,6 +5,8 @@ use crate::settings::GameSettings;
 use super::models::{get_tile_definitions, EMPTY_CHAR};
 use super::storage::{evaluate_map, load_stored_map_groups, save_map_groups, MapGroup};
 
+const PALETTE_WIDTH: f32 = 220.0;
+
 pub fn run_editor(
     rl: &mut RaylibHandle,
     thread: &RaylibThread,
@@ -48,8 +50,8 @@ pub fn run_editor(
 
         let mouse_pos = rl.get_mouse_position() / scale;
 
-        let save_btn = Rectangle::new(560.0, 520.0, 220.0, 40.0);
-        let back_btn = Rectangle::new(560.0, 565.0, 220.0, 30.0);
+        let save_btn = Rectangle::new(560.0, 520.0, PALETTE_WIDTH, 40.0);
+        let back_btn = Rectangle::new(560.0, 565.0, PALETTE_WIDTH, 30.0);
 
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
             if save_btn.check_collision_point_rec(mouse_pos) {
@@ -72,7 +74,7 @@ pub fn run_editor(
                 let item_rect = Rectangle::new(
                     palette_x,
                     palette_y + i as f32 * palette_item_height,
-                    220.0,
+                    PALETTE_WIDTH,
                     palette_item_height - 4.0,
                 );
                 if item_rect.check_collision_point_rec(mouse_pos) {
@@ -217,7 +219,12 @@ fn draw_palette(
 ) {
     d.draw_text("Tiles", palette_x as i32, (palette_y - 30.0) as i32, 20, Color::DARKBLUE);
     for (i, tile) in tile_defs.iter().enumerate() {
-        let item_rect = Rectangle::new(palette_x, palette_y + i as f32 * item_height, 220.0, item_height - 4.0);
+        let item_rect = Rectangle::new(
+            palette_x,
+            palette_y + i as f32 * item_height,
+            PALETTE_WIDTH,
+            item_height - 4.0,
+        );
         let selected = i == selected_idx;
         let hover = item_rect.check_collision_point_rec(mouse_pos);
         let bg_color = if selected {
