@@ -1,12 +1,25 @@
-use image::{ImageBuffer, Rgb, RgbImage};
+use image::{ImageBuffer, Rgba, RgbaImage, Pixel};
 
-pub fn apply_clay_filter(img: &RgbImage) -> RgbImage {
+pub fn apply_clay_filter(img: &RgbaImage) -> RgbaImage {
     let width = img.width();
     let height = img.height();
     let mut output = ImageBuffer::new(width, height);
 
     for y in 1..height - 1 {
         for x in 1..width - 1 {
+            let pixel = img.get_pixel(x, y);
+            // If completely transparent, skip processing and keep it transparent
+            if pixel[3] == 0 {
+                output.put_pixel(x, y, *pixel);
+                continue;
+            }
+
+            // Convert to RGB for processing
+            let rgb = pixel.to_rgb();
+            
+            // We need a helper for bilateral that handles RGBA but only looks at RGB channels
+            // For simplicity, let's just extract RGB, process, and recombine with Alpha
+            
             let smooth = bilateral_filter(img, x as i32, y as i32, 3, 3.0, 30.0);
 
             let h_l = luminance(bilateral_filter(img, x as i32 - 1, y as i32, 3, 3.0, 30.0));
@@ -17,20 +30,18 @@ pub fn apply_clay_filter(img: &RgbImage) -> RgbImage {
             let normal = normal_from_height(h_l, h_r, h_u, h_d, 3.0);
             let lit = light_pixel(smooth, normal);
 
-            let out = Rgb([
+            let out = Rgba([
                 add_noise(lit[0]) as u8,
                 add_noise(lit[1]) as u8,
                 add_noise(lit[2]) as u8,
+                pixel[3], // Preserve Alpha
             ]);
 
             output.put_pixel(x, y, out);
         }
     }
     
-    // Fill borders with original or black to avoid uninitialized pixels
-    // For simplicity, we just leave them black or copy original? 
-    // The loop skips 0 and width-1. Let's just leave them as is (black/transparent if initialized to 0)
-    // or copy from source. Copying from source is safer visually.
+    // Copy borders
     for x in 0..width {
         output.put_pixel(x, 0, *img.get_pixel(x, 0));
         output.put_pixel(x, height - 1, *img.get_pixel(x, height - 1));
@@ -44,7 +55,7 @@ pub fn apply_clay_filter(img: &RgbImage) -> RgbImage {
 }
 
 fn bilateral_filter(
-    img: &RgbImage,
+    img: &RgbaImage,
     x: i32,
     y: i32,
     radius: i32,
