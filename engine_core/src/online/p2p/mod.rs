@@ -55,4 +55,37 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_generate_and_connect_via_link() -> anyhow::Result<()> {
+        let node_a = P2PNode::new(0)?;
+        let node_b = P2PNode::new(0)?;
+
+        let ip_b = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        let link = node_b.generate_invite_link(ip_b)?;
+        println!("Generated link: {}", link);
+
+        // Node B accepts in background...
+        let endpoint_b = node_b.endpoint.clone();
+        let accept_task = tokio::spawn(async move {
+            if let Some(incoming) = endpoint_b.accept().await {
+                let connection = incoming.await.expect("Accept failed");
+                if let Ok(recv) = connection.accept_uni().await {
+                    let msg = read_stream(recv).await.expect("Read failed");
+                    return Some(msg);
+                }
+            }
+            None
+        });
+
+        // Node A connects using link
+        let conn = node_a.connect_via_link(&link).await?;
+        let msg = b"Link Connect Works";
+        send_msg(&conn, msg).await?;
+
+        let received = accept_task.await?;
+        assert_eq!(received, Some(msg.to_vec()));
+
+        Ok(())
+    }
 }
