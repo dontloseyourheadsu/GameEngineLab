@@ -5,7 +5,7 @@ use engine_core::{
     rendering::sprites_2d::sprite_2d::Sprite2D,
 };
 use raylib::math::Vector2;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 
 pub struct GhostSpawner {
@@ -65,6 +65,7 @@ impl GhostSpawner {
                 (self.spawn_position.x / tile_size) as usize,
                 (self.spawn_position.y / tile_size) as usize,
             ),
+            return_path: VecDeque::new(),
         };
 
         self.ghost = Some(ghost);
