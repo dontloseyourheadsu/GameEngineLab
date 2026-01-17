@@ -28,6 +28,10 @@ pub struct Ghost {
     pub spawn_position: Vector2,
     pub behavior: GhostBehavior,
     pub current_direction: (i32, i32),
+    pub is_moving: bool,
+    pub move_progress: f32,
+    pub previous_grid_position: (usize, usize),
+    pub next_grid_position: (usize, usize),
 }
 
 impl Ghost {
@@ -38,6 +42,7 @@ impl Ghost {
         pacman_dir: Vector2,
         tile_size: f32,
         map: &mut Map2DModel,
+        move_interval_secs: f32,
     ) {
         if !self.is_active {
             return;
@@ -116,6 +121,7 @@ impl Ghost {
         }
 
         // Move towards target
+        self.update_visuals(delta_time, move_interval_secs, tile_size);
         self.move_towards_target(tile_size, map);
     }
 
@@ -132,13 +138,55 @@ impl Ghost {
             (self.spawn_position.x / tile_size) as usize,
             (self.spawn_position.y / tile_size) as usize,
         );
+        self.previous_grid_position = self.grid_position;
+        self.next_grid_position = self.grid_position;
+        self.is_moving = false;
+        self.move_progress = 0.0;
+
         self.state = GhostState::Chase;
         self.frightened_timer = 0.0;
         self.current_direction = (0, 0);
         // is_active remains true
     }
 
+    fn update_visuals(&mut self, delta_time: f32, move_interval_secs: f32, tile_size: f32) {
+        if !self.is_moving {
+            self.character.position.x = (self.grid_position.0 as f32) * tile_size;
+            self.character.position.y = (self.grid_position.1 as f32) * tile_size;
+            return;
+        }
+
+        self.move_progress += delta_time / move_interval_secs;
+
+        // Physical update: for 1/3 (3/4 actually, but let's say > 0.5) and 4/4 then it will be at target cell
+        if self.move_progress >= 0.5 && self.grid_position != self.next_grid_position {
+            self.grid_position = self.next_grid_position;
+        }
+
+        if self.move_progress >= 1.0 {
+            self.move_progress = 0.0;
+            self.is_moving = false;
+            // Snap to next
+            self.grid_position = self.next_grid_position;
+            self.character.position.x = (self.grid_position.0 as f32) * tile_size;
+            self.character.position.y = (self.grid_position.1 as f32) * tile_size;
+        } else {
+            // Interpolate
+            let start_x = (self.previous_grid_position.0 as f32) * tile_size;
+            let start_y = (self.previous_grid_position.1 as f32) * tile_size;
+            let end_x = (self.next_grid_position.0 as f32) * tile_size;
+            let end_y = (self.next_grid_position.1 as f32) * tile_size;
+
+            let t = self.move_progress;
+            self.character.position.x = start_x + (end_x - start_x) * t;
+            self.character.position.y = start_y + (end_y - start_y) * t;
+        }
+    }
+
     fn move_towards_target(&mut self, tile_size: f32, map: &mut Map2DModel) {
+        if self.is_moving {
+            return;
+        }
         let (current_x, current_y) = self.grid_position;
         let target_x = (self.target_position.x / tile_size) as usize;
         let target_y = (self.target_position.y / tile_size) as usize;
@@ -208,10 +256,12 @@ impl Ghost {
         }
 
         if let Some((next_x, next_y)) = best_move {
-            // Update position
-            self.grid_position = (next_x, next_y);
-            self.character.position.x = (next_x as f32) * tile_size;
-            self.character.position.y = (next_y as f32) * tile_size;
+            // Initiate move
+            self.previous_grid_position = self.grid_position;
+            self.next_grid_position = (next_x, next_y);
+            self.is_moving = true;
+            self.move_progress = 0.0;
+            // grid_position remains current until t >= 0.5
         }
     }
 
