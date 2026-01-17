@@ -9,8 +9,15 @@ pub enum PacmanEvent {
 }
 
 pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) -> PacmanEvent {
-    let tile_size = map.tile_size as f32;
     let (current_x, current_y) = pacman.grid_position;
+
+    // If already moving, specific logic handles animation updates elsewhere or we return early.
+    // However, for this architecture, we split logic (try_move) and visual (update).
+    // This function acts as 'try_move'.
+    if pacman.is_moving {
+        return PacmanEvent::None;
+    }
+
     let mut event = PacmanEvent::None;
 
     // Try to update direction
@@ -41,12 +48,78 @@ pub fn move_pacman(pacman: &mut Pacman, map: &mut Map2DModel) -> PacmanEvent {
             }
         }
 
-        // Move Pacman
+        // Move Pacman Logic (Start Move)
+        // Check if teleporting (wraparound means distance > 1)
+        let dist_x = (next_x as i32 - current_x as i32).abs();
+        let dist_y = (next_y as i32 - current_y as i32).abs();
+        pacman.is_teleporting = dist_x > 1 || dist_y > 1;
+
+        pacman.previous_grid_position = pacman.grid_position;
         pacman.grid_position = (next_x, next_y);
-        pacman.character.position.x = (next_x as f32) * tile_size;
-        pacman.character.position.y = (next_y as f32) * tile_size;
+        // Do NOT set character.position here, it's handled by update_visuals
+        pacman.is_moving = true;
+        pacman.move_progress = 0.0;
     }
     event
+}
+
+pub fn update_pacman_visuals(
+    pacman: &mut Pacman,
+    delta_time: f32,
+    move_interval_secs: f32,
+    tile_size: f32,
+) {
+    if !pacman.is_moving {
+        // Ensure position is snapped
+        pacman.character.position.x = (pacman.grid_position.0 as f32) * tile_size;
+        pacman.character.position.y = (pacman.grid_position.1 as f32) * tile_size;
+        return;
+    }
+
+    pacman.move_progress += delta_time / move_interval_secs;
+
+    if pacman.move_progress >= 1.0 {
+        pacman.move_progress = 0.0;
+        pacman.is_moving = false;
+        pacman.is_teleporting = false;
+        // Snap to final
+        pacman.character.position.x = (pacman.grid_position.0 as f32) * tile_size;
+        pacman.character.position.y = (pacman.grid_position.1 as f32) * tile_size;
+    } else {
+        if !pacman.is_teleporting {
+            // Normal movement: Interpolate (stepped)
+            let start_x = (pacman.previous_grid_position.0 as f32) * tile_size;
+            let start_y = (pacman.previous_grid_position.1 as f32) * tile_size;
+            let end_x = (pacman.grid_position.0 as f32) * tile_size;
+            let end_y = (pacman.grid_position.1 as f32) * tile_size;
+
+            let t = pacman.move_progress;
+            let steps = 4.0;
+            let stepped_t = (t * steps).floor() / steps;
+
+            pacman.character.position.x = start_x + (end_x - start_x) * stepped_t;
+            pacman.character.position.y = start_y + (end_y - start_y) * stepped_t;
+        } else {
+            // Teleporting logic
+            let t = pacman.move_progress;
+            let steps = 4.0;
+            let stepped_t = (t * steps).floor() / steps; // 0.0, 0.25, 0.5, 0.75
+
+            if stepped_t >= 0.75 {
+                // Last frame: Show at target
+                let end_x = (pacman.grid_position.0 as f32) * tile_size;
+                let end_y = (pacman.grid_position.1 as f32) * tile_size;
+                pacman.character.position.x = end_x;
+                pacman.character.position.y = end_y;
+            } else {
+                // First frames: Show at start
+                let start_x = (pacman.previous_grid_position.0 as f32) * tile_size;
+                let start_y = (pacman.previous_grid_position.1 as f32) * tile_size;
+                pacman.character.position.x = start_x;
+                pacman.character.position.y = start_y;
+            }
+        }
+    }
 }
 
 fn get_next_position(
