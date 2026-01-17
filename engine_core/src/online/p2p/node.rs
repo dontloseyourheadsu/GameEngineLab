@@ -1,5 +1,6 @@
-use super::cert::{configure_client, configure_server};
+use super::cert::{SkipServerVerification, configure_client, configure_server};
 use anyhow::Result;
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use quinn::Endpoint;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
@@ -17,7 +18,7 @@ impl P2PNode {
         let _ = rustls::crypto::ring::default_provider().install_default();
 
         let (server_config, _server_cert) = configure_server()?;
-        let mut client_config = configure_client()?;
+        let mut client_config = configure_client(Arc::new(SkipServerVerification))?;
 
         let mut endpoint = Endpoint::server(
             server_config,
@@ -41,6 +42,24 @@ impl P2PNode {
     pub async fn connect(&self, addr: SocketAddr, server_name: &str) -> Result<quinn::Connection> {
         let connection = self.endpoint.connect(addr, server_name)?.await?;
         Ok(connection)
+    }
+
+    /// Generates a base64 connection link containing IP and port.
+    /// If external_ip is provided, it uses that; otherwise it uses the bounds IP (which is 0.0.0.0, not useful for sharing).
+    /// You should pass the machine's public or LAN IP here.
+    pub fn generate_invite_link(&self, external_ip: IpAddr) -> Result<String> {
+        let port = self.local_addr()?.port();
+        let s = format!("{}:{}", external_ip, port);
+        Ok(BASE64.encode(s))
+    }
+
+    /// Connects to a peer using the invite link.
+    pub async fn connect_via_link(&self, link: &str) -> Result<quinn::Connection> {
+        let bytes = BASE64.decode(link)?;
+        let s = String::from_utf8(bytes)?;
+        let addr: SocketAddr = s.parse()?;
+        // server_name "localhost" is a placeholder since we skip verification
+        self.connect(addr, "localhost").await
     }
 }
 
