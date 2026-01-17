@@ -1,5 +1,6 @@
 mod asset_editor;
 mod clay_filter;
+mod grayscale_filter;
 mod game;
 mod ghosts;
 mod map_editor;

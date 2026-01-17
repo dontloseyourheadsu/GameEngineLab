@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 use crate::clay_filter::apply_clay_filter;
 use crate::ghosts::ghost::{GhostBehavior, GhostState};
 use crate::ghosts::ghost_spawner::GhostSpawner;
+use crate::grayscale_filter::apply_grayscale_filter;
 use crate::pacman::{
     controller::handle_input,
     movement::{PacmanEvent, move_pacman, update_pacman_visuals},
@@ -74,9 +75,9 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
 
                         // If it's a ghost, also create a filtered version
                         if name == "ghost" {
-                            // Filter works on RGB
-                            let img_rgb = img.to_rgb8();
-                            let processed_img = apply_clay_filter(&img_rgb);
+                            // Frightened: Use RGBA to preserve transparency
+                            let img_rgba = img.clone().to_rgba8();
+                            let processed_img = apply_clay_filter(&img_rgba);
                             let mut buffer = std::io::Cursor::new(Vec::new());
                             processed_img
                                 .write_to(&mut buffer, image::ImageOutputFormat::Png)
@@ -88,6 +89,20 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                                 .load_texture_from_image(&thread, &image)
                                 .expect("Failed to create texture");
                             textures.insert(format!("{}_frightened", symbol), texture);
+
+                            // Returning
+                            let gray_img = apply_grayscale_filter(&img_rgba);
+                            let mut buffer = std::io::Cursor::new(Vec::new());
+                            gray_img
+                                .write_to(&mut buffer, image::ImageOutputFormat::Png)
+                                .unwrap();
+                            let data = buffer.into_inner();
+                            let image = Image::load_image_from_mem(file_extension, &data)
+                                .expect("Failed to load image from memory");
+                            let texture = rl
+                                .load_texture_from_image(&thread, &image)
+                                .expect("Failed to create texture");
+                            textures.insert(format!("{}_returning", symbol), texture);
                         }
                     }
                 }
@@ -274,7 +289,8 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
             // Sync ghosts to global mode (unless frightened or waiting)
             for spawner in ghost_spawners.iter_mut() {
                 if let Some(ghost) = spawner.ghost.as_mut() {
-                    if ghost.state != GhostState::Frightened {
+                    if ghost.state != GhostState::Frightened && ghost.state != GhostState::Returning
+                    {
                         ghost.state = if is_scatter_mode {
                             GhostState::Scatter
                         } else {
@@ -310,8 +326,11 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                         items_eaten += 1;
                         for spawner in ghost_spawners.iter_mut() {
                             if let Some(ref mut ghost) = spawner.ghost {
-                                ghost.state = GhostState::Frightened;
-                                ghost.frightened_timer = 10.0;
+                                if ghost.state != GhostState::Returning {
+                                    ghost.state = GhostState::Frightened;
+                                    // Set timer to 15 seconds (requested by user: 10 or 15)
+                                    ghost.frightened_timer = 15.0;
+                                }
                             }
                         }
                     }
@@ -327,9 +346,9 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                     if let Some(ref mut ghost) = spawner.ghost {
                         if ghost.is_active && ghost.grid_position == pacman.grid_position {
                             if ghost.state == GhostState::Frightened {
-                                ghost.respawn();
+                                ghost.on_eaten();
                                 score += 200;
-                            } else {
+                            } else if ghost.state != GhostState::Returning {
                                 lives -= 1;
                                 reset_needed = true;
                             }
@@ -358,9 +377,9 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                         if let Some(ref mut ghost) = spawner.ghost {
                             if ghost.is_active && ghost.grid_position == pacman.grid_position {
                                 if ghost.state == GhostState::Frightened {
-                                    ghost.respawn();
+                                    ghost.on_eaten();
                                     score += 200;
-                                } else {
+                                } else if ghost.state != GhostState::Returning {
                                     lives -= 1;
                                     reset_needed = true;
                                 }
@@ -387,7 +406,7 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                         // Reset All Ghosts
                         for spawner in ghost_spawners.iter_mut() {
                             if let Some(ref mut ghost) = spawner.ghost {
-                                ghost.respawn();
+                                ghost.reset(map.tile_size as f32);
                             }
                         }
                     }
@@ -478,6 +497,9 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
             let ghost_texture_frightened = textures
                 .get(&format!("{}_frightened", ghost_symbol))
                 .unwrap_or(ghost_texture_normal);
+            let ghost_texture_returning = textures
+                .get(&format!("{}_returning", ghost_symbol))
+                .unwrap_or(ghost_texture_normal);
 
             for spawner in &ghost_spawners {
                 if let Some(ref ghost) = spawner.ghost {
@@ -494,6 +516,8 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                                     current_texture = ghost_texture_frightened;
                                 }
                             }
+                        } else if ghost.state == GhostState::Returning {
+                            current_texture = ghost_texture_returning;
                         }
 
                         let source_rec = Rectangle::new(
