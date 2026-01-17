@@ -1,72 +1,58 @@
-pub mod crypto;
+pub mod cert;
 pub mod node;
-pub mod packet;
 
 pub use node::P2PNode;
-pub use packet::Packet;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use node::ConnectionState;
+    use super::node::{P2PNode, read_stream, send_msg};
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-    use std::thread;
-    use std::time::Duration;
 
-    #[test]
-    fn test_p2p_connection_and_messaging() {
-        // Bind with port 0 to let OS assign an available port
-        let mut node_a = P2PNode::new(0).expect("Failed to bind node A");
-        let mut node_b = P2PNode::new(0).expect("Failed to bind node B");
+    #[tokio::test]
+    async fn test_p2p_connection_and_messaging_quic() -> anyhow::Result<()> {
+        // Create two nodes
+        let node_a = P2PNode::new(0)?;
+        let node_b = P2PNode::new(0)?;
 
-        // Get the assigned addresses (assuming localhost)
-        // Note: local_addr() returns the bound address. If we bound to 0.0.0.0, it returns 0.0.0.0.
-        // We need to use 127.0.0.1 for the connect call.
-        let port_a = node_a.socket.local_addr().unwrap().port();
-        let port_b = node_b.socket.local_addr().unwrap().port();
-
-        let _addr_a = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port_a);
-        let addr_b = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port_b);
+        let port_a = node_a.local_addr()?.port();
+        let port_b = node_b.local_addr()?.port();
 
         println!("Node A on {}, Node B on {}", port_a, port_b);
 
-        // A connects to B
-        node_a.connect(addr_b);
+        let addr_b = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port_b);
 
-        // Simulation loop
-        let msg = b"Hello Secure World";
-        let mut msg_sent = false;
-        let mut msg_received = false;
+        // We need to accept on Node B.
+        let endpoint_b = node_b.endpoint.clone();
 
-        for i in 0..100 {
-            node_a.update();
-            node_b.update();
+        let accept_task = tokio::spawn(async move {
+            if let Some(incoming) = endpoint_b.accept().await {
+                println!("Node B: incoming connection...");
+                let connection = incoming.await.expect("Failed to accept connection");
+                println!("Node B: connected from {}", connection.remote_address());
 
-            // When B receives A's Hello (which happens implicitly by A sending it),
-            // B will set A as peer.
-            // Note: In my implementation, B accepts peer if peer_addr is none.
-
-            // Wait for connection
-            if node_a.state == ConnectionState::Connected
-                && node_b.state == ConnectionState::Connected
-            {
-                if !msg_sent {
-                    println!("Both connected! Sending message...");
-                    node_a.send_message(msg.to_vec());
-                    msg_sent = true;
+                // Wait for a message (stream)
+                if let Ok(recv) = connection.accept_uni().await {
+                    let msg = read_stream(recv).await.expect("Failed to read stream");
+                    println!(
+                        "Node B: received message: {:?}",
+                        String::from_utf8_lossy(&msg)
+                    );
+                    return Some(msg);
                 }
             }
+            None
+        });
 
-            if let Some(received) = node_b.receive_message() {
-                assert_eq!(received, msg);
-                println!("Message received successfully!");
-                msg_received = true;
-                break;
-            }
+        // Node A connects
+        let conn_a = node_a.connect(addr_b, "localhost").await?;
+        println!("Node A: connected to B");
 
-            thread::sleep(Duration::from_millis(50));
-        }
+        let msg = b"Hello QUIC World";
+        send_msg(&conn_a, msg).await?;
 
-        assert!(msg_received, "Message was not received");
+        let received_msg = accept_task.await?;
+        assert_eq!(received_msg, Some(msg.to_vec()));
+
+        Ok(())
     }
 }
