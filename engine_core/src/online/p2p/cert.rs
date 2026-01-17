@@ -35,7 +35,7 @@ pub fn configure_server() -> Result<(quinn::ServerConfig, Vec<u8>)> {
 }
 
 #[derive(Debug)]
-struct SkipServerVerification;
+pub struct SkipServerVerification;
 
 impl ServerCertVerifier for SkipServerVerification {
     fn verify_server_cert(
@@ -77,11 +77,13 @@ impl ServerCertVerifier for SkipServerVerification {
     }
 }
 
-/// Configures a client that skips server verification (for P2P)
-pub fn configure_client() -> Result<quinn::ClientConfig> {
+/// Configures a client with a custom verifier.
+/// If `verifier` is None, it effectively trusts nothing (or fails).
+/// Use `SkipServerVerification` for blind trust.
+pub fn configure_client(verifier: Arc<dyn ServerCertVerifier>) -> Result<quinn::ClientConfig> {
     let client_crypto = ClientConfig::builder()
         .dangerous()
-        .with_custom_certificate_verifier(Arc::new(SkipServerVerification))
+        .with_custom_certificate_verifier(verifier)
         .with_no_client_auth();
 
     let client_config = quinn::ClientConfig::new(Arc::new(
