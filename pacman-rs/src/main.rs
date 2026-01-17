@@ -2,6 +2,7 @@ mod asset_editor;
 mod clay_filter;
 mod game;
 mod ghosts;
+mod map_editor;
 mod options_menu;
 mod pacman;
 mod settings;
@@ -49,6 +50,10 @@ fn main() {
             }
             if asset_btn.check_collision_point_rec(mouse_pos) {
                 asset_editor::run_asset_group_selector(&mut rl, &thread, &settings);
+                continue;
+            }
+            if map_btn.check_collision_point_rec(mouse_pos) {
+                map_editor::run_map_group_selector(&mut rl, &thread, &settings);
                 continue;
             }
             if options_btn.check_collision_point_rec(mouse_pos) {
