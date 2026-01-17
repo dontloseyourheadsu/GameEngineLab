@@ -3,8 +3,8 @@ use raylib::prelude::*;
 use crate::settings::GameSettings;
 
 use super::editor::run_editor;
-use super::models::{MapGroupSummary, MAX_MAP_SIZE};
-use super::storage::{load_stored_map_groups, MapGroup};
+use super::models::{MAX_MAP_SIZE, MapGroupSummary};
+use super::storage::{MapGroup, load_stored_map_groups};
 
 pub fn load_map_summaries() -> (Vec<MapGroupSummary>, Vec<MapGroup>) {
     let stored_groups = load_stored_map_groups();
@@ -40,6 +40,7 @@ pub fn run_map_group_selector(
     let mut scroll_offset = 0.0;
     let mut new_width: usize = 20;
     let mut new_height: usize = 20;
+    let mut hold_timer = 0.0;
 
     let list_rect = Rectangle::new(100.0, 90.0, 600.0, 260.0);
     let item_height = 50.0;
@@ -68,30 +69,48 @@ pub fn run_map_group_selector(
         let max_scroll = (content_height - list_rect.height).max(0.0);
         scroll_offset = scroll_offset.clamp(-max_scroll, 0.0);
 
+        let dt = rl.get_frame_time();
+
         let width_minus = Rectangle::new(100.0, 380.0, 30.0, 30.0);
-        let width_plus = Rectangle::new(210.0, 380.0, 30.0, 30.0);
+        let width_plus = Rectangle::new(250.0, 380.0, 30.0, 30.0);
         let height_minus = Rectangle::new(360.0, 380.0, 30.0, 30.0);
-        let height_plus = Rectangle::new(470.0, 380.0, 30.0, 30.0);
+        let height_plus = Rectangle::new(510.0, 380.0, 30.0, 30.0);
 
         let load_btn = Rectangle::new(100.0, 440.0, 150.0, 50.0);
         let new_btn = Rectangle::new(270.0, 440.0, 150.0, 50.0);
         let back_btn = Rectangle::new(440.0, 440.0, 150.0, 50.0);
 
+        if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
+            let pressed = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
+            if hold_timer <= 0.0 || pressed {
+                let mut changed = false;
+                if width_minus.check_collision_point_rec(mouse_pos) {
+                    new_width = new_width.saturating_sub(1).max(5);
+                    changed = true;
+                } else if width_plus.check_collision_point_rec(mouse_pos) {
+                    new_width = (new_width + 1).min(MAX_MAP_SIZE);
+                    changed = true;
+                } else if height_minus.check_collision_point_rec(mouse_pos) {
+                    new_height = new_height.saturating_sub(1).max(5);
+                    changed = true;
+                } else if height_plus.check_collision_point_rec(mouse_pos) {
+                    new_height = (new_height + 1).min(MAX_MAP_SIZE);
+                    changed = true;
+                }
+
+                if changed {
+                    hold_timer = if pressed { 0.4 } else { 0.05 };
+                }
+            } else {
+                hold_timer -= dt;
+            }
+        } else {
+            hold_timer = 0.0;
+        }
+
         if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
             if back_btn.check_collision_point_rec(mouse_pos) {
                 break;
-            }
-            if width_minus.check_collision_point_rec(mouse_pos) {
-                new_width = new_width.saturating_sub(1).max(1);
-            }
-            if width_plus.check_collision_point_rec(mouse_pos) {
-                new_width = (new_width + 1).min(MAX_MAP_SIZE);
-            }
-            if height_minus.check_collision_point_rec(mouse_pos) {
-                new_height = new_height.saturating_sub(1).max(1);
-            }
-            if height_plus.check_collision_point_rec(mouse_pos) {
-                new_height = (new_height + 1).min(MAX_MAP_SIZE);
             }
             if new_btn.check_collision_point_rec(mouse_pos) {
                 let name = format!("Map {}", map_summaries.len() + 1);
@@ -190,13 +209,7 @@ pub fn run_map_group_selector(
 
             draw_button(&mut d, "-", width_minus, mouse_pos);
             draw_button(&mut d, "+", width_plus, mouse_pos);
-            d.draw_text(
-                &format!("Width: {}", new_width),
-                140,
-                385,
-                20,
-                Color::BLACK,
-            );
+            d.draw_text(&format!("Width: {}", new_width), 140, 385, 20, Color::BLACK);
 
             draw_button(&mut d, "-", height_minus, mouse_pos);
             draw_button(&mut d, "+", height_plus, mouse_pos);
