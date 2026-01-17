@@ -16,7 +16,7 @@ use crate::ghosts::ghost::{GhostBehavior, GhostState};
 use crate::ghosts::ghost_spawner::GhostSpawner;
 use crate::pacman::{
     controller::handle_input,
-    movement::{PacmanEvent, move_pacman},
+    movement::{PacmanEvent, move_pacman, update_pacman_visuals},
     pacman::Pacman,
 };
 use crate::settings::GameSettings;
@@ -146,6 +146,10 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
         current_direction: Vector2::zero(),
         desired_direction: Vector2::zero(),
         grid_position: (pacman_map_pos.0 as usize, pacman_map_pos.1 as usize),
+        is_moving: false,
+        move_progress: 0.0,
+        previous_grid_position: (pacman_map_pos.0 as usize, pacman_map_pos.1 as usize),
+        is_teleporting: false,
     };
     pacman.character.sprite.animation_state = "walk".to_string();
 
@@ -234,7 +238,6 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
     let mut items_eaten = 0;
     let map_offset = Vector2::new(0.0, UI_HEIGHT as f32);
 
-    let mut last_move_time = Instant::now();
     let move_interval = Duration::from_millis(200);
     let mut previous_time = Instant::now();
 
@@ -283,9 +286,18 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
 
             handle_input(rl, &mut pacman);
 
-            // Handle movement on tick
-            if last_move_time.elapsed() >= move_interval {
+            // Handle movement on tick (Continuous animation)
+            {
                 let mut reset_needed = false;
+                let move_interval_secs = move_interval.as_secs_f32();
+
+                update_pacman_visuals(
+                    &mut pacman,
+                    delta_time,
+                    move_interval_secs,
+                    map.tile_size as f32,
+                );
+
                 let event = move_pacman(&mut pacman, &mut map);
 
                 match event {
@@ -336,6 +348,7 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                                 pacman.current_direction,
                                 map.tile_size as f32,
                                 &mut map,
+                                move_interval_secs,
                             );
                         }
                     }
@@ -366,6 +379,10 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                         pacman.character.position = pacman_start_pos;
                         pacman.current_direction = Vector2::zero();
                         pacman.desired_direction = Vector2::zero();
+                        pacman.is_moving = false;
+                        pacman.move_progress = 0.0;
+                        pacman.previous_grid_position = pacman.grid_position;
+                        pacman.is_teleporting = false;
 
                         // Reset All Ghosts
                         for spawner in ghost_spawners.iter_mut() {
@@ -375,8 +392,6 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
                         }
                     }
                 }
-
-                last_move_time = Instant::now();
             }
         }
 
@@ -439,12 +454,23 @@ pub fn run_game(rl: &mut RaylibHandle, thread: &RaylibThread, settings: &GameSet
             let pacman_symbol = map.symbols.get("pacman").unwrap();
             let pacman_texture = textures.get(pacman_symbol).unwrap();
 
-            pacman.character.sprite.draw(
-                &mut d,
-                pacman_texture,
-                pacman.character.position + map_offset,
-                map.tile_size as f32,
-            );
+            // Determine visibility
+            let mut visible = true;
+            if pacman.is_teleporting {
+                // Teleport logic: Visible at start (0.0-0.25) and end (0.75-1.0), invisible in between
+                if pacman.move_progress >= 0.25 && pacman.move_progress < 0.75 {
+                    visible = false;
+                }
+            }
+
+            if visible {
+                pacman.character.sprite.draw(
+                    &mut d,
+                    pacman_texture,
+                    pacman.character.position + map_offset,
+                    map.tile_size as f32,
+                );
+            }
 
             // Draw ghosts
             let ghost_symbol = map.symbols.get("ghost").unwrap();
