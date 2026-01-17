@@ -55,6 +55,16 @@ impl GhostSpawner {
             spawn_position: self.spawn_position,
             behavior,
             current_direction: (0, 0),
+            is_moving: false,
+            move_progress: 0.0,
+            previous_grid_position: (
+                (self.spawn_position.x / tile_size) as usize,
+                (self.spawn_position.y / tile_size) as usize,
+            ),
+            next_grid_position: (
+                (self.spawn_position.x / tile_size) as usize,
+                (self.spawn_position.y / tile_size) as usize,
+            ),
         };
 
         self.ghost = Some(ghost);

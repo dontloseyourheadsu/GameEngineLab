@@ -6,4 +6,8 @@ pub struct Pacman {
     pub current_direction: Vector2,
     pub desired_direction: Vector2,
     pub grid_position: (usize, usize),
+    pub is_moving: bool,
+    pub move_progress: f32,
+    pub previous_grid_position: (usize, usize),
+    pub is_teleporting: bool,
 }
