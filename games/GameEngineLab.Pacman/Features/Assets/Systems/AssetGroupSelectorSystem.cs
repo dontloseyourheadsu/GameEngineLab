@@ -73,12 +73,22 @@ public sealed class AssetGroupSelectorSystem : IGameSystem
                 if (rect.Contains(mouse))
                 {
                     lib.SelectedGroupIndex = i;
-                    var editor = world.GetRequiredResource<AssetEditorResource>();
-                    editor.ActiveGroup = lib.Groups[i];
-                    editor.SelectedAssetIndex = 0;
-                    editor.SelectedFrameIndex = 0;
-                    editor.Dirty = false;
-                    appMode.Mode = AppMode.AssetEditor;
+
+                    var editBtn = new Rectangle(rect.Right - (int)(240 * scale), rect.Y + (int)(25 * scale), (int)(120 * scale), (int)(60 * scale));
+                    if (editBtn.Contains(mouse))
+                    {
+                        var editor = world.GetRequiredResource<AssetEditorResource>();
+                        editor.ActiveGroup = lib.Groups[i];
+                        editor.SelectedAssetIndex = 0;
+                        editor.SelectedFrameIndex = 0;
+                        editor.Dirty = false;
+                        appMode.Mode = AppMode.AssetEditor;
+                    }
+                    else
+                    {
+                        // Proceed to Game Setup (Map is already selected if they came from Map Selector)
+                        appMode.Mode = AppMode.GameSetup;
+                    }
                     return;
                 }
             }
@@ -127,6 +137,9 @@ public sealed class AssetGroupSelectorSystem : IGameSystem
 
             PixelText.Draw(sb, pixel, group.Name, new Vector2(rect.X + (int)(25 * scale), rect.Y + (int)(35 * scale)), (int)(2 * scale), ColorText);
             
+            var editBtn = new Rectangle(rect.Right - (int)(240 * scale), rect.Y + (int)(25 * scale), (int)(120 * scale), (int)(60 * scale));
+            DrawButton(sb, pixel, editBtn, "EDIT", ColorNeonCyan, scale, 1);
+
             string status = group.IsDone ? "DONE" : "WIP";
             PixelText.Draw(sb, pixel, status, new Vector2(rect.Right - (int)(100 * scale), rect.Y + (int)(40 * scale)), (int)(1 * scale), group.IsDone ? ColorNeonGreen : ColorNeonYellow);
 
