@@ -69,10 +69,20 @@ public sealed class MapGroupSelectorSystem : IGameSystem
                 if (rect.Contains(mouse))
                 {
                     lib.SelectedProjectIndex = i;
-                    var editor = world.GetRequiredResource<MapEditorResource>();
-                    editor.ActiveProject = lib.Projects[i];
-                    editor.Dirty = false;
-                    appMode.Mode = AppMode.MapEditor;
+                    
+                    // Specific "EDIT" button check
+                    var editBtn = new Rectangle(rect.Right - (int)(180 * scale), rect.Y + (int)(15 * scale), (int)(100 * scale), (int)(40 * scale));
+                    if (editBtn.Contains(mouse))
+                    {
+                        var editor = world.GetRequiredResource<MapEditorResource>();
+                        editor.ActiveProject = lib.Projects[i];
+                        editor.Dirty = false;
+                        appMode.Mode = AppMode.MapEditor;
+                    }
+                    else
+                    {
+                        appMode.Mode = AppMode.AssetGroupSelector;
+                    }
                     return;
                 }
             }
@@ -119,6 +129,9 @@ public sealed class MapGroupSelectorSystem : IGameSystem
             PixelText.Draw(sb, pixel, proj.Name, new Vector2(rect.X + (int)(25 * scale), rect.Y + (int)(30 * scale)), (int)(2 * scale), ColorText);
             PixelText.Draw(sb, pixel, $"{proj.Width}x{proj.Height}", new Vector2(rect.X + (int)(25 * scale), rect.Y + (int)(65 * scale)), (int)(1 * scale), ColorTextDim);
             
+            var editBtn = new Rectangle(rect.Right - (int)(240 * scale), rect.Y + (int)(25 * scale), (int)(120 * scale), (int)(60 * scale));
+            DrawButton(sb, pixel, editBtn, "EDIT", ColorNeonCyan, scale, 1);
+
             string status = proj.IsDone ? "DONE" : "WIP";
             PixelText.Draw(sb, pixel, status, new Vector2(rect.Right - (int)(100 * scale), rect.Y + (int)(40 * scale)), (int)(1 * scale), proj.IsDone ? ColorNeonGreen : ColorNeonYellow);
 

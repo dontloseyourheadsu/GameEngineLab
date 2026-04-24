@@ -2,7 +2,10 @@ using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
+using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace GameEngineLab.Pacman.Features.Map.Systems;
 
@@ -32,6 +35,9 @@ public sealed class MapRenderSystem : IGameSystem
             return;
         }
 
+        var gpAssets = world.GetRequiredResource<GameplayAssetsResource>();
+        var sb = frameContext.SpriteBatch;
+
         var map = mapState.Map;
         var tileSize = map.TileSize;
 
@@ -45,16 +51,11 @@ public sealed class MapRenderSystem : IGameSystem
                 var tile = map.GetTile(x, y);
                 var rect = new Rectangle(offsetX + x * tileSize, offsetY + y * tileSize, tileSize, tileSize);
 
-                Color color = tile switch
+                if (tile == '#')
                 {
-                    '#' => new Color(38, 70, 140),
-                    '.' => new Color(46, 52, 92),
-                    'o' => new Color(66, 72, 112),
-                    'S' => new Color(72, 56, 100),
-                    _ => new Color(22, 26, 46),
-                };
-
-                frameContext.SpriteBatch.Draw(frameContext.DebugPixel, rect, color);
+                    if (gpAssets.IsInitialized) sb.Draw(gpAssets.Wall, rect, Color.White);
+                    else sb.Draw(frameContext.DebugPixel, rect, new Color(38, 70, 140));
+                }
             }
         }
 
@@ -63,23 +64,26 @@ public sealed class MapRenderSystem : IGameSystem
             return;
         }
 
-        var dotSize = Math.Max(2, tileSize / 8);
-        var pillSize = Math.Max(4, tileSize / 4);
-
         foreach (var tile in collectibles.Food)
         {
-            var centerX = offsetX + tile.X * tileSize + tileSize / 2;
-            var centerY = offsetY + tile.Y * tileSize + tileSize / 2;
-            var dot = new Rectangle(centerX - dotSize / 2, centerY - dotSize / 2, dotSize, dotSize);
-            frameContext.SpriteBatch.Draw(frameContext.DebugPixel, dot, new Color(255, 224, 170));
+            var rect = new Rectangle(offsetX + tile.X * tileSize, offsetY + tile.Y * tileSize, tileSize, tileSize);
+            if (gpAssets.IsInitialized) sb.Draw(gpAssets.Food, rect, Color.White);
+            else {
+                var dotSize = Math.Max(2, tileSize / 8);
+                var dot = new Rectangle(rect.Center.X - dotSize / 2, rect.Center.Y - dotSize / 2, dotSize, dotSize);
+                sb.Draw(frameContext.DebugPixel, dot, new Color(255, 224, 170));
+            }
         }
 
         foreach (var tile in collectibles.Pills)
         {
-            var centerX = offsetX + tile.X * tileSize + tileSize / 2;
-            var centerY = offsetY + tile.Y * tileSize + tileSize / 2;
-            var pill = new Rectangle(centerX - pillSize / 2, centerY - pillSize / 2, pillSize, pillSize);
-            frameContext.SpriteBatch.Draw(frameContext.DebugPixel, pill, new Color(250, 250, 250));
+            var rect = new Rectangle(offsetX + tile.X * tileSize, offsetY + tile.Y * tileSize, tileSize, tileSize);
+            if (gpAssets.IsInitialized) sb.Draw(gpAssets.Pill, rect, Color.White);
+            else {
+                var pillSize = Math.Max(4, tileSize / 4);
+                var pill = new Rectangle(rect.Center.X - pillSize / 2, rect.Center.Y - pillSize / 2, pillSize, pillSize);
+                sb.Draw(frameContext.DebugPixel, pill, new Color(250, 250, 250));
+            }
         }
     }
 }

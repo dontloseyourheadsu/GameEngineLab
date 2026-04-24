@@ -4,7 +4,9 @@ using GameEngineLab.Pacman.Features.Gameplay.Components;
 using GameEngineLab.Pacman.Features.Ghosts.Components;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
+using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace GameEngineLab.Pacman.Features.Ghosts.Systems;
 
@@ -34,6 +36,9 @@ public sealed class GhostRenderSystem : IGameSystem
             return;
         }
 
+        var gpAssets = world.GetRequiredResource<GameplayAssetsResource>();
+        var sb = frameContext.SpriteBatch;
+
         var map = mapState.Map;
         var offsetX = (frameContext.Viewport.Width - map.Width * map.TileSize) / 2;
         var offsetY = (frameContext.Viewport.Height - map.Height * map.TileSize) / 2;
@@ -52,21 +57,27 @@ public sealed class GhostRenderSystem : IGameSystem
                 (int)(ghost.Radius * 2f),
                 (int)(ghost.Radius * 2f));
 
-            var color = ghost.State switch
+            if (gpAssets.IsInitialized && ghost.State != GhostState.Frightened && ghost.State != GhostState.Returning)
             {
-                GhostState.Frightened => new Color(86, 136, 255),
-                GhostState.Returning => new Color(190, 190, 190),
-                _ => ghost.Behavior switch
+                sb.Draw(gpAssets.Ghost, rect, Color.White);
+            }
+            else
+            {
+                var color = ghost.State switch
                 {
-                    GhostBehavior.Blinky => new Color(255, 64, 64),
-                    GhostBehavior.Pinky => new Color(255, 136, 190),
-                    GhostBehavior.Inky => new Color(64, 232, 255),
-                    GhostBehavior.Clyde => new Color(255, 170, 74),
-                    _ => Color.Orange,
-                },
-            };
-
-            frameContext.SpriteBatch.Draw(frameContext.DebugPixel, rect, color);
+                    GhostState.Frightened => new Color(86, 136, 255),
+                    GhostState.Returning => new Color(190, 190, 190),
+                    _ => ghost.Behavior switch
+                    {
+                        GhostBehavior.Blinky => new Color(255, 64, 64),
+                        GhostBehavior.Pinky => new Color(255, 136, 190),
+                        GhostBehavior.Inky => new Color(64, 232, 255),
+                        GhostBehavior.Clyde => new Color(255, 170, 74),
+                        _ => Color.Orange,
+                    },
+                };
+                sb.Draw(frameContext.DebugPixel, rect, color);
+            }
         }
     }
 }
