@@ -1,4 +1,6 @@
 <Solution>
+  <Folder Name="/games/">
+    <Project Path="games/GameEngineLab.Pacman/GameEngineLab.Pacman.csproj" />
+  </Folder>
   <Project Path="GameEngineLab.Core/GameEngineLab.Core.csproj" />
-  <Project Path="games/GameEngineLab.Pacman/GameEngineLab.Pacman.csproj" />
 </Solution>

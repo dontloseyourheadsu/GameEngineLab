@@ -4,7 +4,9 @@ public enum AppMode
 {
     Menu,
     Gameplay,
+    MapGroupSelector,
     MapEditor,
+    AssetGroupSelector,
     AssetEditor,
     Options,
 }
