@@ -81,6 +81,8 @@ public sealed class PacmanGame : Game
         {
             Palette = new[] { '#', 'P', 'S', '.', 'o', ' ' }
         });
+
+        _world.SetResource(new GameplayAssetsResource());
         
         var assetLibrary = AssetEditorStorage.LoadLibraryOrDefault(AssetPaths.DefaultAssets);
         _world.SetResource(assetLibrary);
@@ -135,6 +137,7 @@ public sealed class PacmanGame : Game
         SpawnGhosts(map);
 
         _scheduler.AddSystem(new MenuSystem());
+        _scheduler.AddSystem(new GameplaySetupSystem());
         _scheduler.AddSystem(new MapGroupSelectorSystem());
         _scheduler.AddSystem(new MapEditorSystem());
         _scheduler.AddSystem(new AssetGroupSelectorSystem());
@@ -148,8 +151,11 @@ public sealed class PacmanGame : Game
         _scheduler.AddSystem(new GhostCollisionSystem());
         _scheduler.AddSystem(new MapRenderSystem());
         _scheduler.AddSystem(new GhostRenderSystem());
-        _scheduler.AddSystem(new DebugRenderSystem());
+        _scheduler.AddSystem(new PacmanRenderSystem());
         _scheduler.AddSystem(new GameplayOverlaySystem());
+
+        if (mapLibrary.Projects.Count > 0) mapLibrary.SelectedProjectIndex = 0;
+        if (assetLibrary.Groups.Count > 0) assetLibrary.SelectedGroupIndex = 0;
 
         base.Initialize();
     }
