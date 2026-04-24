@@ -4,12 +4,20 @@ using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace GameEngineLab.Pacman.Features.UI.Systems;
 
 public sealed class GameplayOverlaySystem : IGameSystem
 {
     public int Order => 120;
+
+    private static readonly Color ColorNeonCyan = new(0, 255, 255);
+    private static readonly Color ColorNeonMagenta = new(255, 0, 255);
+    private static readonly Color ColorNeonGreen = new(0, 255, 128);
+    private static readonly Color ColorNeonRed = new(255, 50, 50);
+    private static readonly Color ColorNeonYellow = new(255, 255, 0);
 
     public void Update(World world, FrameContext frameContext)
     {
@@ -30,45 +38,83 @@ public sealed class GameplayOverlaySystem : IGameSystem
 
         var gameplay = world.GetRequiredResource<GameplayStateResource>();
         var collectibles = world.GetRequiredResource<CollectiblesResource>();
+        var options = world.GetRequiredResource<OptionsResource>();
 
-        DrawTopBar(frameContext, gameplay, collectibles);
+        var viewport = frameContext.Viewport;
+        float autoScale = Math.Max(1.0f, Math.Min(viewport.Width / 1024f, viewport.Height / 768f));
+        float scale = options.UiScale * autoScale;
+
+        DrawTopBar(frameContext, gameplay, collectibles, scale);
 
         if (gameplay.IsGameOver)
         {
-            DrawCenterOverlay(frameContext, new Color(150, 24, 24, 180));
+            DrawCenterOverlay(frameContext, "GAME OVER", ColorNeonRed, scale);
         }
         else if (gameplay.IsWin)
         {
-            DrawCenterOverlay(frameContext, new Color(24, 130, 56, 180));
+            DrawCenterOverlay(frameContext, "YOU WIN!", ColorNeonGreen, scale);
         }
     }
 
-    private static void DrawTopBar(FrameContext frameContext, GameplayStateResource gameplay, CollectiblesResource collectibles)
+    private static void DrawTopBar(FrameContext frameContext, GameplayStateResource gameplay, CollectiblesResource collectibles, float scale)
     {
-        var bar = new Rectangle(0, 0, 1024, 34);
-        frameContext.SpriteBatch!.Draw(frameContext.DebugPixel!, bar, new Color(6, 10, 20, 220));
+        var sb = frameContext.SpriteBatch!;
+        var pixel = frameContext.DebugPixel!;
+        var viewport = frameContext.Viewport;
+        
+        var barH = (int)(60 * scale);
+        var bar = new Rectangle(0, 0, viewport.Width, barH);
+        sb.Draw(pixel, bar, new Color(10, 10, 25, 200));
+        sb.Draw(pixel, new Rectangle(0, barH - 2, viewport.Width, 2), ColorNeonCyan);
+
+        // Score
+        var scoreText = $"SCORE: {gameplay.Score:D6}";
+        PixelText.Draw(sb, pixel, scoreText, new Vector2(20 * scale, (barH - 24 * scale) / 2), (int)(2 * scale), ColorNeonCyan);
+
+        // Items Remaining
+        var itemsText = $"LEFT: {collectibles.TotalCount}";
+        var itemsSize = PixelText.Measure(itemsText, (int)(2 * scale));
+        PixelText.Draw(sb, pixel, itemsText, new Vector2(viewport.Width / 2 - itemsSize.X / 2, (barH - 24 * scale) / 2), (int)(2 * scale), ColorNeonYellow);
+
+        // Lives
+        var livesText = "LIVES: ";
+        var livesTextSize = PixelText.Measure(livesText, (int)(2 * scale));
+        var livesX = viewport.Width - (int)(180 * scale);
+        PixelText.Draw(sb, pixel, livesText, new Vector2(livesX, (barH - 24 * scale) / 2), (int)(2 * scale), ColorNeonMagenta);
 
         for (var i = 0; i < gameplay.Lives; i++)
         {
-            var lifeRect = new Rectangle(12 + (i * 16), 10, 10, 10);
-            frameContext.SpriteBatch.Draw(frameContext.DebugPixel, lifeRect, new Color(255, 214, 74));
+            var lifeSize = (int)(14 * scale);
+            var lifeRect = new Rectangle(livesX + livesTextSize.X + i * (int)(20 * scale), (barH - lifeSize) / 2, lifeSize, lifeSize);
+            sb.Draw(pixel, lifeRect, ColorNeonYellow);
         }
-
-        var scoreWidth = Math.Clamp(gameplay.Score / 4, 0, 300);
-        var scoreRect = new Rectangle(120, 12, scoreWidth, 6);
-        frameContext.SpriteBatch.Draw(frameContext.DebugPixel, scoreRect, new Color(93, 197, 255));
-
-        var remaining = collectibles.TotalCount;
-        var remainingWidth = Math.Clamp(remaining * 2, 0, 300);
-        var remainingRect = new Rectangle(120, 22, remainingWidth, 4);
-        frameContext.SpriteBatch.Draw(frameContext.DebugPixel, remainingRect, new Color(220, 230, 255));
     }
 
-    private static void DrawCenterOverlay(FrameContext frameContext, Color color)
+    private static void DrawCenterOverlay(FrameContext frameContext, string text, Color color, float scale)
     {
-        var rect = new Rectangle(300, 180, 420, 180);
-        frameContext.SpriteBatch!.Draw(frameContext.DebugPixel!, rect, color);
-        var accent = new Rectangle(rect.X + 20, rect.Y + 20, rect.Width - 40, rect.Height - 40);
-        frameContext.SpriteBatch.Draw(frameContext.DebugPixel, accent, new Color(255, 255, 255, 30));
+        var sb = frameContext.SpriteBatch!;
+        var pixel = frameContext.DebugPixel!;
+        var viewport = frameContext.Viewport;
+
+        var w = (int)(500 * scale);
+        var h = (int)(200 * scale);
+        var rect = new Rectangle((viewport.Width - w) / 2, (viewport.Height - h) / 2, w, h);
+        
+        // Shadow/Blur
+        sb.Draw(pixel, new Rectangle(0, 0, viewport.Width, viewport.Height), new Color(0, 0, 0, 150));
+        
+        // Panel
+        sb.Draw(pixel, rect, new Color(16, 16, 32));
+        sb.Draw(pixel, new Rectangle(rect.X, rect.Y, rect.Width, 4), color);
+        sb.Draw(pixel, new Rectangle(rect.X, rect.Bottom - 4, rect.Width, 4), color);
+
+        var tScale = (int)(5 * scale);
+        var tSize = PixelText.Measure(text, tScale);
+        PixelText.Draw(sb, pixel, text, new Vector2(rect.Center.X - tSize.X / 2, rect.Center.Y - tSize.Y / 2 - (int)(10 * scale)), tScale, color);
+        
+        var subText = "PRESS TAB FOR MENU";
+        var sScale = (int)(1 * scale);
+        var sSize = PixelText.Measure(subText, sScale);
+        PixelText.Draw(sb, pixel, subText, new Vector2(rect.Center.X - sSize.X / 2, rect.Bottom - (int)(40 * scale)), sScale, Color.Gray);
     }
 }
