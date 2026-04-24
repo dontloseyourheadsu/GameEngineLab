@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GameEngineLab.Core/GameEngineLab.Core.csproj" />
+  <Project Path="games/GameEngineLab.Pacman/GameEngineLab.Pacman.csproj" />
+</Solution>
