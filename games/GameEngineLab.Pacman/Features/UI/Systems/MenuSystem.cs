@@ -53,7 +53,7 @@ public sealed class MenuSystem : IGameSystem
         float autoScale = Math.Max(1.0f, Math.Min(sw / 1024f, sh / 768f));
         var scale = options.UiScale * autoScale;
 
-        if (IsNewKeyPress(frameContext, Keys.D1)) appMode.Mode = AppMode.Gameplay;
+        if (IsNewKeyPress(frameContext, Keys.D1)) appMode.Mode = AppMode.GameSetup;
         else if (IsNewKeyPress(frameContext, Keys.D2)) appMode.Mode = AppMode.MapGroupSelector;
         else if (IsNewKeyPress(frameContext, Keys.D3)) appMode.Mode = AppMode.AssetGroupSelector;
         else if (IsNewKeyPress(frameContext, Keys.D4)) appMode.Mode = AppMode.Options;
@@ -66,7 +66,7 @@ public sealed class MenuSystem : IGameSystem
                 {
                     appMode.Mode = i switch
                     {
-                        0 => AppMode.Gameplay,
+                        0 => AppMode.GameSetup,
                         1 => AppMode.MapGroupSelector,
                         2 => AppMode.AssetGroupSelector,
                         _ => AppMode.Options
