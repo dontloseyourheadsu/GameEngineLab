@@ -12,6 +12,7 @@ public sealed class FrameContext
         KeyboardState previousKeyboard,
         MouseState currentMouse,
         MouseState previousMouse,
+        Viewport viewport,
         SpriteBatch? spriteBatch = null,
         Texture2D? debugPixel = null)
     {
@@ -20,6 +21,7 @@ public sealed class FrameContext
         PreviousKeyboard = previousKeyboard;
         CurrentMouse = currentMouse;
         PreviousMouse = previousMouse;
+        Viewport = viewport;
         SpriteBatch = spriteBatch;
         DebugPixel = debugPixel;
     }
@@ -33,6 +35,8 @@ public sealed class FrameContext
     public MouseState CurrentMouse { get; }
 
     public MouseState PreviousMouse { get; }
+
+    public Viewport Viewport { get; }
 
     public SpriteBatch? SpriteBatch { get; }
 

@@ -3,6 +3,8 @@ using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Maps.Systems;
 using GameEngineLab.Core.Features.Runtime.Resources;
+using GameEngineLab.Pacman.Features.Assets.Resources;
+using GameEngineLab.Pacman.Features.Assets.Systems;
 using GameEngineLab.Pacman.Features.Gameplay.Components;
 using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using GameEngineLab.Pacman.Features.Gameplay.Systems;
@@ -38,12 +40,23 @@ public sealed class PacmanGame : Game
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+        Window.AllowUserResizing = true;
         _graphics.PreferredBackBufferWidth = GameConstants.DefaultWindowWidth;
         _graphics.PreferredBackBufferHeight = GameConstants.DefaultWindowHeight;
     }
 
     protected override void Initialize()
     {
+        Window.ClientSizeChanged += (s, e) =>
+        {
+            if (Window.ClientBounds.Width > 0 && Window.ClientBounds.Height > 0)
+            {
+                _graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+                _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+                _graphics.ApplyChanges();
+            }
+        };
+
         var map = Map2DLoader.LoadFromJson(MapPaths.DefaultMap);
         _world.SetResource(new MapStateResource
         {
@@ -62,7 +75,20 @@ public sealed class PacmanGame : Game
             PlayArea = new Rectangle(0, 0, mapWidth, mapHeight),
         });
         _world.SetResource(BuildCollectibles(map));
-        _world.SetResource(BuildMapEditor(map));
+        var mapLibrary = MapEditorStorage.LoadLibraryOrDefault(MapPaths.MapLibrary);
+        _world.SetResource(mapLibrary);
+        _world.SetResource(new MapEditorResource
+        {
+            Palette = new[] { '#', 'P', 'S', '.', 'o', ' ' }
+        });
+        
+        var assetLibrary = AssetEditorStorage.LoadLibraryOrDefault(AssetPaths.DefaultAssets);
+        _world.SetResource(assetLibrary);
+        _world.SetResource(new AssetEditorResource
+        {
+            Palette = AssetEditorStorage.BuildPalette()
+        });
+        _world.SetResource(OptionsStorage.LoadOrDefault(OptionsPaths.SettingsPath));
         _world.SetResource(new GameplayStateResource());
         _world.SetResource(new GhostModeResource());
         _world.SetResource(new AppModeResource
@@ -109,7 +135,11 @@ public sealed class PacmanGame : Game
         SpawnGhosts(map);
 
         _scheduler.AddSystem(new MenuSystem());
+        _scheduler.AddSystem(new MapGroupSelectorSystem());
         _scheduler.AddSystem(new MapEditorSystem());
+        _scheduler.AddSystem(new AssetGroupSelectorSystem());
+        _scheduler.AddSystem(new AssetEditorSystem());
+        _scheduler.AddSystem(new OptionsSystem());
         _scheduler.AddSystem(new PacmanInputSystem());
         _scheduler.AddSystem(new PacmanMovementSystem());
         _scheduler.AddSystem(new PacmanCollectibleSystem());
@@ -136,7 +166,7 @@ public sealed class PacmanGame : Game
         var currentKeyboard = Keyboard.GetState();
         var currentMouse = Mouse.GetState();
 
-        var frameContext = new FrameContext(gameTime, currentKeyboard, _previousKeyboard, currentMouse, _previousMouse);
+        var frameContext = new FrameContext(gameTime, currentKeyboard, _previousKeyboard, currentMouse, _previousMouse, GraphicsDevice.Viewport);
         _scheduler.Update(_world, frameContext);
 
         if (_world.TryGetResource<AppModeResource>(out var appMode) && appMode is not null)
@@ -145,8 +175,8 @@ public sealed class PacmanGame : Game
             {
                 AppMode.Menu => "GameEngineLab.Pacman | Menu | 1 Play  2 Map Editor  3 Asset Editor  4 Options",
                 AppMode.MapEditor => "GameEngineLab.Pacman | Map Editor | LMB paint  RMB erase  1-6 tile  Enter save  Esc menu",
-                AppMode.AssetEditor => "GameEngineLab.Pacman | Asset Editor migration pending | Esc menu",
-                AppMode.Options => "GameEngineLab.Pacman | Options migration pending | Esc menu",
+                AppMode.AssetEditor => "GameEngineLab.Pacman | Asset Editor | LMB paint  RMB erase  [ ] asset  +/- frame  1-9 color  Enter save  Esc menu",
+                AppMode.Options => "GameEngineLab.Pacman | Options | Drag sliders  Enter Apply  Esc Menu",
                 _ => BuildGameplayTitle(),
             };
         }
@@ -169,7 +199,7 @@ public sealed class PacmanGame : Game
 
         var currentKeyboard = Keyboard.GetState();
         var currentMouse = Mouse.GetState();
-        var frameContext = new FrameContext(gameTime, currentKeyboard, _previousKeyboard, currentMouse, _previousMouse, _spriteBatch, _debugPixel);
+        var frameContext = new FrameContext(gameTime, currentKeyboard, _previousKeyboard, currentMouse, _previousMouse, GraphicsDevice.Viewport, _spriteBatch, _debugPixel);
 
         _spriteBatch.Begin();
         _scheduler.Draw(_world, frameContext);
@@ -219,10 +249,19 @@ public sealed class PacmanGame : Game
 
     private static MapEditorResource BuildMapEditor(Map2DModel map)
     {
+        var project = new MapProject
+        {
+            Name = "Initial Map",
+            Width = map.Width,
+            Height = map.Height,
+            Tiles = map.Data.Select(row => row.ToCharArray()).ToArray(),
+            IsDone = true
+        };
+
         return new MapEditorResource
         {
-            Tiles = map.Data.Select(static row => row.ToCharArray()).ToArray(),
-            Palette = ['#', '.', 'o', 'S', 'P', ' '],
+            ActiveProject = project,
+            Palette = new[] { '#', 'P', 'S', '.', 'o', ' ' },
             SelectedPaletteIndex = 0,
             Dirty = false,
         };
