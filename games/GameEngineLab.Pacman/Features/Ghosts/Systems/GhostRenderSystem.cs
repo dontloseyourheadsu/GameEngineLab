@@ -2,6 +2,7 @@ using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Pacman.Features.Gameplay.Components;
 using GameEngineLab.Pacman.Features.Ghosts.Components;
+using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
 using Microsoft.Xna.Framework;
 
@@ -28,6 +29,15 @@ public sealed class GhostRenderSystem : IGameSystem
             return;
         }
 
+        if (!world.TryGetResource<MapStateResource>(out var mapState) || mapState is null)
+        {
+            return;
+        }
+
+        var map = mapState.Map;
+        var offsetX = (frameContext.Viewport.Width - map.Width * map.TileSize) / 2;
+        var offsetY = (frameContext.Viewport.Height - map.Height * map.TileSize) / 2;
+
         foreach (var entity in world.GetEntitiesWith<GhostComponent, TransformComponent>())
         {
             if (!world.TryGetComponent<GhostComponent>(entity, out var ghost)
@@ -37,8 +47,8 @@ public sealed class GhostRenderSystem : IGameSystem
             }
 
             var rect = new Rectangle(
-                (int)(transform.Position.X - ghost.Radius),
-                (int)(transform.Position.Y - ghost.Radius),
+                (int)(offsetX + transform.Position.X - ghost.Radius),
+                (int)(offsetY + transform.Position.Y - ghost.Radius),
                 (int)(ghost.Radius * 2f),
                 (int)(ghost.Radius * 2f));
 
