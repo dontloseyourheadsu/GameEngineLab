@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace GameEngineLab.Pacman.Features.Map.Resources;
+namespace GameEngineLab.Core.Features.Maps.Resources;
 
 public sealed class MapBoundsResource
 {

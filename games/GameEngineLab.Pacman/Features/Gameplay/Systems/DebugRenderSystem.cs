@@ -1,6 +1,6 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
-using GameEngineLab.Pacman.Features.Gameplay.Components;
+using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.Pacman.Components;
 using GameEngineLab.Pacman.Features.UI.Resources;

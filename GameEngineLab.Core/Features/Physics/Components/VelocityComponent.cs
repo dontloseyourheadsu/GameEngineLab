@@ -1,7 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Components;
 using Microsoft.Xna.Framework;
 
-namespace GameEngineLab.Pacman.Features.Gameplay.Components;
+namespace GameEngineLab.Core.Features.Physics.Components;
 
 public struct VelocityComponent : IComponent
 {

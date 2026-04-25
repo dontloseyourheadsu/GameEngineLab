@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace GameEngineLab.Pacman.Features.UI.Resources;
+namespace GameEngineLab.Core.Features.UI.Resources;
 
 public static class PixelText
 {
