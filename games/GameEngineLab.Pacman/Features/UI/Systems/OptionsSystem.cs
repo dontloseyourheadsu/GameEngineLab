@@ -1,5 +1,6 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

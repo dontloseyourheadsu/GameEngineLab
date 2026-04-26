@@ -139,7 +139,7 @@ public sealed class PacmanMovementSystem : IGameSystem
             ny = 0;
         }
 
-        if (map.GetTile(nx, ny) == '#')
+        if (map.GetTile(nx, ny) == '#' || map.GetTile(nx, ny) == 'S')
         {
             return false;
         }
