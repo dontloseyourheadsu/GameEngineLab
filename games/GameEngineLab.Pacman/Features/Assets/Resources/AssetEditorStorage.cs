@@ -16,7 +16,7 @@ public static class AssetEditorStorage
         if (!File.Exists(path))
         {
             var lib = new AssetLibraryResource();
-            lib.Groups.Add(CreateDefaultGroup("Default Pack"));
+            lib.Groups.Add(CreateDefaultGroup("Default Pack", Guid.Empty, Guid.Empty));
             return lib;
         }
 
@@ -30,12 +30,20 @@ public static class AssetEditorStorage
 
             foreach (var gDto in dto.Groups)
             {
-                var group = new AssetGroup { Name = gDto.Name, IsDone = gDto.IsDone };
+                var group = new AssetGroup 
+                { 
+                    Name = gDto.Name, 
+                    IsDone = gDto.IsDone,
+                    CreatorId = gDto.CreatorId,
+                    OwnerId = gDto.OwnerId
+                };
                 foreach (var aDto in gDto.Assets)
                 {
                     var asset = new EditableAsset
                     {
                         Name = aDto.Name,
+                        CreatorId = aDto.CreatorId,
+                        OwnerId = aDto.OwnerId,
                         Width = aDto.Width,
                         Height = aDto.Height,
                         Resolution = aDto.Resolution,
@@ -61,7 +69,7 @@ public static class AssetEditorStorage
         catch
         {
             var lib = new AssetLibraryResource();
-            lib.Groups.Add(CreateDefaultGroup("Default Pack"));
+            lib.Groups.Add(CreateDefaultGroup("Default Pack", Guid.Empty, Guid.Empty));
             return lib;
         }
     }
@@ -74,9 +82,13 @@ public static class AssetEditorStorage
             {
                 Name = g.Name,
                 IsDone = g.IsDone,
+                CreatorId = g.CreatorId,
+                OwnerId = g.OwnerId,
                 Assets = g.Assets.Select(a => new AssetDto
                 {
                     Name = a.Name,
+                    CreatorId = a.CreatorId,
+                    OwnerId = a.OwnerId,
                     Width = a.Width,
                     Height = a.Height,
                     Resolution = a.Resolution,
@@ -100,9 +112,14 @@ public static class AssetEditorStorage
         File.WriteAllText(path, JsonSerializer.Serialize(dto, JsonOptions));
     }
 
-    public static AssetGroup CreateDefaultGroup(string name)
+    public static AssetGroup CreateDefaultGroup(string name, Guid creatorId, Guid ownerId)
     {
-        var group = new AssetGroup { Name = name };
+        var group = new AssetGroup 
+        { 
+            Name = name,
+            CreatorId = creatorId,
+            OwnerId = ownerId
+        };
         var definitions = new (string Name, int Frames)[]
         {
             ("Pacman", 4), ("Ghost", 1), ("Wall", 1), ("Food", 1), ("Pill", 1),
@@ -113,6 +130,8 @@ public static class AssetEditorStorage
             var asset = new EditableAsset
             {
                 Name = def.Name,
+                CreatorId = creatorId,
+                OwnerId = ownerId,
                 Width = 32,
                 Height = 32,
                 Resolution = 32,
@@ -146,6 +165,8 @@ public static class AssetEditorStorage
     private sealed class AssetGroupDto
     {
         public string Name { get; set; } = string.Empty;
+        public Guid CreatorId { get; set; }
+        public Guid OwnerId { get; set; }
         public List<AssetDto> Assets { get; set; } = new();
         public bool IsDone { get; set; }
     }
@@ -153,6 +174,8 @@ public static class AssetEditorStorage
     private sealed class AssetDto
     {
         public string Name { get; set; } = string.Empty;
+        public Guid CreatorId { get; set; }
+        public Guid OwnerId { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int Resolution { get; set; }

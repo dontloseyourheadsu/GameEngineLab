@@ -13,6 +13,10 @@ public sealed class EditableAsset
 {
     public string Name { get; set; } = string.Empty;
 
+    public Guid CreatorId { get; set; }
+
+    public Guid OwnerId { get; set; }
+
     public int Width { get; set; }
 
     public int Height { get; set; }
@@ -27,6 +31,11 @@ public sealed class EditableAsset
 public sealed class AssetGroup
 {
     public string Name { get; set; } = "New Group";
+
+    public Guid CreatorId { get; set; }
+
+    public Guid OwnerId { get; set; }
+
     public List<EditableAsset> Assets { get; set; } = new();
     public bool IsDone { get; set; }
 }

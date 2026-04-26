@@ -1,7 +1,9 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.Identity.Resources;
 using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Maps.Systems;
+using GameEngineLab.Core.Features.Online.Systems;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.Pacman.Features.Assets.Resources;
@@ -43,6 +45,11 @@ public sealed class PacmanGame : Game
         Window.AllowUserResizing = true;
         _graphics.PreferredBackBufferWidth = GameConstants.DefaultWindowWidth;
         _graphics.PreferredBackBufferHeight = GameConstants.DefaultWindowHeight;
+
+        // Simulated Login
+        var account = new UserAccountResource();
+        account.Login("Developer");
+        _world.SetResource(account);
     }
 
     protected override void Initialize()
@@ -136,6 +143,7 @@ public sealed class PacmanGame : Game
 
         SpawnGhosts(map);
 
+        _scheduler.AddSystem(new NetworkSystem());
         _scheduler.AddSystem(new MenuSystem());
         _scheduler.AddSystem(new GameplaySetupSystem());
         _scheduler.AddSystem(new MapGroupSelectorSystem());
