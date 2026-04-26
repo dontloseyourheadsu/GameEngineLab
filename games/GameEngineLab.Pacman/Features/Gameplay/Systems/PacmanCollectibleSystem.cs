@@ -45,6 +45,7 @@ public sealed class PacmanCollectibleSystem : IGameSystem
             if (collectibles.TotalCount == 0)
             {
                 gameplay.IsWin = true;
+                appMode.Mode = AppMode.Win;
             }
         }
     }
