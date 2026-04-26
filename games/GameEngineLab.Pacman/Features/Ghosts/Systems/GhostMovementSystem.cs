@@ -33,7 +33,22 @@ public sealed class GhostMovementSystem : IGameSystem
             return;
         }
 
-        foreach (var entity in world.GetEntitiesWith<GhostComponent, TransformComponent>())
+        var occupiedTiles = new HashSet<Point>();
+        var ghostEntities = world.GetEntitiesWith<GhostComponent, TransformComponent>().ToList();
+
+        foreach (var entity in ghostEntities)
+        {
+            if (world.TryGetComponent<GhostComponent>(entity, out var ghost))
+            {
+                occupiedTiles.Add(ghost.GridPosition);
+                if (ghost.IsMoving)
+                {
+                    occupiedTiles.Add(ghost.NextGridPosition);
+                }
+            }
+        }
+
+        foreach (var entity in ghostEntities)
         {
             if (!world.TryGetComponent<GhostComponent>(entity, out var ghost)
                 || !world.TryGetComponent<TransformComponent>(entity, out var transform))
@@ -57,16 +72,21 @@ public sealed class GhostMovementSystem : IGameSystem
                 else
                 {
                     var target = GetTarget(ghost, transform.Position, pacmanPosition, pacmanDirection, map);
-                    moveDir = ChooseDirection(ghost, target, map);
+                    moveDir = ChooseDirection(ghost, target, map, occupiedTiles);
                 }
 
                 if (TryGetNextPosition(ghost.GridPosition, moveDir, map, out var nextPosition))
                 {
-                    ghost.CurrentDirection = moveDir;
-                    ghost.PreviousGridPosition = ghost.GridPosition;
-                    ghost.NextGridPosition = nextPosition;
-                    ghost.IsMoving = true;
-                    ghost.MoveProgress = 0f;
+                    if (!occupiedTiles.Contains(nextPosition))
+                    {
+                        occupiedTiles.Remove(ghost.GridPosition);
+                        ghost.CurrentDirection = moveDir;
+                        ghost.PreviousGridPosition = ghost.GridPosition;
+                        ghost.NextGridPosition = nextPosition;
+                        ghost.IsMoving = true;
+                        ghost.MoveProgress = 0f;
+                        occupiedTiles.Add(nextPosition);
+                    }
                 }
             }
 
@@ -136,7 +156,7 @@ public sealed class GhostMovementSystem : IGameSystem
         return false;
     }
 
-    private static Point ChooseDirection(GhostComponent ghost, Vector2 target, Map2DModel map)
+    private static Point ChooseDirection(GhostComponent ghost, Vector2 target, Map2DModel map, HashSet<Point> occupiedTiles)
     {
         var directions = new List<Point>
         {
@@ -151,9 +171,12 @@ public sealed class GhostMovementSystem : IGameSystem
         var valid = new List<Point>();
         foreach (var dir in directions)
         {
-            if (TryGetNextPosition(ghost.GridPosition, dir, map, out _))
+            if (TryGetNextPosition(ghost.GridPosition, dir, map, out var nextTile))
             {
-                valid.Add(dir);
+                if (!occupiedTiles.Contains(nextTile))
+                {
+                    valid.Add(dir);
+                }
             }
         }
 

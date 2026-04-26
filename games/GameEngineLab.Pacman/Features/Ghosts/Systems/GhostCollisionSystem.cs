@@ -61,6 +61,7 @@ public sealed class GhostCollisionSystem : IGameSystem
             if (gameplay.Lives <= 0)
             {
                 gameplay.IsGameOver = true;
+                appMode.Mode = AppMode.GameOver;
                 break;
             }
 
