@@ -1,6 +1,7 @@
 using System;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.Input.Components;
 using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Pacman.Features.Gameplay.Resources;
@@ -39,9 +40,15 @@ public sealed class PacmanMovementSystem : IGameSystem
 
             if (!pacman.IsMoving)
             {
-                if (TryGetNextPosition(pacman.GridPosition, pacman.DesiredDirection, map, out _))
+                Point desired = pacman.DesiredDirection;
+                if (world.TryGetComponent<InputComponent>(entity, out var input))
                 {
-                    pacman.CurrentDirection = pacman.DesiredDirection;
+                    desired = input.DesiredDirection;
+                }
+
+                if (TryGetNextPosition(pacman.GridPosition, desired, map, out _))
+                {
+                    pacman.CurrentDirection = desired;
                 }
 
                 if (TryGetNextPosition(pacman.GridPosition, pacman.CurrentDirection, map, out var nextPosition))

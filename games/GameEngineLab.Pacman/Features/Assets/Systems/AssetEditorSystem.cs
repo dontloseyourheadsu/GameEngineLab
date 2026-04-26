@@ -1,5 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.Identity.Resources;
+using GameEngineLab.Core.Features.Online.Resources;
 using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.Assets.Resources;
@@ -95,7 +97,7 @@ public sealed class AssetEditorSystem : IGameSystem
             }
             else
             {
-                HandlePanelClick(editor, layout, clickPosition);
+                HandlePanelClick(world, editor, layout, clickPosition);
             }
         }
 
@@ -178,7 +180,7 @@ public sealed class AssetEditorSystem : IGameSystem
         DrawFrameStrip(editor, frameContext, layout);
         
         // Controls
-        DrawControls(editor, frameContext, layout);
+        DrawControls(world, editor, frameContext, layout);
         
         // Overlay for Confirmation
         if (editor.IsConfirmingModeSwitch)
@@ -278,7 +280,7 @@ public sealed class AssetEditorSystem : IGameSystem
         }
     }
 
-    private static void HandlePanelClick(AssetEditorResource editor, EditorLayout layout, Point mouse)
+    private static void HandlePanelClick(World world, AssetEditorResource editor, EditorLayout layout, Point mouse)
     {
         if (editor.ActiveGroup == null) return;
 
@@ -316,6 +318,30 @@ public sealed class AssetEditorSystem : IGameSystem
             var bgs = new[] { Color.Transparent, Color.Black, Color.White, new Color(100, 100, 100), new Color(0, 50, 0), new Color(50, 0, 0) };
             var idx = Array.IndexOf(bgs, editor.BackgroundColor);
             editor.BackgroundColor = bgs[(idx + 1) % bgs.Length];
+            return;
+        }
+
+        // Transfer
+        if (layout.TransferButton.Contains(mouse))
+        {
+            if (world.TryGetResource<NetworkResource>(out var net) && net is { IsConnected: true })
+            {
+                // Simulated Transfer logic
+                // In a real scenario, this would serialize the group and send it over the wire.
+                // For now, we simulate changing the owner.
+                Console.WriteLine($"[Network] Transferring asset group '{editor.ActiveGroup.Name}' to peer...");
+                editor.ActiveGroup.OwnerId = Guid.NewGuid(); // Simulated peer ID
+                foreach (var asset in editor.ActiveGroup.Assets)
+                {
+                    asset.OwnerId = editor.ActiveGroup.OwnerId;
+                }
+                editor.Dirty = true;
+                Console.WriteLine("[Network] Transfer complete.");
+            }
+            else
+            {
+                Console.WriteLine("[Network] Cannot transfer: Not connected to any peer.");
+            }
             return;
         }
 
@@ -732,7 +758,7 @@ public sealed class AssetEditorSystem : IGameSystem
         }
     }
 
-    private static void DrawControls(AssetEditorResource editor, FrameContext frameContext, EditorLayout layout)
+    private static void DrawControls(World world, AssetEditorResource editor, FrameContext frameContext, EditorLayout layout)
     {
         if (editor.ActiveGroup == null) return;
         var sb = frameContext.SpriteBatch!;
@@ -777,6 +803,11 @@ public sealed class AssetEditorSystem : IGameSystem
         PixelText.Draw(sb, pixel, "COLOR", new Vector2(layout.CustomColorButton.X, layout.CustomColorButton.Y - (int)(25 * scale)), (int)Math.Max(1, 2 * scale), ColorText);
         DrawButton(sb, pixel, layout.CustomColorButton, "PICK", editor.IsUsingCustomColor, editor.CustomColor, scale);
         DrawButton(sb, pixel, layout.BgColorButton, "BG", editor.BackgroundColor.A > 0, editor.BackgroundColor, scale);
+
+        // Social
+        PixelText.Draw(sb, pixel, "SOCIAL", new Vector2(layout.TransferButton.X, layout.TransferButton.Y - (int)(25 * scale)), (int)Math.Max(1, 2 * scale), ColorText);
+        bool canTransfer = world.TryGetResource<NetworkResource>(out var net) && net is { IsConnected: true };
+        DrawButton(sb, pixel, layout.TransferButton, "TRANSFER TO PEER", false, canTransfer ? ColorNeonMagenta : Color.DarkSlateGray, scale);
 
         // Save / Discard
         DrawButton(sb, pixel, layout.SaveButton, "SAVE", false, ColorNeonGreen, scale);
@@ -981,6 +1012,8 @@ public sealed class AssetEditorSystem : IGameSystem
             CustomColorButton = new Rectangle(toolStartX, rightPanel.Y + (int)(640 * scale), btnW, btnH),
             BgColorButton = new Rectangle(toolStartX + btnW + margin, rightPanel.Y + (int)(640 * scale), btnW, btnH),
 
+            TransferButton = new Rectangle(toolStartX, rightPanel.Y + (int)(730 * scale), btnW * 2 + margin, btnH),
+
             SaveButton = new Rectangle(actionPanel.X + margin, actionPanel.Y + (int)(30 * scale), btnW, btnH),
             DiscardButton = new Rectangle(actionPanel.X + btnW + margin * 2, actionPanel.Y + (int)(30 * scale), btnW, btnH),
 
@@ -1017,6 +1050,7 @@ public sealed class AssetEditorSystem : IGameSystem
         public Rectangle ToolBucketButton { get; init; }
         public Rectangle CustomColorButton { get; init; }
         public Rectangle BgColorButton { get; init; }
+        public Rectangle TransferButton { get; init; }
 
         public Rectangle SaveButton { get; init; }
         public Rectangle DiscardButton { get; init; }

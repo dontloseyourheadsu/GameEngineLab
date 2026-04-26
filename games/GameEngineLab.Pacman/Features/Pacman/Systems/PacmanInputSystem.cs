@@ -1,5 +1,6 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.Input.Components;
 using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using GameEngineLab.Pacman.Features.Pacman.Components;
 using GameEngineLab.Pacman.Features.UI.Resources;
@@ -23,40 +24,35 @@ public sealed class PacmanInputSystem : IGameSystem
 
         foreach (var entity in world.GetEntitiesWith<PacmanPlayerComponent>())
         {
-            Vector2 direction = Vector2.Zero;
+            Point desiredDirection = Point.Zero;
 
             if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Left) || frameContext.CurrentKeyboard.IsKeyDown(Keys.A))
             {
-                direction.X -= 1f;
+                desiredDirection = new Point(-1, 0);
             }
-
-            if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Right) || frameContext.CurrentKeyboard.IsKeyDown(Keys.D))
+            else if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Right) || frameContext.CurrentKeyboard.IsKeyDown(Keys.D))
             {
-                direction.X += 1f;
+                desiredDirection = new Point(1, 0);
             }
-
-            if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Up) || frameContext.CurrentKeyboard.IsKeyDown(Keys.W))
+            else if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Up) || frameContext.CurrentKeyboard.IsKeyDown(Keys.W))
             {
-                direction.Y -= 1f;
+                desiredDirection = new Point(0, -1);
             }
-
-            if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Down) || frameContext.CurrentKeyboard.IsKeyDown(Keys.S))
+            else if (frameContext.CurrentKeyboard.IsKeyDown(Keys.Down) || frameContext.CurrentKeyboard.IsKeyDown(Keys.S))
             {
-                direction.Y += 1f;
+                desiredDirection = new Point(0, 1);
             }
 
-            if (direction != Vector2.Zero)
+            if (!world.HasComponent<InputComponent>(entity))
             {
-                direction.Normalize();
+                world.SetComponent(entity, new InputComponent());
             }
 
-            if (!world.TryGetComponent<PacmanPlayerComponent>(entity, out var pacman))
+            if (world.TryGetComponent<InputComponent>(entity, out var input))
             {
-                continue;
+                input.DesiredDirection = desiredDirection;
+                world.SetComponent(entity, input);
             }
-
-            pacman.DesiredDirection = new Point((int)direction.X, (int)direction.Y);
-            world.SetComponent(entity, pacman);
         }
     }
 

@@ -1,5 +1,6 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.Identity.Resources;
 using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Pacman.Features.Assets.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
@@ -61,7 +62,8 @@ public sealed class AssetGroupSelectorSystem : IGameSystem
             
             if (newBtnRect.Contains(mouse))
             {
-                var newGroup = AssetEditorStorage.CreateDefaultGroup($"Group {lib.Groups.Count + 1}");
+                var user = world.GetRequiredResource<UserAccountResource>();
+                var newGroup = AssetEditorStorage.CreateDefaultGroup($"Group {lib.Groups.Count + 1}", user.UserId, user.UserId);
                 lib.Groups.Add(newGroup);
                 AssetEditorStorage.SaveLibrary(AssetPaths.DefaultAssets, lib);
                 return;
