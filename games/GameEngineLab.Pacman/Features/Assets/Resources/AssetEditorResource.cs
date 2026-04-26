@@ -37,6 +37,12 @@ public sealed class AssetLibraryResource
     public int SelectedGroupIndex { get; set; } = -1;
 }
 
+public enum AssetEditorTool
+{
+    Brush,
+    Bucket,
+}
+
 public sealed class AssetEditorResource
 {
     // The active group being edited
@@ -50,6 +56,14 @@ public sealed class AssetEditorResource
 
     public int SelectedColorIndex { get; set; }
 
+    public Color CustomColor { get; set; } = Color.White;
+
+    public bool IsUsingCustomColor { get; set; }
+
+    public Color BackgroundColor { get; set; } = Color.Transparent;
+
+    public AssetEditorTool SelectedTool { get; set; } = AssetEditorTool.Brush;
+
     public int BrushSize { get; set; } = 1;
 
     public Vector2? LastStrokePoint { get; set; }
@@ -59,4 +73,11 @@ public sealed class AssetEditorResource
     // Confirmation State
     public bool IsConfirmingModeSwitch { get; set; }
     public AssetCanvasMode PendingCanvasMode { get; set; }
+
+    public Color GetActiveColor()
+    {
+        if (IsUsingCustomColor) return CustomColor;
+        if (SelectedColorIndex >= 0 && SelectedColorIndex < Palette.Length) return Palette[SelectedColorIndex];
+        return Color.White;
+    }
 }

@@ -1,7 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Ecs.Entities;
-using GameEngineLab.Pacman.Features.Gameplay.Components;
+using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using GameEngineLab.Pacman.Features.Ghosts.Components;
 using GameEngineLab.Pacman.Features.Pacman.Components;
@@ -61,6 +61,7 @@ public sealed class GhostCollisionSystem : IGameSystem
             if (gameplay.Lives <= 0)
             {
                 gameplay.IsGameOver = true;
+                appMode.Mode = AppMode.GameOver;
                 break;
             }
 

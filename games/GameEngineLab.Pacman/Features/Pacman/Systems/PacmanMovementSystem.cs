@@ -2,7 +2,7 @@ using System;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
-using GameEngineLab.Pacman.Features.Gameplay.Components;
+using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.Pacman.Components;
@@ -139,7 +139,7 @@ public sealed class PacmanMovementSystem : IGameSystem
             ny = 0;
         }
 
-        if (map.GetTile(nx, ny) == '#')
+        if (map.GetTile(nx, ny) == '#' || map.GetTile(nx, ny) == 'S')
         {
             return false;
         }

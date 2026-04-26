@@ -2,10 +2,10 @@ using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Maps.Systems;
+using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.Pacman.Features.Assets.Resources;
 using GameEngineLab.Pacman.Features.Assets.Systems;
-using GameEngineLab.Pacman.Features.Gameplay.Components;
 using GameEngineLab.Pacman.Features.Gameplay.Resources;
 using GameEngineLab.Pacman.Features.Gameplay.Systems;
 using GameEngineLab.Pacman.Features.Ghosts.Components;
@@ -183,6 +183,8 @@ public sealed class PacmanGame : Game
                 AppMode.MapEditor => "GameEngineLab.Pacman | Map Editor | LMB paint  RMB erase  1-6 tile  Enter save  Esc menu",
                 AppMode.AssetEditor => "GameEngineLab.Pacman | Asset Editor | LMB paint  RMB erase  [ ] asset  +/- frame  1-9 color  Enter save  Esc menu",
                 AppMode.Options => "GameEngineLab.Pacman | Options | Drag sliders  Enter Apply  Esc Menu",
+                AppMode.Win => "GameEngineLab.Pacman | YOU WIN! | Press Tab for Menu",
+                AppMode.GameOver => "GameEngineLab.Pacman | GAME OVER | Press Tab for Menu",
                 _ => BuildGameplayTitle(),
             };
         }

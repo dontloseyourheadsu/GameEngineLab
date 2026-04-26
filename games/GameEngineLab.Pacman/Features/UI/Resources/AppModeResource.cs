@@ -4,6 +4,8 @@ public enum AppMode
 {
     Menu,
     Gameplay,
+    Win,
+    GameOver,
     GameSetup,
     MapGroupSelector,
     MapEditor,
