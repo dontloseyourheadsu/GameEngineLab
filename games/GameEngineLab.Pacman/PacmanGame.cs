@@ -183,6 +183,8 @@ public sealed class PacmanGame : Game
                 AppMode.MapEditor => "GameEngineLab.Pacman | Map Editor | LMB paint  RMB erase  1-6 tile  Enter save  Esc menu",
                 AppMode.AssetEditor => "GameEngineLab.Pacman | Asset Editor | LMB paint  RMB erase  [ ] asset  +/- frame  1-9 color  Enter save  Esc menu",
                 AppMode.Options => "GameEngineLab.Pacman | Options | Drag sliders  Enter Apply  Esc Menu",
+                AppMode.Win => "GameEngineLab.Pacman | YOU WIN! | Press Tab for Menu",
+                AppMode.GameOver => "GameEngineLab.Pacman | GAME OVER | Press Tab for Menu",
                 _ => BuildGameplayTitle(),
             };
         }

@@ -1,5 +1,6 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Pacman.Features.Map.Resources;
 using GameEngineLab.Pacman.Features.Assets.Resources;
 using GameEngineLab.Pacman.Features.UI.Resources;
@@ -164,7 +165,7 @@ public sealed class AssetEditorSystem : IGameSystem
 
         // Canvas Area
         bool showGrid = selectedAsset.Mode == AssetCanvasMode.Pixel;
-        DrawChecker(frameContext, layout.CanvasRect, layout.CellSize, selectedAsset.Resolution, showGrid);
+        DrawChecker(frameContext, layout.CanvasRect, layout.CellSize, selectedAsset.Resolution, showGrid, editor.BackgroundColor);
         DrawActiveFrame(editor, frameContext, layout.CanvasRect);
         
         // Palette
@@ -287,11 +288,36 @@ public sealed class AssetEditorSystem : IGameSystem
             if (GetPaletteRect(layout, i).Contains(mouse))
             {
                 editor.SelectedColorIndex = i;
+                editor.IsUsingCustomColor = false;
                 return;
             }
         }
 
         var selectedAsset = editor.ActiveGroup.Assets[editor.SelectedAssetIndex];
+
+        // Tools
+        if (layout.ToolBrushButton.Contains(mouse)) { editor.SelectedTool = AssetEditorTool.Brush; return; }
+        if (layout.ToolBucketButton.Contains(mouse)) { editor.SelectedTool = AssetEditorTool.Bucket; return; }
+
+        // Custom Color
+        if (layout.CustomColorButton.Contains(mouse))
+        {
+            editor.IsUsingCustomColor = true;
+            // Cycle through some colors for "custom" in this lab
+            var colors = new[] { Color.White, Color.Red, Color.Green, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan, Color.Orange, Color.Purple };
+            var idx = Array.IndexOf(colors, editor.CustomColor);
+            editor.CustomColor = colors[(idx + 1) % colors.Length];
+            return;
+        }
+
+        // Bg Color
+        if (layout.BgColorButton.Contains(mouse))
+        {
+            var bgs = new[] { Color.Transparent, Color.Black, Color.White, new Color(100, 100, 100), new Color(0, 50, 0), new Color(50, 0, 0) };
+            var idx = Array.IndexOf(bgs, editor.BackgroundColor);
+            editor.BackgroundColor = bgs[(idx + 1) % bgs.Length];
+            return;
+        }
 
         // Mode Buttons
         if (layout.ModePixelButton.Contains(mouse))
@@ -409,14 +435,25 @@ public sealed class AssetEditorSystem : IGameSystem
 
         var selectedAsset = editor.ActiveGroup.Assets[editor.SelectedAssetIndex];
         var frame = selectedAsset.Frames[editor.SelectedFrameIndex];
-        var color = leftDown ? editor.Palette[editor.SelectedColorIndex] : Color.Transparent;
+        var color = leftDown ? editor.GetActiveColor() : Color.Transparent;
 
         if (selectedAsset.Mode == AssetCanvasMode.Pixel)
         {
             if (TryGetCanvasPixel(frameContext.CurrentMouse.Position, layout, selectedAsset, out var pixel))
             {
-                PaintBrush(frame, selectedAsset.Width, selectedAsset.Height, pixel, editor.BrushSize, color);
-                editor.Dirty = true;
+                if (editor.SelectedTool == AssetEditorTool.Bucket && leftDown)
+                {
+                    if (IsNewLeftClick(frameContext, out _))
+                    {
+                        FloodFill(frame, selectedAsset.Width, selectedAsset.Height, pixel, color);
+                        editor.Dirty = true;
+                    }
+                }
+                else
+                {
+                    PaintBrush(frame, selectedAsset.Width, selectedAsset.Height, pixel, editor.BrushSize, color);
+                    editor.Dirty = true;
+                }
             }
             editor.LastStrokePoint = null;
         }
@@ -424,17 +461,51 @@ public sealed class AssetEditorSystem : IGameSystem
         {
             if (TryGetCanvasLocal(frameContext.CurrentMouse.Position, layout, selectedAsset, out var currentPoint))
             {
-                if (editor.LastStrokePoint is Vector2 last)
+                if (editor.SelectedTool == AssetEditorTool.Bucket && leftDown)
                 {
-                    PaintLineContinuous(frame, selectedAsset.Width, selectedAsset.Height, last, currentPoint, editor.BrushSize, color);
+                     if (IsNewLeftClick(frameContext, out _))
+                     {
+                        Point p = new((int)currentPoint.X, (int)currentPoint.Y);
+                        FloodFill(frame, selectedAsset.Width, selectedAsset.Height, p, color);
+                        editor.Dirty = true;
+                     }
                 }
                 else
                 {
-                    PaintBrushContinuous(frame, selectedAsset.Width, selectedAsset.Height, currentPoint, editor.BrushSize, color);
+                    if (editor.LastStrokePoint is Vector2 last)
+                    {
+                        PaintLineContinuous(frame, selectedAsset.Width, selectedAsset.Height, last, currentPoint, editor.BrushSize, color);
+                    }
+                    else
+                    {
+                        PaintBrushContinuous(frame, selectedAsset.Width, selectedAsset.Height, currentPoint, editor.BrushSize, color);
+                    }
+                    editor.Dirty = true;
                 }
-                editor.Dirty = true;
                 editor.LastStrokePoint = currentPoint;
             }
+        }
+    }
+
+    private static void FloodFill(Color[] frame, int width, int height, Point start, Color newColor)
+    {
+        Color targetColor = frame[start.Y * width + start.X];
+        if (targetColor == newColor) return;
+
+        var queue = new Queue<Point>();
+        queue.Enqueue(start);
+
+        while (queue.Count > 0)
+        {
+            var p = queue.Dequeue();
+            if (frame[p.Y * width + p.X] != targetColor) continue;
+
+            frame[p.Y * width + p.X] = newColor;
+
+            if (p.X > 0) queue.Enqueue(new Point(p.X - 1, p.Y));
+            if (p.X < width - 1) queue.Enqueue(new Point(p.X + 1, p.Y));
+            if (p.Y > 0) queue.Enqueue(new Point(p.X, p.Y - 1));
+            if (p.Y < height - 1) queue.Enqueue(new Point(p.X, p.Y + 1));
         }
     }
 
@@ -480,18 +551,28 @@ public sealed class AssetEditorSystem : IGameSystem
         }
     }
 
-    private static void DrawChecker(FrameContext frameContext, Rectangle canvasRect, int cellSize, int resolution, bool showGrid)
+    private static void DrawChecker(FrameContext frameContext, Rectangle canvasRect, int cellSize, int resolution, bool showGrid, Color backgroundColor)
     {
         var sb = frameContext.SpriteBatch!;
         var pixel = frameContext.DebugPixel!;
         
+        if (backgroundColor.A > 0)
+        {
+            sb.Draw(pixel, canvasRect, backgroundColor);
+        }
+
         int bigChecker = Math.Max(2, cellSize * Math.Max(1, resolution / 8));
         for (var y = 0; y < canvasRect.Height / bigChecker + 1; y++)
         {
             for (var x = 0; x < canvasRect.Width / bigChecker + 1; x++)
             {
                 var isEven = ((x + y) % 2) == 0;
-                var color = isEven ? new Color(24, 24, 36) : new Color(32, 32, 44);
+                var color = isEven ? new Color(24, 24, 36, 100) : new Color(32, 32, 44, 100);
+                if (backgroundColor.A > 0)
+                {
+                    color = isEven ? new Color(0,0,0, 20) : new Color(255,255,255, 20);
+                }
+
                 var r = new Rectangle(canvasRect.X + x * bigChecker, canvasRect.Y + y * bigChecker, bigChecker, bigChecker);
                 
                 int intersectX = Math.Max(r.X, canvasRect.X);
@@ -540,7 +621,7 @@ public sealed class AssetEditorSystem : IGameSystem
                 sb.Draw(pixel, rect, color);
             }
 
-            if (i == editor.SelectedColorIndex)
+            if (i == editor.SelectedColorIndex && !editor.IsUsingCustomColor)
             {
                 var border = (int)Math.Max(1, 4 * layout.Scale);
                 sb.Draw(pixel, new Rectangle(rect.X - border, rect.Y - border, rect.Width + border * 2, border), Color.White);
@@ -686,6 +767,16 @@ public sealed class AssetEditorSystem : IGameSystem
         var sizeText = editor.BrushSize.ToString();
         var sizePos = new Vector2(layout.BrushMinusButton.Right + (int)(20 * scale), layout.BrushMinusButton.Y + (int)(15 * scale));
         PixelText.Draw(sb, pixel, sizeText, sizePos, (int)Math.Max(1, 3 * scale), ColorNeonYellow);
+
+        // Tool Selection
+        PixelText.Draw(sb, pixel, "TOOL", new Vector2(layout.ToolBrushButton.X, layout.ToolBrushButton.Y - (int)(25 * scale)), (int)Math.Max(1, 2 * scale), ColorText);
+        DrawButton(sb, pixel, layout.ToolBrushButton, "BRUSH", editor.SelectedTool == AssetEditorTool.Brush, ColorNeonCyan, scale);
+        DrawButton(sb, pixel, layout.ToolBucketButton, "BUCKET", editor.SelectedTool == AssetEditorTool.Bucket, ColorNeonCyan, scale);
+
+        // Custom/Bg Color
+        PixelText.Draw(sb, pixel, "COLOR", new Vector2(layout.CustomColorButton.X, layout.CustomColorButton.Y - (int)(25 * scale)), (int)Math.Max(1, 2 * scale), ColorText);
+        DrawButton(sb, pixel, layout.CustomColorButton, "PICK", editor.IsUsingCustomColor, editor.CustomColor, scale);
+        DrawButton(sb, pixel, layout.BgColorButton, "BG", editor.BackgroundColor.A > 0, editor.BackgroundColor, scale);
 
         // Save / Discard
         DrawButton(sb, pixel, layout.SaveButton, "SAVE", false, ColorNeonGreen, scale);
@@ -884,6 +975,12 @@ public sealed class AssetEditorSystem : IGameSystem
             BrushMinusButton = new Rectangle(toolStartX, rightPanel.Y + (int)(460 * scale), (int)(64 * scale), (int)(64 * scale)),
             BrushPlusButton = new Rectangle(toolStartX + (int)(150 * scale), rightPanel.Y + (int)(460 * scale), (int)(64 * scale), (int)(64 * scale)),
 
+            ToolBrushButton = new Rectangle(toolStartX, rightPanel.Y + (int)(550 * scale), btnW, btnH),
+            ToolBucketButton = new Rectangle(toolStartX + btnW + margin, rightPanel.Y + (int)(550 * scale), btnW, btnH),
+
+            CustomColorButton = new Rectangle(toolStartX, rightPanel.Y + (int)(640 * scale), btnW, btnH),
+            BgColorButton = new Rectangle(toolStartX + btnW + margin, rightPanel.Y + (int)(640 * scale), btnW, btnH),
+
             SaveButton = new Rectangle(actionPanel.X + margin, actionPanel.Y + (int)(30 * scale), btnW, btnH),
             DiscardButton = new Rectangle(actionPanel.X + btnW + margin * 2, actionPanel.Y + (int)(30 * scale), btnW, btnH),
 
@@ -915,6 +1012,11 @@ public sealed class AssetEditorSystem : IGameSystem
 
         public Rectangle BrushMinusButton { get; init; }
         public Rectangle BrushPlusButton { get; init; }
+
+        public Rectangle ToolBrushButton { get; init; }
+        public Rectangle ToolBucketButton { get; init; }
+        public Rectangle CustomColorButton { get; init; }
+        public Rectangle BgColorButton { get; init; }
 
         public Rectangle SaveButton { get; init; }
         public Rectangle DiscardButton { get; init; }
