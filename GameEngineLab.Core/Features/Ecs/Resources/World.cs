@@ -117,6 +117,20 @@ public sealed class World
         }
     }
 
+    public IEnumerable<EntityId> GetEntitiesWith<TFirst, TSecond, TThird>()
+        where TFirst : struct, IComponent
+        where TSecond : struct, IComponent
+        where TThird : struct, IComponent
+    {
+        foreach (EntityId entityId in GetEntitiesWith<TFirst, TSecond>())
+        {
+            if (HasComponent<TThird>(entityId))
+            {
+                yield return entityId;
+            }
+        }
+    }
+
     public void SetResource<TResource>(TResource resource)
         where TResource : class
     {
