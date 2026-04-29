@@ -1,6 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Physics.Components;
+using GameEngineLab.Core.Features.Rendering.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using Microsoft.Xna.Framework;
 
@@ -16,19 +17,17 @@ public sealed class BallRenderSystem : IGameSystem
     {
         if (frameContext.SpriteBatch == null || frameContext.DebugPixel == null) return;
 
-        foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent>())
+        foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent, RigidBodyComponent>())
         {
-            world.TryGetComponent<BallComponent>(entityId, out var ball);
+            world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
             world.TryGetComponent<TransformComponent>(entityId, out var transform);
 
-            var size = (int)(ball.Radius * 2);
-            var rect = new Rectangle(
-                (int)(transform.Position.X - ball.Radius),
-                (int)(transform.Position.Y - ball.Radius),
-                size,
-                size);
-
-            frameContext.SpriteBatch.Draw(frameContext.DebugPixel, rect, Color.White);
+            ShapeRenderer.DrawCircle(
+                frameContext.SpriteBatch,
+                frameContext.DebugPixel,
+                transform.Position,
+                body.BoundingRadius,
+                Color.White);
         }
     }
 }

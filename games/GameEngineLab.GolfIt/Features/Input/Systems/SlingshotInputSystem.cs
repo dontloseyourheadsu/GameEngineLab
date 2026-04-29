@@ -1,6 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Physics.Components;
+using GameEngineLab.Core.Features.Rendering.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -20,9 +21,9 @@ public sealed class SlingshotInputSystem : IGameSystem
         var mouse = frameContext.CurrentMouse;
         var prevMouse = frameContext.PreviousMouse;
 
-        foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent>())
+        foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent, RigidBodyComponent>())
         {
-            world.TryGetComponent<BallComponent>(entityId, out var ball);
+            world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
             world.TryGetComponent<TransformComponent>(entityId, out var transform);
             world.TryGetComponent<VelocityComponent>(entityId, out var velocity);
 
@@ -31,7 +32,7 @@ public sealed class SlingshotInputSystem : IGameSystem
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouse.LeftButton == ButtonState.Released)
             {
-                if (Vector2.Distance(mousePos, ballPos) < ball.Radius * 2)
+                if (Vector2.Distance(mousePos, ballPos) < body.BoundingRadius * 2)
                 {
                     _isDragging = true;
                     _dragStart = mousePos;
@@ -61,7 +62,7 @@ public sealed class SlingshotInputSystem : IGameSystem
             var mouse = frameContext.CurrentMouse;
             var mousePos = new Vector2(mouse.X, mouse.Y);
             
-            // Draw a simple line using a scaled pixel
+            // Draw aiming line
             var diff = _dragStart - mousePos;
             var angle = (float)System.Math.Atan2(diff.Y, diff.X);
             var length = diff.Length();
@@ -70,12 +71,29 @@ public sealed class SlingshotInputSystem : IGameSystem
                 frameContext.DebugPixel,
                 _dragStart,
                 null,
-                Color.Red,
+                Color.Red * 0.5f,
                 angle,
                 Vector2.Zero,
-                new Vector2(length, 2f),
+                new Vector2(length, 1f),
                 SpriteEffects.None,
                 0);
+
+            // Highlight the ball being dragged
+            foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent, RigidBodyComponent>())
+            {
+                world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
+                world.TryGetComponent<TransformComponent>(entityId, out var transform);
+                
+                if (Vector2.Distance(_dragStart, transform.Position) < body.BoundingRadius * 2)
+                {
+                    ShapeRenderer.DrawCircleOutline(
+                        frameContext.SpriteBatch,
+                        frameContext.DebugPixel,
+                        transform.Position,
+                        body.BoundingRadius + 2,
+                        Color.Yellow);
+                }
+            }
         }
     }
 }

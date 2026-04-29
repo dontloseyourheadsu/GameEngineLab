@@ -2,10 +2,10 @@ using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Physics.Components;
+using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Input.Systems;
-using GameEngineLab.GolfIt.Features.Physics.Systems;
 using GameEngineLab.GolfIt.Features.Rendering.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -43,13 +43,14 @@ public sealed class GolfItGame : Game
 
         var ball = _world.CreateEntity();
         _world.SetComponent(ball, new BallComponent());
+        _world.SetComponent(ball, new RigidBodyComponent { BoundingRadius = 10f, Restitution = 0.8f, Friction = 0.98f });
         _world.SetComponent(ball, new TransformComponent { Position = new Vector2(400, 300) });
         _world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
 
         _scheduler.AddSystem(new SlingshotInputSystem());
         _scheduler.AddSystem(new MovementSystem());
-        _scheduler.AddSystem(new BounceSystem());
-        _scheduler.AddSystem(new FrictionSystem());
+        _scheduler.AddSystem(new BoundarySystem());
+        _scheduler.AddSystem(new PhysicsFrictionSystem());
         _scheduler.AddSystem(new BallRenderSystem());
 
         base.Initialize();
