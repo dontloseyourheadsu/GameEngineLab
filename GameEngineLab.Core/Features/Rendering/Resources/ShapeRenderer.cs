@@ -28,4 +28,33 @@ public static class ShapeRenderer
             spriteBatch.Draw(pixel, new Rectangle((int)pos.X, (int)pos.Y, thickness, thickness), color);
         }
     }
+
+    public static void DrawRectangle(SpriteBatch spriteBatch, Texture2D pixel, Vector2 center, Vector2 size, Color color)
+    {
+        var rect = new Rectangle(
+            (int)(center.X - size.X / 2f),
+            (int)(center.Y - size.Y / 2f),
+            (int)size.X,
+            (int)size.Y);
+        spriteBatch.Draw(pixel, rect, color);
+    }
+
+    public static void DrawLine(SpriteBatch spriteBatch, Texture2D pixel, Vector2 start, Vector2 end, Color color, int thickness = 1)
+    {
+        var edge = end - start;
+        var angle = (float)Math.Atan2(edge.Y, edge.X);
+
+        spriteBatch.Draw(pixel,
+            new Rectangle(
+                (int)start.X,
+                (int)start.Y,
+                (int)edge.Length(),
+                thickness),
+            null,
+            color,
+            angle,
+            Vector2.Zero,
+            SpriteEffects.None,
+            0);
+    }
 }
