@@ -6,6 +6,8 @@ using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Input.Systems;
+using GameEngineLab.GolfIt.Features.Physics.Components;
+using GameEngineLab.GolfIt.Features.Physics.Systems;
 using GameEngineLab.GolfIt.Features.Rendering.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -41,19 +43,55 @@ public sealed class GolfItGame : Game
             PlayArea = new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight)
         });
 
+        // Create the heavy ball with a spring
         var ball = _world.CreateEntity();
         _world.SetComponent(ball, new BallComponent());
-        _world.SetComponent(ball, new RigidBodyComponent { BoundingRadius = 10f, Restitution = 0.8f, Friction = 0.98f });
-        _world.SetComponent(ball, new TransformComponent { Position = new Vector2(400, 300) });
+        _world.SetComponent(ball, new RigidBodyComponent 
+        { 
+            Shape = RigidBodyShape.Circle,
+            BoundingRadius = 12f, 
+            Restitution = 0.6f, 
+            Friction = 0.99f,
+            Mass = 5.0f // Heavy ball
+        });
+        _world.SetComponent(ball, new TransformComponent { Position = new Vector2(512, 600) });
         _world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
+        _world.SetComponent(ball, new SpringComponent
+        {
+            Anchor = new Vector2(512, 600),
+            Stiffness = 30f,
+            Damping = 2f,
+            RestLength = 0f
+        });
+
+        // Create some obstacles
+        CreateObstacle(new Vector2(300, 300), new Vector2(100, 40));
+        CreateObstacle(new Vector2(700, 300), new Vector2(100, 40));
+        CreateObstacle(new Vector2(512, 200), new Vector2(200, 20));
 
         _scheduler.AddSystem(new SlingshotInputSystem());
+        _scheduler.AddSystem(new SpringSystem());
         _scheduler.AddSystem(new MovementSystem());
+        _scheduler.AddSystem(new CollisionSystem());
         _scheduler.AddSystem(new BoundarySystem());
         _scheduler.AddSystem(new PhysicsFrictionSystem());
         _scheduler.AddSystem(new BallRenderSystem());
 
         base.Initialize();
+    }
+
+    private void CreateObstacle(Vector2 position, Vector2 size)
+    {
+        var obstacle = _world.CreateEntity();
+        _world.SetComponent(obstacle, new ObstacleComponent());
+        _world.SetComponent(obstacle, new TransformComponent { Position = position });
+        _world.SetComponent(obstacle, new RigidBodyComponent
+        {
+            Shape = RigidBodyShape.Rectangle,
+            Size = size,
+            Restitution = 0.5f,
+            Mass = 0f // Static
+        });
     }
 
     protected override void LoadContent()
