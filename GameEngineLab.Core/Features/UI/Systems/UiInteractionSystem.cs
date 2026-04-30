@@ -54,8 +54,16 @@ public sealed class UiInteractionSystem : IGameSystem
             // Handle Clicks & Focus
             if (isHovered && wasLeftPressedJustNow)
             {
-                // Update Global Focus on press for better responsiveness
-                focusResource.FocusedEntity = entityId;
+                // Only allow interactive components to take focus
+                bool isInteractive = world.HasComponent<UiButtonComponent>(entityId) || 
+                                     world.HasComponent<UiCheckboxComponent>(entityId) || 
+                                     world.HasComponent<UiSliderComponent>(entityId) || 
+                                     world.HasComponent<UiTextInputComponent>(entityId);
+
+                if (isInteractive)
+                {
+                    focusResource.FocusedEntity = entityId;
+                }
             }
 
             if (isHovered && wasLeftClicked)

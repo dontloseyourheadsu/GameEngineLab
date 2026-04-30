@@ -6,4 +6,5 @@ public sealed class PaletteLibraryResource
 {
     public required PaletteResource General { get; init; }
     public required PaletteResource Specific { get; init; }
+    public required PaletteResource Cozy { get; init; }
 }

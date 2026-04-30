@@ -109,7 +109,7 @@ public sealed class UiRenderSystem : IGameSystem
             // Draw Slider / Scrollbar
             if (world.TryGetComponent<UiSliderComponent>(entityId, out var slider))
             {
-                var thumbSize = 16;
+                var thumbSize = 24; // Increased from 16
                 var trackColor = theme.ShadowColor;
                 var thumbColor = theme.HighlightColor;
 
@@ -120,16 +120,28 @@ public sealed class UiRenderSystem : IGameSystem
                 if (slider.Vertical)
                 {
                     var thumbY = contentRect.Y + (int)(slider.Value * (contentRect.Height - thumbSize)) + thumbSize / 2;
+                    // Draw Thumb Shadow
+                    ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
+                        new Vector2(contentRect.Center.X + 2, thumbY + 2), new Vector2(contentRect.Width, thumbSize), theme.ShadowColor);
                     // Draw Thumb
                     ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
-                        new Vector2(contentRect.Center.X, thumbY), new Vector2(contentRect.Width - 2, thumbSize), thumbColor);
+                        new Vector2(contentRect.Center.X, thumbY), new Vector2(contentRect.Width, thumbSize), thumbColor);
+                    // Thumb Top Highlight
+                    ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
+                        new Vector2(contentRect.Center.X, thumbY - thumbSize/4), new Vector2(contentRect.Width, 2), theme.TextColor);
                 }
                 else
                 {
                     var thumbX = contentRect.X + (int)(slider.Value * (contentRect.Width - thumbSize)) + thumbSize / 2;
+                    // Draw Thumb Shadow
+                    ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
+                        new Vector2(thumbX + 2, contentRect.Center.Y + 2), new Vector2(thumbSize, contentRect.Height), theme.ShadowColor);
                     // Draw Thumb
                     ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
-                        new Vector2(thumbX, contentRect.Center.Y), new Vector2(thumbSize, contentRect.Height - 2), thumbColor);
+                        new Vector2(thumbX, contentRect.Center.Y), new Vector2(thumbSize, contentRect.Height), thumbColor);
+                    // Thumb Side Highlight
+                    ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
+                        new Vector2(thumbX - thumbSize/4, contentRect.Center.Y), new Vector2(2, contentRect.Height), theme.TextColor);
                 }
             }
 

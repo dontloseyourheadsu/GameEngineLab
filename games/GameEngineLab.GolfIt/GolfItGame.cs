@@ -5,12 +5,17 @@ using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Runtime.Resources;
+using GameEngineLab.Core.Features.UI;
+using GameEngineLab.Core.Features.UI.Resources;
+using GameEngineLab.Core.Features.UI.Systems;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Input.Systems;
 using GameEngineLab.GolfIt.Features.Physics.Components;
 using GameEngineLab.GolfIt.Features.Physics.Systems;
 using GameEngineLab.GolfIt.Features.Rendering.Resources;
 using GameEngineLab.GolfIt.Features.Rendering.Systems;
+using GameEngineLab.GolfIt.Features.Runtime;
+using GameEngineLab.GolfIt.Features.UI.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -24,6 +29,7 @@ public sealed class GolfItGame : Game
     private readonly GraphicsDeviceManager _graphics;
     private readonly World _world = new();
     private readonly SystemScheduler _scheduler = new();
+    private readonly SystemScheduler _uiScheduler = new();
 
     private SpriteBatch? _spriteBatch;
     private Texture2D? _debugPixel;
@@ -50,9 +56,19 @@ public sealed class GolfItGame : Game
         var library = new PaletteLibraryResource
         {
             General = TwilioQuestPalette.Create(),
-            Specific = SpecificAssetsPalette.Create()
+            Specific = SpecificAssetsPalette.Create(),
+            Cozy = CozyPalette.Create()
         };
         _world.SetResource(library);
+        _world.SetResource(new GameStateResource());
+        _world.SetResource(new UiThemeResource
+        {
+            BorderColor = library.Cozy.GetColor(6),
+            SurfaceColor = library.Cozy.GetColor(1),
+            TextColor = library.Cozy.GetColor(4),
+            HighlightColor = library.Cozy.GetColor(5),
+            ShadowColor = library.Cozy.GetColor(3)
+        });
 
         // Create the heavy ball with a spring
         var ball = _world.CreateEntity();
@@ -88,6 +104,7 @@ public sealed class GolfItGame : Game
             CreateObstacle(pos, size, color);
         }
 
+        // Gameplay Systems
         _scheduler.AddSystem(new SlingshotInputSystem());
         _scheduler.AddSystem(new SpringSystem());
         _scheduler.AddSystem(new MovementSystem());
@@ -95,6 +112,12 @@ public sealed class GolfItGame : Game
         _scheduler.AddSystem(new BoundarySystem());
         _scheduler.AddSystem(new PhysicsFrictionSystem());
         _scheduler.AddSystem(new BallRenderSystem());
+
+        // UI Systems
+        _uiScheduler.AddSystem(new UiInteractionSystem());
+        _uiScheduler.AddSystem(new UiTextInputSystem());
+        _uiScheduler.AddSystem(new UiActionSystem());
+        _uiScheduler.AddSystem(new UiRenderSystem());
 
         base.Initialize();
     }
@@ -119,6 +142,54 @@ public sealed class GolfItGame : Game
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _debugPixel = new Texture2D(GraphicsDevice, 1, 1);
         _debugPixel.SetData(new[] { Color.White });
+
+        var uiTheme = _world.GetRequiredResource<UiThemeResource>();
+        uiTheme.Fonts["Fonts/Silkscreen"] = Content.Load<SpriteFont>("Fonts/Silkscreen");
+        uiTheme.Fonts["Fonts/SilkscreenBold"] = Content.Load<SpriteFont>("Fonts/SilkscreenBold");
+        uiTheme.Fonts["Fonts/Blanka"] = Content.Load<SpriteFont>("Fonts/Blanka");
+
+        // Create Menu UI based on HTML design
+        UiBuilder.CreateLabel(_world, 350, 40, "GOLF IT", "Fonts/Blanka", 1.2f, true);
+        UiBuilder.CreateLabel(_world, 360, 90, "UI COMPONENT SHOWCASE - COZY TONES", "Fonts/Silkscreen", 0.6f);
+
+        // Grid Layout simulation using Cards (Panels)
+        
+        // TYPOGRAPHY CARD
+        UiBuilder.CreatePanel(_world, 50, 150, 300, 200);
+        UiBuilder.CreateLabel(_world, 60, 160, "TYPOGRAPHY", "Fonts/SilkscreenBold", 0.6f);
+        UiBuilder.CreateLabel(_world, 60, 190, "GOLF IT", "Fonts/SilkscreenBold", 1.1f, true);
+        UiBuilder.CreateLabel(_world, 60, 230, "COURSE SELECT", "Fonts/SilkscreenBold", 0.8f);
+        UiBuilder.CreateLabel(_world, 60, 260, "HOLE 7 / 18", "Fonts/Silkscreen", 0.7f);
+
+        // BUTTONS CARD
+        UiBuilder.CreatePanel(_world, 365, 150, 300, 200);
+        UiBuilder.CreateLabel(_world, 375, 160, "TEXT BUTTONS", "Fonts/SilkscreenBold", 0.6f);
+        UiBuilder.CreateButton(_world, 375, 190, 200, 50, "PLAY GAME", "play", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, 375, 260, 120, 40, "CONFIRM", "none");
+        UiBuilder.CreateButton(_world, 505, 260, 120, 40, "CANCEL", "none");
+
+        // CHECKBOXES CARD
+        UiBuilder.CreatePanel(_world, 680, 150, 300, 200);
+        UiBuilder.CreateLabel(_world, 690, 160, "CHECKBOXES", "Fonts/SilkscreenBold", 0.6f);
+        UiBuilder.CreateCheckbox(_world, 690, 190, "ENABLE SHADOWS", true, 250);
+        UiBuilder.CreateCheckbox(_world, 690, 230, "SHOW TRAJECTORY", true, 250);
+        UiBuilder.CreateCheckbox(_world, 690, 270, "WIND EFFECTS", false, 250);
+
+        // INPUTS CARD
+        UiBuilder.CreatePanel(_world, 50, 380, 300, 200);
+        UiBuilder.CreateLabel(_world, 60, 390, "INPUTS", "Fonts/SilkscreenBold", 0.6f);
+        UiBuilder.CreateLabel(_world, 60, 420, "PLAYER NAME", "Fonts/Silkscreen", 0.6f);
+        UiBuilder.CreateTextInput(_world, 60, 440, 250, 40, "PLAYER 1");
+        UiBuilder.CreateLabel(_world, 60, 490, "COURSE CODE", "Fonts/Silkscreen", 0.6f);
+        UiBuilder.CreateTextInput(_world, 60, 510, 250, 40, "XXXX-XXXX");
+
+        // SLIDERS CARD
+        UiBuilder.CreatePanel(_world, 365, 380, 300, 200);
+        UiBuilder.CreateLabel(_world, 375, 390, "SLIDERS", "Fonts/SilkscreenBold", 0.6f);
+        UiBuilder.CreateLabel(_world, 375, 420, "WIND SPEED", "Fonts/Silkscreen", 0.6f);
+        UiBuilder.CreateSlider(_world, 375, 440, 250, 20, 0.4f);
+        UiBuilder.CreateLabel(_world, 375, 490, "SHOT POWER", "Fonts/Silkscreen", 0.6f);
+        UiBuilder.CreateSlider(_world, 375, 510, 250, 20, 0.75f);
     }
 
     protected override void Update(GameTime gameTime)
@@ -136,7 +207,16 @@ public sealed class GolfItGame : Game
             _spriteBatch,
             _debugPixel);
 
-        _scheduler.Update(_world, frameContext);
+        var gameState = _world.GetRequiredResource<GameStateResource>();
+
+        if (gameState.Current == GameState.Playing)
+        {
+            _scheduler.Update(_world, frameContext);
+        }
+        else
+        {
+            _uiScheduler.Update(_world, frameContext);
+        }
 
         _previousKeyboard = currentKeyboard;
         _previousMouse = currentMouse;
@@ -146,10 +226,10 @@ public sealed class GolfItGame : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        var backgroundColor = Color.CornflowerBlue;
+        var backgroundColor = new Color(0x2d, 0x4a, 0x1b); // Cozy Root BG
         if (_world.TryGetResource<PaletteLibraryResource>(out var library) && library != null)
         {
-            backgroundColor = library.Specific.GetColor(7); // The darkest color from the specific palette
+            backgroundColor = library.Cozy.GetColor(0); 
         }
 
         GraphicsDevice.Clear(backgroundColor);
@@ -165,7 +245,17 @@ public sealed class GolfItGame : Game
             _debugPixel);
 
         _spriteBatch?.Begin();
-        _scheduler.Draw(_world, frameContext);
+        
+        var gameState = _world.GetRequiredResource<GameStateResource>();
+        if (gameState.Current == GameState.Playing)
+        {
+            _scheduler.Draw(_world, frameContext);
+        }
+        else
+        {
+            _uiScheduler.Draw(_world, frameContext);
+        }
+
         _spriteBatch?.End();
 
         base.Draw(gameTime);
