@@ -13,3 +13,11 @@
 
 #---------------------------------- Content ---------------------------------#
 
+/copy:Fonts/Silkscreen-Regular.ttf
+/copy:Fonts/Silkscreen-Bold.ttf
+/copy:Fonts/Blanka-Regular.otf
+
+/build:Fonts/Silkscreen.spritefont
+/build:Fonts/SilkscreenBold.spritefont
+/build:Fonts/Blanka.spritefont
+
