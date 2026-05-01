@@ -1,3 +1,4 @@
+using GameEngineLab.Core.Features.Ecs.Entities;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
@@ -6,6 +7,7 @@ using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.Core.Features.UI;
+using GameEngineLab.Core.Features.UI.Components;
 using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Core.Features.UI.Systems;
 using GameEngineLab.GolfIt.Features.Ball.Components;
@@ -35,13 +37,20 @@ public sealed class GolfItGame : Game
     private Texture2D? _debugPixel;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
+    private GameState _lastGameState = GameState.Menu;
+    private SettingsResource _settings = new();
+
+    // UI Entity IDs for Settings tracking
+    private EntityId _volumeSlider;
+    private EntityId _scaleSelector;
+    private EntityId _fullscreenCheckbox;
 
     public GolfItGame()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
-        Window.AllowUserResizing = true;
+        Window.AllowUserResizing = false; // Block resizing as requested
         _graphics.PreferredBackBufferWidth = GameConstants.DefaultWindowWidth;
         _graphics.PreferredBackBufferHeight = GameConstants.DefaultWindowHeight;
     }
@@ -61,6 +70,7 @@ public sealed class GolfItGame : Game
         };
         _world.SetResource(library);
         _world.SetResource(new GameStateResource());
+        _world.SetResource(_settings);
         _world.SetResource(new UiThemeResource
         {
             BorderColor = library.Cozy.GetColor(6),
@@ -148,48 +158,58 @@ public sealed class GolfItGame : Game
         uiTheme.Fonts["Fonts/SilkscreenBold"] = Content.Load<SpriteFont>("Fonts/SilkscreenBold");
         uiTheme.Fonts["Fonts/Blanka"] = Content.Load<SpriteFont>("Fonts/Blanka");
 
-        // Create Menu UI based on HTML design
-        UiBuilder.CreateLabel(_world, 350, 40, "GOLF IT", "Fonts/Blanka", 1.2f, true);
-        UiBuilder.CreateLabel(_world, 360, 90, "UI COMPONENT SHOWCASE - COZY TONES", "Fonts/Silkscreen", 0.6f);
+        RebuildUi();
+    }
 
-        // Grid Layout simulation using Cards (Panels)
+    private void ClearUi()
+    {
+        foreach (var entity in _world.GetEntitiesWith<UiTransformComponent>().ToList())
+        {
+            _world.DestroyEntity(entity);
+        }
+    }
+
+    private void RebuildUi()
+    {
+        ClearUi();
+        var state = _world.GetRequiredResource<GameStateResource>().Current;
         
-        // TYPOGRAPHY CARD
-        UiBuilder.CreatePanel(_world, 50, 150, 300, 200);
-        UiBuilder.CreateLabel(_world, 60, 160, "TYPOGRAPHY", "Fonts/SilkscreenBold", 0.6f);
-        UiBuilder.CreateLabel(_world, 60, 190, "GOLF IT", "Fonts/SilkscreenBold", 1.1f, true);
-        UiBuilder.CreateLabel(_world, 60, 230, "COURSE SELECT", "Fonts/SilkscreenBold", 0.8f);
-        UiBuilder.CreateLabel(_world, 60, 260, "HOLE 7 / 18", "Fonts/Silkscreen", 0.7f);
+        if (state == GameState.Menu)
+        {
+            CreateMainMenuUi();
+        }
+        else if (state == GameState.Settings)
+        {
+            CreateSettingsUi();
+        }
+    }
 
-        // BUTTONS CARD
-        UiBuilder.CreatePanel(_world, 365, 150, 300, 200);
-        UiBuilder.CreateLabel(_world, 375, 160, "TEXT BUTTONS", "Fonts/SilkscreenBold", 0.6f);
-        UiBuilder.CreateButton(_world, 375, 190, 200, 50, "PLAY GAME", "play", "Fonts/SilkscreenBold");
-        UiBuilder.CreateButton(_world, 375, 260, 120, 40, "CONFIRM", "none");
-        UiBuilder.CreateButton(_world, 505, 260, 120, 40, "CANCEL", "none");
+    private void CreateMainMenuUi()
+    {
+        var centerX = GraphicsDevice.Viewport.Width / 2;
+        UiBuilder.CreateLabel(_world, centerX - 150, 100, "GOLFIN'", "Fonts/Blanka", 2.0f, true);
+        
+        UiBuilder.CreateButton(_world, centerX - 100, 300, 200, 60, "PLAY", "play", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 100, 400, 200, 60, "SETTINGS", "settings", "Fonts/SilkscreenBold");
+    }
 
-        // CHECKBOXES CARD
-        UiBuilder.CreatePanel(_world, 680, 150, 300, 200);
-        UiBuilder.CreateLabel(_world, 690, 160, "CHECKBOXES", "Fonts/SilkscreenBold", 0.6f);
-        UiBuilder.CreateCheckbox(_world, 690, 190, "ENABLE SHADOWS", true, 250);
-        UiBuilder.CreateCheckbox(_world, 690, 230, "SHOW TRAJECTORY", true, 250);
-        UiBuilder.CreateCheckbox(_world, 690, 270, "WIND EFFECTS", false, 250);
+    private void CreateSettingsUi()
+    {
+        var centerX = GraphicsDevice.Viewport.Width / 2;
+        UiBuilder.CreateLabel(_world, centerX - 100, 50, "SETTINGS", "Fonts/Blanka", 1.2f, true);
 
-        // INPUTS CARD
-        UiBuilder.CreatePanel(_world, 50, 380, 300, 200);
-        UiBuilder.CreateLabel(_world, 60, 390, "INPUTS", "Fonts/SilkscreenBold", 0.6f);
-        UiBuilder.CreateLabel(_world, 60, 420, "PLAYER NAME", "Fonts/Silkscreen", 0.6f);
-        UiBuilder.CreateTextInput(_world, 60, 440, 250, 40, "PLAYER 1");
-        UiBuilder.CreateLabel(_world, 60, 490, "COURSE CODE", "Fonts/Silkscreen", 0.6f);
-        UiBuilder.CreateTextInput(_world, 60, 510, 250, 40, "XXXX-XXXX");
+        // Volume Slider
+        UiBuilder.CreateLabel(_world, centerX - 150, 150, "VOLUME", "Fonts/SilkscreenBold", 0.6f);
+        _volumeSlider = UiBuilder.CreateSlider(_world, centerX - 150, 180, 300, 30, _settings.Volume);
 
-        // SLIDERS CARD
-        UiBuilder.CreatePanel(_world, 365, 380, 300, 200);
-        UiBuilder.CreateLabel(_world, 375, 390, "SLIDERS", "Fonts/SilkscreenBold", 0.6f);
-        UiBuilder.CreateLabel(_world, 375, 420, "WIND SPEED", "Fonts/Silkscreen", 0.6f);
-        UiBuilder.CreateSlider(_world, 375, 440, 250, 20, 0.4f);
-        UiBuilder.CreateLabel(_world, 375, 490, "SHOT POWER", "Fonts/Silkscreen", 0.6f);
-        UiBuilder.CreateSlider(_world, 375, 510, 250, 20, 0.75f);
+        // Scale Selector
+        UiBuilder.CreateLabel(_world, centerX - 150, 250, "RESOLUTION SCALE", "Fonts/SilkscreenBold", 0.6f);
+        _scaleSelector = UiBuilder.CreateSelector(_world, centerX - 150, 280, 300, 40, "SCALE", _settings.ScaleOptions, _settings.ResolutionScaleIndex);
+
+        // Fullscreen Checkbox
+        _fullscreenCheckbox = UiBuilder.CreateCheckbox(_world, centerX - 150, 360, "FULLSCREEN MODE", _settings.IsFullScreen, 300);
+
+        UiBuilder.CreateButton(_world, centerX - 100, 500, 200, 50, "BACK", "back_to_menu", "Fonts/SilkscreenBold");
     }
 
     protected override void Update(GameTime gameTime)
@@ -207,21 +227,87 @@ public sealed class GolfItGame : Game
             _spriteBatch,
             _debugPixel);
 
-        var gameState = _world.GetRequiredResource<GameStateResource>();
+        var gameStateResource = _world.GetRequiredResource<GameStateResource>();
+        
+        // Handle State Transitions
+        if (gameStateResource.Current != _lastGameState)
+        {
+            RebuildUi();
+            _lastGameState = gameStateResource.Current;
+        }
 
-        if (gameState.Current == GameState.Playing)
+        if (gameStateResource.Current == GameState.Playing)
         {
             _scheduler.Update(_world, frameContext);
         }
         else
         {
             _uiScheduler.Update(_world, frameContext);
+            
+            if (gameStateResource.Current == GameState.Settings)
+            {
+                UpdateSettingsFromUi();
+            }
+        }
+
+        if (_settings.NeedsApply)
+        {
+            ApplyGraphicsSettings();
         }
 
         _previousKeyboard = currentKeyboard;
         _previousMouse = currentMouse;
 
         base.Update(gameTime);
+    }
+
+    private void UpdateSettingsFromUi()
+    {
+        if (_world.TryGetComponent<UiSliderComponent>(_volumeSlider, out var volumeSlider))
+        {
+            if (Math.Abs(_settings.Volume - volumeSlider.Value) > 0.01f)
+            {
+                _settings.Volume = volumeSlider.Value;
+            }
+        }
+
+        if (_world.TryGetComponent<UiSelectorComponent>(_scaleSelector, out var scaleSelector))
+        {
+            if (_settings.ResolutionScaleIndex != scaleSelector.SelectedIndex)
+            {
+                _settings.ResolutionScaleIndex = scaleSelector.SelectedIndex;
+                _settings.NeedsApply = true;
+            }
+        }
+
+        if (_world.TryGetComponent<UiCheckboxComponent>(_fullscreenCheckbox, out var fullscreenCheckbox))
+        {
+            if (_settings.IsFullScreen != fullscreenCheckbox.Checked)
+            {
+                _settings.IsFullScreen = fullscreenCheckbox.Checked;
+                _settings.NeedsApply = true;
+            }
+        }
+    }
+
+    private void ApplyGraphicsSettings()
+    {
+        var res = _settings.GetResolution();
+        _graphics.PreferredBackBufferWidth = res.Width;
+        _graphics.PreferredBackBufferHeight = res.Height;
+        _graphics.IsFullScreen = _settings.IsFullScreen;
+        _graphics.ApplyChanges();
+
+        // Update MapBoundsResource to match new resolution
+        _world.SetResource(new MapBoundsResource
+        {
+            PlayArea = new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight)
+        });
+
+        _settings.NeedsApply = false;
+        
+        // Rebuild UI to center things correctly for new resolution
+        RebuildUi();
     }
 
     protected override void Draw(GameTime gameTime)

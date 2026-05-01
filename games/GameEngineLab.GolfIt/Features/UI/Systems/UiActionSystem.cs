@@ -31,9 +31,19 @@ public sealed class UiActionSystem : IGameSystem
 
     private void HandleAction(World world, string actionId)
     {
-        if (actionId == "play" && world.TryGetResource<GameStateResource>(out var state))
+        if (!world.TryGetResource<GameStateResource>(out var state) || state == null) return;
+
+        if (actionId == "play")
         {
-            state!.Current = GameState.Playing;
+            state.Current = GameState.Playing;
+        }
+        else if (actionId == "settings")
+        {
+            state.Current = GameState.Settings;
+        }
+        else if (actionId == "back_to_menu")
+        {
+            state.Current = GameState.Menu;
         }
     }
 }
