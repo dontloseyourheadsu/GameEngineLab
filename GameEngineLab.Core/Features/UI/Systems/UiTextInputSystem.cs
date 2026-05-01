@@ -13,7 +13,7 @@ public sealed class UiTextInputSystem : IGameSystem
 
     public void Update(World world, FrameContext frameContext)
     {
-        if (!world.TryGetResource<UiFocusResource>(out var focusResource) || focusResource.FocusedEntity.Value == -1)
+        if (!world.TryGetResource<UiFocusResource>(out var focusResource) || focusResource == null || focusResource.FocusedEntity.Value == -1)
         {
             return;
         }

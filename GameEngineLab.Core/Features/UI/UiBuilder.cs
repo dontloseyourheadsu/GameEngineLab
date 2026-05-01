@@ -62,4 +62,14 @@ public static class UiBuilder
         world.SetComponent(entityId, new UiSliderComponent(initialValue, vertical));
         return entityId;
     }
+
+    public static EntityId CreateSelector(World world, int x, int y, int width, int height, string text, string[] options, int initialIndex = 0)
+    {
+        var entityId = world.CreateEntity();
+        world.SetComponent(entityId, new UiTransformComponent(x, y, width, height));
+        world.SetComponent(entityId, new UiStateComponent { State = UiState.Normal });
+        world.SetComponent(entityId, new UiTextComponent(text) { Scale = 0.8f });
+        world.SetComponent(entityId, new UiSelectorComponent(options, initialIndex));
+        return entityId;
+    }
 }
