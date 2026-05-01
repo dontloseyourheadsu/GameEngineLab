@@ -106,6 +106,23 @@ public sealed class UiRenderSystem : IGameSystem
                 textXOffset = 30;
             }
 
+            // Draw Selector
+            if (world.TryGetComponent<UiSelectorComponent>(entityId, out var sel))
+            {
+                var label = sel.Options.Length > 0 ? sel.Options[sel.SelectedIndex] : "EMPTY";
+                
+                // Draw selector box around the text area or a specific indicator
+                var indicatorWidth = 30;
+                var indicatorRect = new Rectangle(contentRect.Right - indicatorWidth - 5, contentRect.Y + 5, indicatorWidth, contentRect.Height - 10);
+                
+                ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
+                    new Vector2(indicatorRect.Center.X, indicatorRect.Center.Y), new Vector2(indicatorRect.Width, indicatorRect.Height), theme.ShadowColor);
+                
+                // Simple arrow indicator (just a dot or small rectangle for now)
+                ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, 
+                    new Vector2(indicatorRect.Center.X, indicatorRect.Center.Y), new Vector2(4, 4), theme.TextColor);
+            }
+
             // Draw Slider / Scrollbar
             if (world.TryGetComponent<UiSliderComponent>(entityId, out var slider))
             {
@@ -153,8 +170,13 @@ public sealed class UiRenderSystem : IGameSystem
                     var displayPath = uiText.Text;
                     if (world.TryGetComponent<UiTextInputComponent>(entityId, out var textInput))
                     {
-                        bool hasGlobalFocus = world.TryGetResource<UiFocusResource>(out var focus) && focus.FocusedEntity == entityId;
+                        bool hasGlobalFocus = world.TryGetResource<UiFocusResource>(out var focus) && focus != null && focus.FocusedEntity == entityId;
                         displayPath = textInput.Text + (hasGlobalFocus && frameContext.GameTime.TotalGameTime.TotalSeconds % 1.0 < 0.5 ? "|" : "");
+                    }
+                    else if (world.TryGetComponent<UiSelectorComponent>(entityId, out var selector))
+                    {
+                        var option = selector.Options.Length > 0 ? selector.Options[selector.SelectedIndex] : "EMPTY";
+                        displayPath = $"{uiText.Text}: {option}";
                     }
 
                     var textSize = font.MeasureString(displayPath) * uiText.Scale;

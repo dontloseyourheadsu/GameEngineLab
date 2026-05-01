@@ -58,7 +58,8 @@ public sealed class UiInteractionSystem : IGameSystem
                 bool isInteractive = world.HasComponent<UiButtonComponent>(entityId) || 
                                      world.HasComponent<UiCheckboxComponent>(entityId) || 
                                      world.HasComponent<UiSliderComponent>(entityId) || 
-                                     world.HasComponent<UiTextInputComponent>(entityId);
+                                     world.HasComponent<UiTextInputComponent>(entityId) ||
+                                     world.HasComponent<UiSelectorComponent>(entityId);
 
                 if (isInteractive)
                 {
@@ -73,6 +74,16 @@ public sealed class UiInteractionSystem : IGameSystem
                 {
                     checkbox.Checked = !checkbox.Checked;
                     world.SetComponent(entityId, checkbox);
+                }
+
+                // Cycle Selector
+                if (world.TryGetComponent<UiSelectorComponent>(entityId, out var selector))
+                {
+                    if (selector.Options.Length > 0)
+                    {
+                        selector.SelectedIndex = (selector.SelectedIndex + 1) % selector.Options.Length;
+                        world.SetComponent(entityId, selector);
+                    }
                 }
             }
             else if (!isHovered && wasLeftClicked && isFocused)
