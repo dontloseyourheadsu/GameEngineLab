@@ -82,5 +82,27 @@ public sealed class BallRenderSystem : IGameSystem
                 body.Size,
                 color);
         }
+
+        // Render Trigger Zones (Goals, etc.)
+        foreach (var entityId in world.GetEntitiesWith<TriggerZoneComponent, TransformComponent, RigidBodyComponent>())
+        {
+            world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
+            world.TryGetComponent<TransformComponent>(entityId, out var transform);
+
+            var color = Color.Black;
+            if (world.TryGetComponent<DrawColorComponent>(entityId, out var colorComp))
+            {
+                color = colorComp.Value;
+            }
+
+            if (body.Shape == RigidBodyShape.Circle)
+            {
+                ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position, body.BoundingRadius, color);
+            }
+            else if (body.Shape == RigidBodyShape.Rectangle)
+            {
+                ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position, body.Size, color);
+            }
+        }
     }
 }
