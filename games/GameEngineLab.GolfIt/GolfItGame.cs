@@ -2,11 +2,13 @@ using GameEngineLab.Core.Features.Ecs.Entities;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
+using GameEngineLab.Core.Features.Physics;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Physics.Resources;
 using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Rendering.Resources;
+using GameEngineLab.Core.Features.Rendering.Systems;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.Core.Features.UI;
 using GameEngineLab.Core.Features.UI.Components;
@@ -89,7 +91,7 @@ public sealed class GolfItGame : Game
             Zoom = 1.0f
         });
 
-        // Create the heavy ball with a spring
+        // Create the heavy ball (NO SPRING)
         var ball = _world.CreateEntity();
         _world.SetComponent(ball, new BallComponent());
         _world.SetComponent(ball, new RigidBodyComponent 
@@ -103,18 +105,29 @@ public sealed class GolfItGame : Game
         _world.SetComponent(ball, new TransformComponent { Position = new Vector2(512, 600) });
         _world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
         _world.SetComponent(ball, new DrawColorComponent(library.Specific.GetColor(1))); // Use a specific color for the ball
-        _world.SetComponent(ball, new SpringComponent
+
+        // Create a Rotating Polygon
+        var poly = _world.CreateEntity();
+        _world.SetComponent(poly, new TransformComponent { Position = new Vector2(300, 300) });
+        _world.SetComponent(poly, new RigidBodyComponent { Shape = RigidBodyShape.Polygon, Mass = 0, Restitution = 0.8f });
+        _world.SetComponent(poly, new PolygonComponent(new[] 
         {
-            Anchor = new Vector2(512, 600),
-            Stiffness = 30f,
-            Damping = 2f,
-            RestLength = 0f
-        });
+            new Vector2(-50, -50),
+            new Vector2(50, -50),
+            new Vector2(80, 0),
+            new Vector2(50, 50),
+            new Vector2(-50, 50)
+        }));
+        _world.SetComponent(poly, new DrawColorComponent(library.General.GetColor(2)));
+
+        // Create a SoftBody
+        SoftBodyFactory.CreateCircle(_world, new Vector2(700, 300), 50f, 8, 80f, 15f, library.General.GetColor(3));
 
         // Create the Goal (Circle Zone)
         var goal = _world.CreateEntity();
         _world.SetComponent(goal, new TriggerZoneComponent("goal"));
-        _world.SetComponent(goal, new TransformComponent { Position = new Vector2(512, 150) });
+        var goalPos = new Vector2(512, 150);
+        _world.SetComponent(goal, new TransformComponent { Position = goalPos });
         _world.SetComponent(goal, new RigidBodyComponent
         {
             Shape = RigidBodyShape.Circle,
@@ -123,27 +136,68 @@ public sealed class GolfItGame : Game
         });
         _world.SetComponent(goal, new DrawColorComponent(Color.Black)); // Black circle as requested
 
+        // Track occupied areas to prevent overlaps
+        var occupiedAreas = new List<Rectangle>();
+        // Ball area
+        occupiedAreas.Add(new Rectangle(512 - 40, 600 - 40, 80, 80));
+        // Goal area
+        occupiedAreas.Add(new Rectangle((int)goalPos.X - 60, (int)goalPos.Y - 60, 120, 120));
+        // Rotating Poly area (approximate)
+        occupiedAreas.Add(new Rectangle(300 - 100, 300 - 100, 200, 200));
+        // Softbody area (approximate)
+        occupiedAreas.Add(new Rectangle(700 - 100, 300 - 100, 200, 200));
+
         // Create some obstacles randomly
         var random = new Random();
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 12; i++) // Increased count since we filter them
         {
-            var pos = new Vector2(random.Next(100, 900), random.Next(250, 500));
-            var size = new Vector2(random.Next(60, 200), random.Next(30, 80));
-            var colorIndex = random.Next(library.General.Colors.Count);
-            var color = library.General.GetColor(colorIndex);
-            
-            CreateObstacle(pos, size, color);
+            Vector2 pos = Vector2.Zero;
+            Vector2 size = Vector2.Zero;
+            bool overlapping = true;
+            int attempts = 0;
+
+            while (overlapping && attempts < 20)
+            {
+                pos = new Vector2(random.Next(100, 900), random.Next(200, 500));
+                size = new Vector2(random.Next(60, 150), random.Next(30, 80));
+                
+                var newRect = new Rectangle((int)(pos.X - size.X / 2), (int)(pos.Y - size.Y / 2), (int)size.X, (int)size.Y);
+                overlapping = false;
+                foreach (var area in occupiedAreas)
+                {
+                    if (newRect.Intersects(area))
+                    {
+                        overlapping = true;
+                        break;
+                    }
+                }
+                attempts++;
+            }
+
+            if (!overlapping)
+            {
+                var colorIndex = random.Next(library.General.Colors.Count);
+                var color = library.General.GetColor(colorIndex);
+                CreateObstacle(pos, size, color);
+                occupiedAreas.Add(new Rectangle((int)(pos.X - size.X / 2), (int)(pos.Y - size.Y / 2), (int)size.X, (int)size.Y));
+            }
         }
 
         // Gameplay Systems
         _scheduler.AddSystem(new SlingshotInputSystem());
-        _scheduler.AddSystem(new SpringSystem());
-        _scheduler.AddSystem(new MovementSystem());
-        _scheduler.AddSystem(new CollisionSystem());
-        _scheduler.AddSystem(new BoundarySystem());
-        _scheduler.AddSystem(new PhysicsFrictionSystem());
-        _scheduler.AddSystem(new ZoneSystem());
-        _scheduler.AddSystem(new BallRenderSystem());
+
+        var physicsStepper = new PhysicsStepperSystem(order: 5, substeps: 8);
+        physicsStepper.AddSystem(new DemoRotationSystem());
+        physicsStepper.AddSystem(new SpringSystem());
+        physicsStepper.AddSystem(new PolygonUpdateSystem());
+        physicsStepper.AddSystem(new MovementSystem());
+        physicsStepper.AddSystem(new CollisionSystem());
+        physicsStepper.AddSystem(new BoundarySystem());
+        physicsStepper.AddSystem(new PhysicsFrictionSystem());
+        physicsStepper.AddSystem(new ZoneSystem());
+
+        _scheduler.AddSystem(physicsStepper);
+        _scheduler.AddSystem(new ShapeRenderSystem());
 
         // UI Systems
         _uiScheduler.AddSystem(new UiInteractionSystem());

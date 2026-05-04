@@ -1,7 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Components;
 using Microsoft.Xna.Framework;
 
-namespace GameEngineLab.GolfIt.Features.Physics.Components;
+namespace GameEngineLab.Core.Features.Physics.Components;
 
 public struct SpringComponent : IComponent
 {

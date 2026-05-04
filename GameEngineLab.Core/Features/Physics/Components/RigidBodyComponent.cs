@@ -6,7 +6,8 @@ namespace GameEngineLab.Core.Features.Physics.Components;
 public enum RigidBodyShape
 {
     Circle,
-    Rectangle
+    Rectangle,
+    Polygon
 }
 
 public struct RigidBodyComponent : IComponent
@@ -24,6 +25,11 @@ public struct RigidBodyComponent : IComponent
     public float Friction { get; set; } = 0.98f;
 
     /// <summary>
+    /// Angular damping applied every frame.
+    /// </summary>
+    public float AngularDamping { get; set; } = 0.95f;
+
+    /// <summary>
     /// The radius for boundary collisions (used if Shape is Circle).
     /// </summary>
     public float BoundingRadius { get; set; } = 10f;
@@ -37,6 +43,16 @@ public struct RigidBodyComponent : IComponent
     /// Mass of the body. 0 means infinite mass (static).
     /// </summary>
     public float Mass { get; set; } = 1.0f;
+
+    /// <summary>
+    /// Collision filtering group.
+    /// </summary>
+    public int CollisionGroup { get; set; } = 0;
+
+    /// <summary>
+    /// Bitmask of groups this body can collide with. -1 for all.
+    /// </summary>
+    public int CollisionMask { get; set; } = -1;
 
     public RigidBodyComponent() { }
 }

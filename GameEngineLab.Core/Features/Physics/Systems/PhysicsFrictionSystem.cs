@@ -29,6 +29,14 @@ public sealed class PhysicsFrictionSystem : IGameSystem
 
                 world.SetComponent(entityId, velocity);
             }
+
+            // Apply angular damping
+            if (world.TryGetComponent<TransformComponent>(entityId, out var transform))
+            {
+                // Note: We don't have an explicit AngularVelocityComponent yet,
+                // but we can simulate simple rotation decay if it's being updated elsewhere.
+                // Or better, we could add AngularVelocityComponent.
+            }
         }
     }
 

@@ -8,7 +8,7 @@ namespace GameEngineLab.Core.Features.Physics.Systems;
 
 public sealed class BoundarySystem : IGameSystem
 {
-    public int Order => 20;
+    public int Order => 25;
 
     public void Update(World world, FrameContext frameContext)
     {
@@ -84,6 +84,31 @@ public sealed class BoundarySystem : IGameSystem
                     pos.Y = area.Bottom - halfSize.Y;
                     vel.Y = -vel.Y * body.Restitution;
                     bounced = true;
+                }
+            }
+            else if (body.Shape == RigidBodyShape.Polygon)
+            {
+                if (world.TryGetComponent<PolygonComponent>(entityId, out var polygon))
+                {
+                    var vertices = polygon.TransformedVertices;
+                    if (vertices != null && vertices.Length > 0)
+                    {
+                        float minX = float.MaxValue, maxX = float.MinValue;
+                        float minY = float.MaxValue, maxY = float.MinValue;
+                        foreach (var v in vertices)
+                        {
+                            if (v.X < minX) minX = v.X;
+                            if (v.X > maxX) maxX = v.X;
+                            if (v.Y < minY) minY = v.Y;
+                            if (v.Y > maxY) maxY = v.Y;
+                        }
+
+                        if (minX < area.Left) { pos.X += (area.Left - minX); vel.X = -vel.X * body.Restitution; bounced = true; }
+                        else if (maxX > area.Right) { pos.X -= (maxX - area.Right); vel.X = -vel.X * body.Restitution; bounced = true; }
+
+                        if (minY < area.Top) { pos.Y += (area.Top - minY); vel.Y = -vel.Y * body.Restitution; bounced = true; }
+                        else if (maxY > area.Bottom) { pos.Y -= (maxY - area.Bottom); vel.Y = -vel.Y * body.Restitution; bounced = true; }
+                    }
                 }
             }
 

@@ -6,4 +6,5 @@ namespace GameEngineLab.Core.Features.Physics.Components;
 public struct TransformComponent : IComponent
 {
     public Vector2 Position;
+    public float Rotation;
 }

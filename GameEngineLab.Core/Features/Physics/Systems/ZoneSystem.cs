@@ -9,7 +9,7 @@ namespace GameEngineLab.Core.Features.Physics.Systems;
 
 public sealed class ZoneSystem : IGameSystem
 {
-    public int Order => 30; // Run after movement
+    public int Order => 35; // Run after all resolution
 
     public void Update(World world, FrameContext frameContext)
     {
