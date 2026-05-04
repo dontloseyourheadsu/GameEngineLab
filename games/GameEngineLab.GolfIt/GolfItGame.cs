@@ -3,6 +3,7 @@ using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Physics.Components;
+using GameEngineLab.Core.Features.Physics.Resources;
 using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Rendering.Resources;
@@ -72,7 +73,8 @@ public sealed class GolfItGame : Game
         _world.SetResource(library);
         _world.SetResource(new GameStateResource());
         _world.SetResource(_settings);
-        _world.SetResource(new UiThemeResource
+        _world.SetResource(new ActionQueueResource());
+        _world.SetResource(new UiThemeResource()
         {
             BorderColor = library.Cozy.GetColor(6),
             SurfaceColor = library.Cozy.GetColor(1),
@@ -109,11 +111,23 @@ public sealed class GolfItGame : Game
             RestLength = 0f
         });
 
+        // Create the Goal (Circle Zone)
+        var goal = _world.CreateEntity();
+        _world.SetComponent(goal, new TriggerZoneComponent("goal"));
+        _world.SetComponent(goal, new TransformComponent { Position = new Vector2(512, 150) });
+        _world.SetComponent(goal, new RigidBodyComponent
+        {
+            Shape = RigidBodyShape.Circle,
+            BoundingRadius = 40f,
+            Mass = 0f
+        });
+        _world.SetComponent(goal, new DrawColorComponent(Color.Black)); // Black circle as requested
+
         // Create some obstacles randomly
         var random = new Random();
-        for (int i = 0; i < 15; i++)
+        for (int i = 0; i < 8; i++)
         {
-            var pos = new Vector2(random.Next(100, 900), random.Next(100, 500));
+            var pos = new Vector2(random.Next(100, 900), random.Next(250, 500));
             var size = new Vector2(random.Next(60, 200), random.Next(30, 80));
             var colorIndex = random.Next(library.General.Colors.Count);
             var color = library.General.GetColor(colorIndex);
@@ -128,6 +142,7 @@ public sealed class GolfItGame : Game
         _scheduler.AddSystem(new CollisionSystem());
         _scheduler.AddSystem(new BoundarySystem());
         _scheduler.AddSystem(new PhysicsFrictionSystem());
+        _scheduler.AddSystem(new ZoneSystem());
         _scheduler.AddSystem(new BallRenderSystem());
 
         // UI Systems
@@ -247,14 +262,12 @@ public sealed class GolfItGame : Game
         {
             _scheduler.Update(_world, frameContext);
         }
-        else
+        
+        _uiScheduler.Update(_world, frameContext);
+        
+        if (gameStateResource.Current == GameState.Settings)
         {
-            _uiScheduler.Update(_world, frameContext);
-            
-            if (gameStateResource.Current == GameState.Settings)
-            {
-                UpdateSettingsFromUi();
-            }
+            UpdateSettingsFromUi();
         }
 
         if (_settings.NeedsApply)

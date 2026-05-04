@@ -39,6 +39,20 @@ public static class ShapeRenderer
         spriteBatch.Draw(pixel, rect, color);
     }
 
+    public static void DrawEllipse(SpriteBatch spriteBatch, Texture2D pixel, Vector2 center, Vector2 size, Color color)
+    {
+        float rx = size.X / 2f;
+        float ry = size.Y / 2f;
+        if (rx <= 0 || ry <= 0) return;
+
+        for (int y = -(int)ry; y <= (int)ry; y++)
+        {
+            float xSpan = rx * (float)Math.Sqrt(Math.Max(0, 1 - (y * y) / (ry * ry)));
+            var rect = new Rectangle((int)(center.X - xSpan), (int)(center.Y + y), (int)(xSpan * 2), 1);
+            spriteBatch.Draw(pixel, rect, color);
+        }
+    }
+
     public static void DrawLine(SpriteBatch spriteBatch, Texture2D pixel, Vector2 start, Vector2 end, Color color, int thickness = 1)
     {
         var edge = end - start;
