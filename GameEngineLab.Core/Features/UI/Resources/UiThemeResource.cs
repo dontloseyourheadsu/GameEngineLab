@@ -16,6 +16,7 @@ public sealed class UiThemeResource
 
     public int ShadowOffset { get; set; } = 4;
     public int PressedContentOffset { get; set; } = 4;
+    public float GlobalScale { get; set; } = 1.0f;
 
     public Dictionary<string, SpriteFont> Fonts { get; } = new();
 }
