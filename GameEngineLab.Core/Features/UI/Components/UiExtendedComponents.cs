@@ -30,11 +30,13 @@ public struct UiSelectorComponent : IComponent
 {
     public string[] Options;
     public int SelectedIndex;
+    public bool IsOpen;
 
     public UiSelectorComponent(string[] options, int selectedIndex = 0)
     {
         Options = options;
         SelectedIndex = selectedIndex;
+        IsOpen = false;
     }
 }
 

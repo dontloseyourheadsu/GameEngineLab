@@ -39,7 +39,7 @@ public static class UiBuilder
         var entityId = world.CreateEntity();
         world.SetComponent(entityId, new UiTransformComponent(x, y, width, 30));
         world.SetComponent(entityId, new UiStateComponent { State = UiState.Normal });
-        world.SetComponent(entityId, new UiTextComponent(text) { Scale = 0.8f }); 
+        world.SetComponent(entityId, new UiTextComponent(text) { Scale = 1.0f }); 
         world.SetComponent(entityId, new UiCheckboxComponent(isChecked));
         return entityId;
     }
@@ -49,7 +49,7 @@ public static class UiBuilder
         var entityId = world.CreateEntity();
         world.SetComponent(entityId, new UiTransformComponent(x, y, width, height));
         world.SetComponent(entityId, new UiStateComponent { State = UiState.Normal });
-        world.SetComponent(entityId, new UiTextComponent(string.Empty) { Scale = 0.8f });
+        world.SetComponent(entityId, new UiTextComponent(string.Empty) { Scale = 1.0f });
         world.SetComponent(entityId, new UiTextInputComponent { Text = initialText });
         return entityId;
     }
@@ -68,7 +68,7 @@ public static class UiBuilder
         var entityId = world.CreateEntity();
         world.SetComponent(entityId, new UiTransformComponent(x, y, width, height));
         world.SetComponent(entityId, new UiStateComponent { State = UiState.Normal });
-        world.SetComponent(entityId, new UiTextComponent(text) { Scale = 0.8f });
+        world.SetComponent(entityId, new UiTextComponent(text) { Scale = 1.0f });
         world.SetComponent(entityId, new UiSelectorComponent(options, initialIndex));
         return entityId;
     }
