@@ -18,8 +18,11 @@ public sealed class SlingshotInputSystem : IGameSystem
 
     public void Update(World world, FrameContext frameContext)
     {
+        if (!world.TryGetResource<CameraResource>(out var camera) || camera == null) return;
+
         var mouse = frameContext.CurrentMouse;
         var prevMouse = frameContext.PreviousMouse;
+        var mousePos = camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y), frameContext.Viewport);
 
         foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent, RigidBodyComponent>())
         {
@@ -28,7 +31,6 @@ public sealed class SlingshotInputSystem : IGameSystem
             world.TryGetComponent<VelocityComponent>(entityId, out var velocity);
 
             var ballPos = transform.Position;
-            var mousePos = new Vector2(mouse.X, mouse.Y);
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouse.LeftButton == ButtonState.Released)
             {
@@ -57,10 +59,12 @@ public sealed class SlingshotInputSystem : IGameSystem
 
     public void Draw(World world, FrameContext frameContext)
     {
+        if (!world.TryGetResource<CameraResource>(out var camera) || camera == null) return;
+
         if (_isDragging && frameContext.SpriteBatch != null && frameContext.DebugPixel != null)
         {
             var mouse = frameContext.CurrentMouse;
-            var mousePos = new Vector2(mouse.X, mouse.Y);
+            var mousePos = camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y), frameContext.Viewport);
             
             // Draw aiming line
             var diff = _dragStart - mousePos;

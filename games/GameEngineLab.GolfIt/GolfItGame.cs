@@ -5,6 +5,7 @@ using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Physics.Systems;
 using GameEngineLab.Core.Features.Rendering.Components;
+using GameEngineLab.Core.Features.Rendering.Resources;
 using GameEngineLab.Core.Features.Runtime.Resources;
 using GameEngineLab.Core.Features.UI;
 using GameEngineLab.Core.Features.UI.Components;
@@ -59,7 +60,7 @@ public sealed class GolfItGame : Game
     {
         _world.SetResource(new MapBoundsResource
         {
-            PlayArea = new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight)
+            PlayArea = new Rectangle(0, 0, GameConstants.DefaultWindowWidth, GameConstants.DefaultWindowHeight)
         });
 
         var library = new PaletteLibraryResource
@@ -77,7 +78,13 @@ public sealed class GolfItGame : Game
             SurfaceColor = library.Cozy.GetColor(1),
             TextColor = library.Cozy.GetColor(4),
             HighlightColor = library.Cozy.GetColor(5),
-            ShadowColor = library.Cozy.GetColor(3)
+            ShadowColor = library.Cozy.GetColor(3),
+            GlobalScale = 1.0f
+        });
+        _world.SetResource(new CameraResource
+        {
+            Position = new Vector2(GameConstants.DefaultWindowWidth / 2f, GameConstants.DefaultWindowHeight / 2f),
+            Zoom = 1.0f
         });
 
         // Create the heavy ball with a spring
@@ -86,7 +93,7 @@ public sealed class GolfItGame : Game
         _world.SetComponent(ball, new RigidBodyComponent 
         { 
             Shape = RigidBodyShape.Circle,
-            BoundingRadius = 12f, 
+            BoundingRadius = 16f, 
             Restitution = 0.6f, 
             Friction = 0.99f,
             Mass = 5.0f // Heavy ball
@@ -107,7 +114,7 @@ public sealed class GolfItGame : Game
         for (int i = 0; i < 15; i++)
         {
             var pos = new Vector2(random.Next(100, 900), random.Next(100, 500));
-            var size = new Vector2(random.Next(40, 150), random.Next(20, 60));
+            var size = new Vector2(random.Next(60, 200), random.Next(30, 80));
             var colorIndex = random.Next(library.General.Colors.Count);
             var color = library.General.GetColor(colorIndex);
             
@@ -186,30 +193,30 @@ public sealed class GolfItGame : Game
 
     private void CreateMainMenuUi()
     {
-        var centerX = GraphicsDevice.Viewport.Width / 2;
-        UiBuilder.CreateLabel(_world, centerX - 150, 100, "GOLFIN'", "Fonts/Blanka", 2.0f, true);
+        var centerX = GameConstants.DefaultWindowWidth / 2;
+        UiBuilder.CreateLabel(_world, centerX - 250, 100, "GOLFIN'", "Fonts/Blanka", 3.0f, true);
         
-        UiBuilder.CreateButton(_world, centerX - 100, 300, 200, 60, "PLAY", "play", "Fonts/SilkscreenBold");
-        UiBuilder.CreateButton(_world, centerX - 100, 400, 200, 60, "SETTINGS", "settings", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 350, 300, 80, "PLAY", "play", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 450, 300, 80, "SETTINGS", "settings", "Fonts/SilkscreenBold");
     }
 
     private void CreateSettingsUi()
     {
-        var centerX = GraphicsDevice.Viewport.Width / 2;
-        UiBuilder.CreateLabel(_world, centerX - 100, 50, "SETTINGS", "Fonts/Blanka", 1.2f, true);
+        var centerX = GameConstants.DefaultWindowWidth / 2;
+        UiBuilder.CreateLabel(_world, centerX - 150, 50, "SETTINGS", "Fonts/Blanka", 1.5f, true);
 
         // Volume Slider
-        UiBuilder.CreateLabel(_world, centerX - 150, 150, "VOLUME", "Fonts/SilkscreenBold", 0.6f);
-        _volumeSlider = UiBuilder.CreateSlider(_world, centerX - 150, 180, 300, 30, _settings.Volume);
+        UiBuilder.CreateLabel(_world, centerX - 200, 150, "VOLUME", "Fonts/SilkscreenBold", 1.0f);
+        _volumeSlider = UiBuilder.CreateSlider(_world, centerX - 200, 190, 400, 40, _settings.Volume);
 
         // Scale Selector
-        UiBuilder.CreateLabel(_world, centerX - 150, 250, "RESOLUTION SCALE", "Fonts/SilkscreenBold", 0.6f);
-        _scaleSelector = UiBuilder.CreateSelector(_world, centerX - 150, 280, 300, 40, "SCALE", _settings.ScaleOptions, _settings.ResolutionScaleIndex);
+        UiBuilder.CreateLabel(_world, centerX - 200, 270, "RESOLUTION SCALE", "Fonts/SilkscreenBold", 1.0f);
+        _scaleSelector = UiBuilder.CreateSelector(_world, centerX - 200, 310, 400, 50, "SCALE", _settings.ScaleOptions, _settings.ResolutionScaleIndex);
 
         // Fullscreen Checkbox
-        _fullscreenCheckbox = UiBuilder.CreateCheckbox(_world, centerX - 150, 360, "FULLSCREEN MODE", _settings.IsFullScreen, 300);
+        _fullscreenCheckbox = UiBuilder.CreateCheckbox(_world, centerX - 200, 420, "FULLSCREEN MODE", _settings.IsFullScreen, 400);
 
-        UiBuilder.CreateButton(_world, centerX - 100, 500, 200, 50, "BACK", "back_to_menu", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 550, 300, 70, "BACK", "back_to_menu", "Fonts/SilkscreenBold");
     }
 
     protected override void Update(GameTime gameTime)
@@ -298,10 +305,24 @@ public sealed class GolfItGame : Game
         _graphics.IsFullScreen = _settings.IsFullScreen;
         _graphics.ApplyChanges();
 
-        // Update MapBoundsResource to match new resolution
+        // Calculate dynamic scales based on base resolution (1024x768)
+        float scaleX = (float)res.Width / GameConstants.DefaultWindowWidth;
+        float scaleY = (float)res.Height / GameConstants.DefaultWindowHeight;
+        float minScale = Math.Min(scaleX, scaleY);
+
+        // Update UI Global Scale
+        var uiTheme = _world.GetRequiredResource<UiThemeResource>();
+        uiTheme.GlobalScale = minScale;
+
+        // Update Camera Zoom for Gameplay
+        var camera = _world.GetRequiredResource<CameraResource>();
+        camera.Zoom = minScale;
+        camera.Position = new Vector2(GameConstants.DefaultWindowWidth / 2f, GameConstants.DefaultWindowHeight / 2f);
+
+        // Keep PlayArea in base coordinates (Camera handles scaling)
         _world.SetResource(new MapBoundsResource
         {
-            PlayArea = new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight)
+            PlayArea = new Rectangle(0, 0, GameConstants.DefaultWindowWidth, GameConstants.DefaultWindowHeight)
         });
 
         _settings.NeedsApply = false;
@@ -330,19 +351,21 @@ public sealed class GolfItGame : Game
             _spriteBatch,
             _debugPixel);
 
-        _spriteBatch?.Begin();
-        
         var gameState = _world.GetRequiredResource<GameStateResource>();
         if (gameState.Current == GameState.Playing)
         {
+            var camera = _world.GetRequiredResource<CameraResource>();
+            _spriteBatch?.Begin(transformMatrix: camera.GetViewMatrix(GraphicsDevice.Viewport));
             _scheduler.Draw(_world, frameContext);
+            _spriteBatch?.End();
         }
         else
         {
+            // UI is rendered in screen space, but our UI system now handles its own internal scaling
+            _spriteBatch?.Begin();
             _uiScheduler.Draw(_world, frameContext);
+            _spriteBatch?.End();
         }
-
-        _spriteBatch?.End();
 
         base.Draw(gameTime);
     }
