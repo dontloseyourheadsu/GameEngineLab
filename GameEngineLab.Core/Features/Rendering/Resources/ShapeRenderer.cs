@@ -71,4 +71,16 @@ public static class ShapeRenderer
             SpriteEffects.None,
             0);
     }
+
+    public static void DrawPolygon(SpriteBatch spriteBatch, Texture2D pixel, Vector2[] vertices, Color color, int thickness = 1)
+    {
+        if (vertices == null || vertices.Length < 2) return;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            var start = vertices[i];
+            var end = vertices[(i + 1) % vertices.Length];
+            DrawLine(spriteBatch, pixel, start, end, color, thickness);
+        }
+    }
 }
