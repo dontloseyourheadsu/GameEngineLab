@@ -1,7 +1,9 @@
+using GameEngineLab.Core.Features.Ecs.Entities;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.UI.Components;
 using GameEngineLab.Core.Features.UI.Resources;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
 
@@ -26,12 +28,71 @@ public sealed class UiInteractionSystem : IGameSystem
         var wasLeftPressedJustNow = mouseState.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton == ButtonState.Released;
         var wasLeftClicked = mouseState.LeftButton == ButtonState.Released && prevMouseState.LeftButton == ButtonState.Pressed;
 
+        if (!world.TryGetResource<UiThemeResource>(out var theme) || theme == null) return;
+        var globalScale = theme.GlobalScale;
+
+        // Check for an open selector first to handle its "modal" behavior
+        EntityId? openSelectorEntity = null;
+        UiSelectorComponent openSelector = default;
+        UiTransformComponent openSelectorTransform = default;
+
+        foreach (var entityId in world.GetEntitiesWith<UiSelectorComponent>())
+        {
+            if (world.TryGetComponent<UiSelectorComponent>(entityId, out var s) && s.IsOpen)
+            {
+                openSelectorEntity = entityId;
+                openSelector = s;
+                world.TryGetComponent<UiTransformComponent>(entityId, out openSelectorTransform);
+                break;
+            }
+        }
+
+        if (openSelectorEntity is { } openId && wasLeftClicked)
+        {
+            var bounds = new Rectangle(
+                (int)(openSelectorTransform.Bounds.X * globalScale),
+                (int)(openSelectorTransform.Bounds.Y * globalScale),
+                (int)(openSelectorTransform.Bounds.Width * globalScale),
+                (int)(openSelectorTransform.Bounds.Height * globalScale)
+            );
+            var optionsCount = openSelector.Options?.Length ?? 0;
+            var overlayHeight = bounds.Height * optionsCount;
+            var overlayBounds = new Rectangle(bounds.X, bounds.Bottom, bounds.Width, overlayHeight);
+
+            if (overlayBounds.Contains(mousePos) && optionsCount > 0)
+            {
+                int index = (mousePos.Y - overlayBounds.Top) / bounds.Height;
+                if (index >= 0 && index < optionsCount)
+                {
+                    openSelector.SelectedIndex = index;
+                }
+                openSelector.IsOpen = false;
+                world.SetComponent(openId, openSelector);
+                return; 
+            }
+            
+            // If we click anywhere else (including the selector itself), close it
+            openSelector.IsOpen = false;
+            world.SetComponent(openId, openSelector);
+            if (bounds.Contains(mousePos)) return; 
+        }
+
         foreach (var entityId in world.GetEntitiesWith<UiTransformComponent, UiStateComponent>())
         {
+            // If a selector is open, other UI elements don't respond to interaction
+            if (openSelectorEntity.HasValue && openSelectorEntity.Value != entityId) continue;
+
             world.TryGetComponent<UiTransformComponent>(entityId, out var transform);
             world.TryGetComponent<UiStateComponent>(entityId, out var uiState);
 
-            bool isHovered = transform.Bounds.Contains(mousePos);
+            var bounds = new Rectangle(
+                (int)(transform.Bounds.X * globalScale),
+                (int)(transform.Bounds.Y * globalScale),
+                (int)(transform.Bounds.Width * globalScale),
+                (int)(transform.Bounds.Height * globalScale)
+            );
+
+            bool isHovered = bounds.Contains(mousePos);
             bool isFocused = focusResource.FocusedEntity == entityId;
             
             var newState = UiState.Normal;
@@ -76,14 +137,11 @@ public sealed class UiInteractionSystem : IGameSystem
                     world.SetComponent(entityId, checkbox);
                 }
 
-                // Cycle Selector
+                // Toggle Selector Open State
                 if (world.TryGetComponent<UiSelectorComponent>(entityId, out var selector))
                 {
-                    if (selector.Options.Length > 0)
-                    {
-                        selector.SelectedIndex = (selector.SelectedIndex + 1) % selector.Options.Length;
-                        world.SetComponent(entityId, selector);
-                    }
+                    selector.IsOpen = !selector.IsOpen;
+                    world.SetComponent(entityId, selector);
                 }
             }
             else if (!isHovered && wasLeftClicked && isFocused)
@@ -99,11 +157,11 @@ public sealed class UiInteractionSystem : IGameSystem
                 {
                     if (slider.Vertical)
                     {
-                        slider.Value = Math.Clamp((float)(mousePos.Y - transform.Bounds.Top) / transform.Bounds.Height, 0, 1);
+                        slider.Value = Math.Clamp((float)(mousePos.Y - bounds.Top) / bounds.Height, 0, 1);
                     }
                     else
                     {
-                        slider.Value = Math.Clamp((float)(mousePos.X - transform.Bounds.Left) / transform.Bounds.Width, 0, 1);
+                        slider.Value = Math.Clamp((float)(mousePos.X - bounds.Left) / bounds.Width, 0, 1);
                     }
                     world.SetComponent(entityId, slider);
                 }
