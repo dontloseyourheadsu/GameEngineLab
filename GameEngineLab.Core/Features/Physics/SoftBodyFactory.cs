@@ -53,19 +53,36 @@ public static class SoftBodyFactory
         world.SetComponent(centerNode, new DrawColorComponent(color));
         world.SetComponent(centerNode, new SoftBodyNodeComponent());
 
-        // Connect nodes in a circle and to center
+        // Connect nodes to maintain form (All-to-all for maximum rigidity)
         for (int i = 0; i < segments; i++)
         {
+            // Perimeter spring
             var n1 = nodes[i];
             var n2 = nodes[(i + 1) % segments];
+            var distP = Vector2.Distance(world.GetRequiredComponent<TransformComponent>(n1).Position, 
+                                        world.GetRequiredComponent<TransformComponent>(n2).Position);
             
-            // Perimeter spring
             var perimeterSpring = world.CreateEntity();
-            world.SetComponent(perimeterSpring, new DistanceSpringComponent(n1, n2, stiffness, damping));
+            world.SetComponent(perimeterSpring, new DistanceSpringComponent(n1, n2, stiffness, damping, distP));
 
-            // Radial spring
+            // Radial spring to center
+            var distR = Vector2.Distance(world.GetRequiredComponent<TransformComponent>(n1).Position, center);
             var radialSpring = world.CreateEntity();
-            world.SetComponent(radialSpring, new DistanceSpringComponent(n1, centerNode, stiffness, damping));
+            world.SetComponent(radialSpring, new DistanceSpringComponent(n1, centerNode, stiffness, damping, distR));
+
+            // Internal Cross-springs (invisible trusses)
+            for (int j = i + 2; j < segments; j++)
+            {
+                // Avoid adjacent nodes (already handled by perimeter) and ensure we don't double up
+                if (i == 0 && j == segments - 1) continue; 
+
+                var nOther = nodes[j];
+                var distC = Vector2.Distance(world.GetRequiredComponent<TransformComponent>(n1).Position, 
+                                            world.GetRequiredComponent<TransformComponent>(nOther).Position);
+                
+                var crossSpring = world.CreateEntity();
+                world.SetComponent(crossSpring, new DistanceSpringComponent(n1, nOther, stiffness * 0.5f, damping, distC));
+            }
         }
     }
 }

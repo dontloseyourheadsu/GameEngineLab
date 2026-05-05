@@ -3,6 +3,7 @@ using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Rendering.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
+using GameEngineLab.GolfIt.Features.Runtime;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -52,6 +53,16 @@ public sealed class SlingshotInputSystem : IGameSystem
                 {
                     velocity.Value = Vector2.Normalize(direction) * strength;
                     world.SetComponent(entityId, velocity);
+
+                    // Increment strokes
+                    if (world.TryGetResource<GameStateResource>(out var gameState) && gameState != null)
+                    {
+                        gameState.Strokes++;
+                        if (gameState.Strokes >= gameState.StrokeLimit)
+                        {
+                            gameState.Current = GameState.GameOver;
+                        }
+                    }
                 }
             }
         }
