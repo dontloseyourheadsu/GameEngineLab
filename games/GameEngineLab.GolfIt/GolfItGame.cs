@@ -248,7 +248,8 @@ public sealed class GolfItGame : Game
     private void RebuildUi()
     {
         ClearUi();
-        var state = _world.GetRequiredResource<GameStateResource>().Current;
+        var gameStateRes = _world.GetRequiredResource<GameStateResource>();
+        var state = gameStateRes.Current;
         
         if (state == GameState.Menu)
         {
@@ -258,6 +259,26 @@ public sealed class GolfItGame : Game
         {
             CreateSettingsUi();
         }
+        else if (state == GameState.GameOver)
+        {
+            CreateGameOverUi();
+        }
+    }
+
+    private void CreateGameOverUi()
+    {
+        var centerX = GameConstants.DefaultWindowWidth / 2;
+        var gameStateRes = _world.GetRequiredResource<GameStateResource>();
+        
+        UiBuilder.CreateLabel(_world, centerX - 250, 100, "HOLE FINISHED", "Fonts/Blanka", 2.5f, true);
+        
+        var strokesText = $"STROKES: {gameStateRes.Strokes}";
+        var legendText = gameStateRes.GetStrokeLegend();
+        
+        UiBuilder.CreateLabel(_world, centerX - 150, 250, strokesText, "Fonts/SilkscreenBold", 1.5f, true);
+        UiBuilder.CreateLabel(_world, centerX - 150, 320, legendText, "Fonts/SilkscreenBold", 2.0f, true);
+        
+        UiBuilder.CreateButton(_world, centerX - 150, 450, 300, 80, "MAIN MENU", "back_to_menu", "Fonts/SilkscreenBold");
     }
 
     private void CreateMainMenuUi()

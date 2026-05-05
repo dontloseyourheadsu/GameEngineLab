@@ -50,14 +50,19 @@ public sealed class UiActionSystem : IGameSystem
         if (actionId == "play")
         {
             state.Current = GameState.Playing;
+            state.Strokes = 0; // Reset strokes on play
         }
         else if (actionId == "settings")
         {
             state.Current = GameState.Settings;
         }
-        else if (actionId == "back_to_menu" || actionId == "goal")
+        else if (actionId == "back_to_menu")
         {
             state.Current = GameState.Menu;
+        }
+        else if (actionId == "goal")
+        {
+            state.Current = GameState.GameOver;
         }
     }
 }
