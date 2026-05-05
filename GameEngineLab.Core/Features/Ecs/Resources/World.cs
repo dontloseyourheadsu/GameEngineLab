@@ -177,6 +177,17 @@ public sealed class World
         return resource;
     }
 
+    public TComponent GetRequiredComponent<TComponent>(EntityId entityId)
+        where TComponent : struct, IComponent
+    {
+        if (!TryGetComponent<TComponent>(entityId, out TComponent component))
+        {
+            throw new InvalidOperationException($"Entity {entityId} does not have component {typeof(TComponent).Name}.");
+        }
+
+        return component;
+    }
+
     private Dictionary<int, object> GetOrCreateStore<TComponent>()
         where TComponent : struct, IComponent
     {
