@@ -19,6 +19,9 @@ public sealed class SlingshotInputSystem : IGameSystem
 
     public void Update(World world, FrameContext frameContext)
     {
+        if (!world.TryGetResource<GameStateResource>(out var gameState) || gameState?.Current != GameState.Playing)
+            return;
+
         if (!world.TryGetResource<CameraResource>(out var camera) || camera == null) return;
 
         var mouse = frameContext.CurrentMouse;
@@ -55,7 +58,7 @@ public sealed class SlingshotInputSystem : IGameSystem
                     world.SetComponent(entityId, velocity);
 
                     // Increment strokes
-                    if (world.TryGetResource<GameStateResource>(out var gameState) && gameState != null)
+                    if (gameState != null)
                     {
                         gameState.Strokes++;
                         if (gameState.Strokes >= gameState.StrokeLimit)
