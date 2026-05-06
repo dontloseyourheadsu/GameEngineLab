@@ -66,3 +66,8 @@ public struct UiButtonComponent : IComponent
         ActionId = actionId;
     }
 }
+
+public struct UiModalComponent : IComponent
+{
+    // Marker for modal components. When present, interaction is restricted to entities with this component.
+}

@@ -77,10 +77,25 @@ public sealed class UiInteractionSystem : IGameSystem
             if (bounds.Contains(mousePos)) return; 
         }
 
+        // Check for modal
+        EntityId? modalEntity = world.GetEntitiesWith<UiModalComponent>().Cast<EntityId?>().FirstOrDefault();
+
         foreach (var entityId in world.GetEntitiesWith<UiTransformComponent, UiStateComponent>())
         {
             // If a selector is open, other UI elements don't respond to interaction
             if (openSelectorEntity.HasValue && openSelectorEntity.Value != entityId) continue;
+
+            // If a modal is present, only the modal (and its components) are interactable
+            if (modalEntity.HasValue && !world.HasComponent<UiModalComponent>(entityId))
+            {
+                // Reset state to normal if it was something else
+                if (world.TryGetComponent<UiStateComponent>(entityId, out var s) && s.State != UiState.Normal)
+                {
+                    s.State = UiState.Normal;
+                    world.SetComponent(entityId, s);
+                }
+                continue;
+            }
 
             world.TryGetComponent<UiTransformComponent>(entityId, out var transform);
             world.TryGetComponent<UiStateComponent>(entityId, out var uiState);
