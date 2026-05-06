@@ -16,6 +16,7 @@ using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Core.Features.UI.Systems;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Input.Systems;
+using GameEngineLab.GolfIt.Features.Maps;
 using GameEngineLab.GolfIt.Features.Physics.Components;
 using GameEngineLab.GolfIt.Features.Physics.Systems;
 using GameEngineLab.GolfIt.Features.Rendering.Resources;
@@ -42,6 +43,7 @@ public sealed class GolfItGame : Game
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
     private GameState _lastGameState = GameState.Menu;
+    private EntityId? _lastSelectedEntity;
     private SettingsResource _settings = new();
 
     // UI Entity IDs for Settings tracking
@@ -74,6 +76,7 @@ public sealed class GolfItGame : Game
         };
         _world.SetResource(library);
         _world.SetResource(new GameStateResource());
+        _world.SetResource(new MapEditorStateResource());
         _world.SetResource(_settings);
         _world.SetResource(new ActionQueueResource());
         _world.SetResource(new UiThemeResource()
@@ -91,6 +94,37 @@ public sealed class GolfItGame : Game
             Zoom = 1.0f
         });
 
+        // Gameplay Systems
+        _scheduler.AddSystem(new SlingshotInputSystem());
+        _scheduler.AddSystem(new MapEditorSystem());
+
+        var physicsStepper = new PhysicsStepperSystem(order: 5, substeps: 8);
+        physicsStepper.AddSystem(new DemoRotationSystem());
+        physicsStepper.AddSystem(new SpringSystem());
+        physicsStepper.AddSystem(new PolygonUpdateSystem());
+        physicsStepper.AddSystem(new MovementSystem());
+        physicsStepper.AddSystem(new CollisionSystem());
+        physicsStepper.AddSystem(new BoundarySystem());
+        physicsStepper.AddSystem(new PhysicsFrictionSystem());
+        physicsStepper.AddSystem(new ZoneSystem());
+
+        _scheduler.AddSystem(physicsStepper);
+        _scheduler.AddSystem(new ShapeRenderSystem());
+
+        // UI Systems
+        _uiScheduler.AddSystem(new UiInteractionSystem());
+        _uiScheduler.AddSystem(new UiTextInputSystem());
+        _uiScheduler.AddSystem(new UiActionSystem());
+        _uiScheduler.AddSystem(new UiRenderSystem());
+        _uiScheduler.AddSystem(new EditorItemRenderSystem());
+
+        base.Initialize();
+    }
+
+    public void LoadDemoLevel()
+    {
+        var library = _world.GetRequiredResource<PaletteLibraryResource>();
+        
         // Create the heavy ball (NO SPRING)
         var ball = _world.CreateEntity();
         _world.SetComponent(ball, new BallComponent());
@@ -182,30 +216,21 @@ public sealed class GolfItGame : Game
                 occupiedAreas.Add(new Rectangle((int)(pos.X - size.X / 2), (int)(pos.Y - size.Y / 2), (int)size.X, (int)size.Y));
             }
         }
+    }
 
-        // Gameplay Systems
-        _scheduler.AddSystem(new SlingshotInputSystem());
-
-        var physicsStepper = new PhysicsStepperSystem(order: 5, substeps: 8);
-        physicsStepper.AddSystem(new DemoRotationSystem());
-        physicsStepper.AddSystem(new SpringSystem());
-        physicsStepper.AddSystem(new PolygonUpdateSystem());
-        physicsStepper.AddSystem(new MovementSystem());
-        physicsStepper.AddSystem(new CollisionSystem());
-        physicsStepper.AddSystem(new BoundarySystem());
-        physicsStepper.AddSystem(new PhysicsFrictionSystem());
-        physicsStepper.AddSystem(new ZoneSystem());
-
-        _scheduler.AddSystem(physicsStepper);
-        _scheduler.AddSystem(new ShapeRenderSystem());
-
-        // UI Systems
-        _uiScheduler.AddSystem(new UiInteractionSystem());
-        _uiScheduler.AddSystem(new UiTextInputSystem());
-        _uiScheduler.AddSystem(new UiActionSystem());
-        _uiScheduler.AddSystem(new UiRenderSystem());
-
-        base.Initialize();
+    public void ClearGameplayEntities()
+    {
+        // Clear obstacles, balls, goals, etc.
+        foreach (var entity in _world.GetEntitiesWith<ObstacleComponent>().ToList()) _world.DestroyEntity(entity);
+        foreach (var entity in _world.GetEntitiesWith<BallComponent>().ToList()) _world.DestroyEntity(entity);
+        foreach (var entity in _world.GetEntitiesWith<TriggerZoneComponent>().ToList()) _world.DestroyEntity(entity);
+        foreach (var entity in _world.GetEntitiesWith<EditorObjectComponent>().ToList())
+        {
+            if (!_world.HasComponent<TemplateComponent>(entity))
+                _world.DestroyEntity(entity);
+        }
+        foreach (var entity in _world.GetEntitiesWith<SoftBodyNodeComponent>().ToList()) _world.DestroyEntity(entity);
+        foreach (var entity in _world.GetEntitiesWith<DistanceSpringComponent>().ToList()) _world.DestroyEntity(entity);
     }
 
     private void CreateObstacle(Vector2 position, Vector2 size, Color color)
@@ -243,6 +268,10 @@ public sealed class GolfItGame : Game
         {
             _world.DestroyEntity(entity);
         }
+        foreach (var entity in _world.GetEntitiesWith<TemplateComponent>().ToList())
+        {
+            _world.DestroyEntity(entity);
+        }
     }
 
     private void RebuildUi()
@@ -262,6 +291,14 @@ public sealed class GolfItGame : Game
         else if (state == GameState.GameOver)
         {
             CreateGameOverUi();
+        }
+        else if (state == GameState.MapEditorList)
+        {
+            CreateMapEditorListUi();
+        }
+        else if (state == GameState.MapEditor)
+        {
+            CreateMapEditorUi();
         }
     }
 
@@ -286,8 +323,9 @@ public sealed class GolfItGame : Game
         var centerX = GameConstants.DefaultWindowWidth / 2;
         UiBuilder.CreateLabel(_world, centerX - 250, 100, "GOLFIN'", "Fonts/Blanka", 3.0f, true);
         
-        UiBuilder.CreateButton(_world, centerX - 150, 350, 300, 80, "PLAY", "play", "Fonts/SilkscreenBold");
-        UiBuilder.CreateButton(_world, centerX - 150, 450, 300, 80, "SETTINGS", "settings", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 300, 300, 80, "PLAY", "play", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 400, 300, 80, "MAP EDITOR", "map_editor_list", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 500, 300, 80, "SETTINGS", "settings", "Fonts/SilkscreenBold");
     }
 
     private void CreateSettingsUi()
@@ -325,15 +363,17 @@ public sealed class GolfItGame : Game
             _debugPixel);
 
         var gameStateResource = _world.GetRequiredResource<GameStateResource>();
+        var mapStateResource = _world.GetRequiredResource<MapEditorStateResource>();
         
-        // Handle State Transitions
-        if (gameStateResource.Current != _lastGameState)
+        // Handle State Transitions or Selection changes
+        if (gameStateResource.Current != _lastGameState || mapStateResource.SelectedEntity != _lastSelectedEntity)
         {
             RebuildUi();
             _lastGameState = gameStateResource.Current;
+            _lastSelectedEntity = mapStateResource.SelectedEntity;
         }
 
-        if (gameStateResource.Current == GameState.Playing)
+        if (gameStateResource.Current == GameState.Playing || gameStateResource.Current == GameState.MapEditor)
         {
             _scheduler.Update(_world, frameContext);
         }
@@ -343,6 +383,16 @@ public sealed class GolfItGame : Game
         if (gameStateResource.Current == GameState.Settings)
         {
             UpdateSettingsFromUi();
+        }
+        
+        if (gameStateResource.Current == GameState.MapEditorList)
+        {
+            UpdateMapEditorListFromUi();
+        }
+
+        if (gameStateResource.Current == GameState.MapEditor)
+        {
+            UpdateMapEditorPropertiesFromUi();
         }
 
         if (_settings.NeedsApply)
@@ -354,6 +404,204 @@ public sealed class GolfItGame : Game
         _previousMouse = currentMouse;
 
         base.Update(gameTime);
+    }
+
+    private void UpdateMapEditorPropertiesFromUi()
+    {
+        var mapState = _world.GetRequiredResource<MapEditorStateResource>();
+        if (!mapState.SelectedEntity.HasValue || !_world.IsAlive(mapState.SelectedEntity.Value)) return;
+
+        var selected = mapState.SelectedEntity.Value;
+
+        // Apply COLOR
+        if (_world.TryGetComponent<UiSelectorComponent>(mapState.ColorSelectorId, out var colorSelector))
+        {
+            var colors = new[] { Color.White, Color.Gray, Color.Red, Color.Green, Color.Blue, Color.Black };
+            if (colorSelector.SelectedIndex >= 0 && colorSelector.SelectedIndex < colors.Length)
+            {
+                _world.SetComponent(selected, new DrawColorComponent(colors[colorSelector.SelectedIndex]));
+            }
+        }
+
+        // Apply SIZE/SCALE
+        if (_world.TryGetComponent<UiSliderComponent>(mapState.SizeSliderId, out var sizeSlider))
+        {
+            if (_world.TryGetComponent<RigidBodyComponent>(selected, out var body))
+            {
+                var baseScale = 0.5f + sizeSlider.Value; // 0.5 to 1.5
+                if (body.Shape == RigidBodyShape.Circle)
+                {
+                    _world.TryGetComponent<EditorObjectComponent>(selected, out var editorObj);
+                    var baseRadius = editorObj.ToolType == EditorTool.Ball ? 16f : (editorObj.ToolType == EditorTool.Goal ? 40f : 30f);
+                    body.BoundingRadius = baseRadius * baseScale;
+                }
+                else if (body.Shape == RigidBodyShape.Rectangle)
+                {
+                    body.Size = new Vector2(80, 40) * baseScale;
+                }
+                _world.SetComponent(selected, body);
+            }
+        }
+
+        // Apply ROTATION
+        if (_world.TryGetComponent<UiSliderComponent>(mapState.RotationSliderId, out var rotSlider))
+        {
+            if (_world.TryGetComponent<TransformComponent>(selected, out var transform))
+            {
+                transform.Rotation = rotSlider.Value * MathHelper.TwoPi;
+                _world.SetComponent(selected, transform);
+            }
+        }
+    }
+
+    private void UpdateMapEditorListFromUi()
+    {
+        // Handle scrollbar updates if we had multiple pages/scrolling
+    }
+
+    private void CreateMapEditorListUi()
+    {
+        var centerX = GameConstants.DefaultWindowWidth / 2;
+        var mapState = _world.GetRequiredResource<MapEditorStateResource>();
+        
+        UiBuilder.CreateLabel(_world, centerX - 150, 50, "MAP LIST", "Fonts/Blanka", 1.5f, true);
+        
+        UiBuilder.CreateButton(_world, centerX + 100, 110, 300, 60, "CREATE NEW", "create_new_map", "Fonts/SilkscreenBold");
+        
+        var listX = centerX - 450;
+        var listY = 180;
+        var listWidth = 900;
+        var listHeight = 480;
+        
+        UiBuilder.CreatePanel(_world, listX, listY, listWidth, listHeight);
+        
+        // Show up to 4 maps for now (simplified scrolling)
+        int startIdx = 0; 
+        int count = Math.Min(4, mapState.Maps.Count);
+        
+        for (int i = 0; i < count; i++)
+        {
+            var map = mapState.Maps[startIdx + i];
+            var itemY = listY + 20 + i * 110;
+            
+            // Item Background
+            UiBuilder.CreatePanel(_world, listX + 20, itemY, listWidth - 40, 100);
+            
+            // Placeholder Preview
+            var preview = UiBuilder.CreatePanel(_world, listX + 40, itemY + 10, 80, 80);
+            _world.SetComponent(preview, new DrawColorComponent(Color.DarkGreen));
+
+            // Map Name
+            UiBuilder.CreateLabel(_world, listX + 140, itemY + 35, map.Name, "Fonts/SilkscreenBold", 1.2f);
+            
+            // Buttons
+            UiBuilder.CreateButton(_world, listX + 550, itemY + 20, 150, 60, "EDIT", $"edit_map:{map.FilePath}", "Fonts/SilkscreenBold");
+            UiBuilder.CreateButton(_world, listX + 720, itemY + 20, 150, 60, "DELETE", $"delete_map_req:{map.FilePath}", "Fonts/SilkscreenBold");
+        }
+
+        if (mapState.Maps.Count == 0)
+        {
+            UiBuilder.CreateLabel(_world, centerX - 100, listY + 200, "NO MAPS FOUND", "Fonts/Silkscreen", 1.0f);
+        }
+
+        UiBuilder.CreateButton(_world, centerX - 150, 680, 300, 60, "BACK", "back_to_menu", "Fonts/SilkscreenBold");
+    }
+
+    private void CreateMapEditorUi()
+    {
+        var mapState = _world.GetRequiredResource<MapEditorStateResource>();
+
+        // 1. TOP TOOLBAR
+        UiBuilder.CreatePanel(_world, 0, 0, GameConstants.DefaultWindowWidth, 60);
+        UiBuilder.CreateLabel(_world, 20, 15, "MAP EDITOR", "Fonts/SilkscreenBold", 1.2f);
+        UiBuilder.CreateButton(_world, 750, 5, 120, 50, "SAVE", "save_map", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, 880, 5, 130, 50, "DISCARD", "discard_map_req", "Fonts/SilkscreenBold");
+
+        // 2. LEFT SIDEBAR: PROPERTIES
+        var leftWidth = 240;
+        UiBuilder.CreatePanel(_world, 0, 60, leftWidth, GameConstants.DefaultWindowHeight - 60);
+        UiBuilder.CreateLabel(_world, 20, 80, "PROPERTIES", "Fonts/SilkscreenBold", 1.0f);
+
+        if (mapState.SelectedEntity.HasValue && _world.IsAlive(mapState.SelectedEntity.Value))
+        {
+            var selected = mapState.SelectedEntity.Value;
+            _world.TryGetComponent<EditorObjectComponent>(selected, out var editorObj);
+            _world.TryGetComponent<TransformComponent>(selected, out var transform);
+            _world.TryGetComponent<RigidBodyComponent>(selected, out var body);
+            _world.TryGetComponent<DrawColorComponent>(selected, out var drawColor);
+
+            UiBuilder.CreateLabel(_world, 20, 120, $"TYPE: {editorObj.ToolType}", "Fonts/Silkscreen", 0.8f);
+
+            // COLOR PICKER
+            UiBuilder.CreateLabel(_world, 20, 160, "COLOR", "Fonts/Silkscreen", 0.8f);
+            var colorOptions = new[] { "WHITE", "GRAY", "RED", "GREEN", "BLUE", "BLACK" };
+            var colors = new[] { Color.White, Color.Gray, Color.Red, Color.Green, Color.Blue, Color.Black };
+            int colorIdx = Array.IndexOf(colors, drawColor.Value);
+            if (colorIdx < 0) colorIdx = 0;
+            mapState.ColorSelectorId = UiBuilder.CreateSelector(_world, 20, 185, 200, 40, "COLOR", colorOptions, colorIdx);
+
+            // SCALE/SIZE SLIDER
+            UiBuilder.CreateLabel(_world, 20, 250, "SIZE", "Fonts/Silkscreen", 0.8f);
+            var baseRadius = editorObj.ToolType == EditorTool.Ball ? 16f : (editorObj.ToolType == EditorTool.Goal ? 40f : 30f);
+            var currentSize = body.Shape == RigidBodyShape.Circle ? body.BoundingRadius : body.Size.X;
+            var baseRef = body.Shape == RigidBodyShape.Circle ? baseRadius : 80f;
+            var initialScale = Math.Clamp((currentSize / baseRef) - 0.5f, 0, 1);
+            mapState.SizeSliderId = UiBuilder.CreateSlider(_world, 20, 275, 200, 30, initialScale);
+
+            // ROTATION SLIDER
+            UiBuilder.CreateLabel(_world, 20, 330, "ROTATION", "Fonts/Silkscreen", 0.8f);
+            mapState.RotationSliderId = UiBuilder.CreateSlider(_world, 20, 355, 200, 30, transform.Rotation / MathHelper.TwoPi);
+            
+            UiBuilder.CreateButton(_world, 20, 450, 200, 50, "DELETE", "delete_selected", "Fonts/SilkscreenBold");
+        }
+        else
+        {
+            UiBuilder.CreateLabel(_world, 20, 150, "SELECT AN ITEM\nTO EDIT", "Fonts/Silkscreen", 0.8f);
+        }
+
+        // 3. RIGHT SIDEBAR: DRAG & DROP ITEMS
+        var rightWidth = 180;
+        var rightX = GameConstants.DefaultWindowWidth - rightWidth;
+        UiBuilder.CreatePanel(_world, rightX, 60, rightWidth, GameConstants.DefaultWindowHeight - 60);
+        UiBuilder.CreateLabel(_world, rightX + 20, 80, "ITEMS", "Fonts/SilkscreenBold", 1.0f);
+
+        // Render "Live" Items for dragging
+        UiBuilder.CreateLabel(_world, rightX + 20, 110, "RECTANGLE", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 160, EditorTool.Square, Color.Gray);
+        
+        UiBuilder.CreateLabel(_world, rightX + 20, 230, "SPHERE", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 280, EditorTool.Circle, Color.Gray);
+        
+        UiBuilder.CreateLabel(_world, rightX + 20, 350, "BALL", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 400, EditorTool.Ball, Color.White);
+        
+        UiBuilder.CreateLabel(_world, rightX + 20, 470, "GOAL", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 520, EditorTool.Goal, Color.Black);
+    }
+
+    private void CreateTemplate(int x, int y, EditorTool tool, Color color)
+    {
+        var entityId = _world.CreateEntity();
+        _world.SetComponent(entityId, new TemplateComponent());
+        _world.SetComponent(entityId, new EditorObjectComponent { ToolType = tool });
+        _world.SetComponent(entityId, new TransformComponent { Position = new Vector2(x, y) });
+        _world.SetComponent(entityId, new DrawColorComponent(color));
+
+        switch (tool)
+        {
+            case EditorTool.Square:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Rectangle, Size = new Vector2(60, 30), Mass = 0 });
+                break;
+            case EditorTool.Circle:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 25, Mass = 0 });
+                break;
+            case EditorTool.Ball:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 16, Mass = 5 });
+                break;
+            case EditorTool.Goal:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 30, Mass = 0 });
+                break;
+        }
     }
 
     private void UpdateSettingsFromUi()
@@ -440,20 +688,20 @@ public sealed class GolfItGame : Game
             _debugPixel);
 
         var gameState = _world.GetRequiredResource<GameStateResource>();
-        if (gameState.Current == GameState.Playing)
+        var mapState = _world.GetRequiredResource<MapEditorStateResource>();
+        
+        if (gameState.Current == GameState.Playing || gameState.Current == GameState.MapEditor)
         {
             var camera = _world.GetRequiredResource<CameraResource>();
             _spriteBatch?.Begin(transformMatrix: camera.GetViewMatrix(GraphicsDevice.Viewport));
             _scheduler.Draw(_world, frameContext);
             _spriteBatch?.End();
         }
-        else
-        {
-            // UI is rendered in screen space, but our UI system now handles its own internal scaling
-            _spriteBatch?.Begin();
-            _uiScheduler.Draw(_world, frameContext);
-            _spriteBatch?.End();
-        }
+        
+        // UI is always screen space
+        _spriteBatch?.Begin();
+        _uiScheduler.Draw(_world, frameContext);
+        _spriteBatch?.End();
 
         base.Draw(gameTime);
     }
