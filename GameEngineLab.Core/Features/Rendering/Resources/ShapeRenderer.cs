@@ -39,6 +39,18 @@ public static class ShapeRenderer
         spriteBatch.Draw(pixel, rect, color);
     }
 
+    public static void DrawRectangle(SpriteBatch spriteBatch, Texture2D pixel, Vector2 center, Vector2 size, float rotation, Color color)
+    {
+        spriteBatch.Draw(pixel,
+            new Rectangle((int)center.X, (int)center.Y, (int)size.X, (int)size.Y),
+            null,
+            color,
+            rotation,
+            new Vector2(0.5f, 0.5f), 
+            SpriteEffects.None,
+            0);
+    }
+
     public static void DrawEllipse(SpriteBatch spriteBatch, Texture2D pixel, Vector2 center, Vector2 size, Color color)
     {
         float rx = size.X / 2f;
