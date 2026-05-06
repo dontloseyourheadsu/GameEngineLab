@@ -40,7 +40,7 @@ public sealed class ShapeRenderSystem : IGameSystem
             }
             else if (body.Shape == RigidBodyShape.Rectangle)
             {
-                ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position, body.Size, color);
+                ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position, body.Size, transform.Rotation, color);
             }
             else if (body.Shape == RigidBodyShape.Polygon)
             {

@@ -5,7 +5,9 @@ public enum GameState
     Menu,
     Playing,
     Settings,
-    GameOver
+    GameOver,
+    MapEditorList,
+    MapEditor
 }
 
 public sealed class GameStateResource

@@ -72,4 +72,27 @@ public static class UiBuilder
         world.SetComponent(entityId, new UiSelectorComponent(options, initialIndex));
         return entityId;
     }
+
+    public static void CreatePopup(World world, int centerX, int centerY, string title, string message, string confirmAction, string cancelAction)
+    {
+        var width = 500;
+        var height = 300;
+        var x = centerX - width / 2;
+        var y = centerY - height / 2;
+
+        var panel = CreatePanel(world, x, y, width, height);
+        world.SetComponent(panel, new UiModalComponent());
+
+        var titleLabel = CreateLabel(world, x + 20, y + 20, title, "Fonts/SilkscreenBold", 1.5f);
+        world.SetComponent(titleLabel, new UiModalComponent());
+
+        var messageLabel = CreateLabel(world, x + 20, y + 80, message, "Fonts/Silkscreen", 1.0f);
+        world.SetComponent(messageLabel, new UiModalComponent());
+
+        var confirmBtn = CreateButton(world, x + 40, y + 200, 180, 60, "CONFIRM", confirmAction, "Fonts/SilkscreenBold");
+        world.SetComponent(confirmBtn, new UiModalComponent());
+
+        var cancelBtn = CreateButton(world, x + 280, y + 200, 180, 60, "CANCEL", cancelAction, "Fonts/SilkscreenBold");
+        world.SetComponent(cancelBtn, new UiModalComponent());
+    }
 }
