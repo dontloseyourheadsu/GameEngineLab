@@ -5,6 +5,7 @@ using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Rendering.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Linq;
 
 namespace GameEngineLab.GolfIt.Features.Maps;
 
@@ -41,6 +42,19 @@ public sealed class EditorItemRenderSystem : IGameSystem
             else if (body.Shape == RigidBodyShape.Rectangle)
             {
                 ShapeRenderer.DrawRectangle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position * globalScale, body.Size * globalScale, 0.0f, color);
+            }
+            else if (body.Shape == RigidBodyShape.Polygon)
+            {
+                if (world.TryGetComponent<PolygonComponent>(entityId, out var poly))
+                {
+                    // Scale vertices for screen space
+                    var scaledVerts = poly.TransformedVertices.Select(v => (v - transform.Position + transform.Position) * globalScale).ToArray();
+                    // Actually, TransformedVertices are already world space. For templates, Position is screen space.
+                    // Let's just use local vertices and transform them manually to screen space.
+                    var localVerts = poly.Vertices;
+                    var screenVerts = localVerts.Select(v => (transform.Position + v) * globalScale).ToArray();
+                    ShapeRenderer.DrawPolygon(frameContext.SpriteBatch, frameContext.DebugPixel, screenVerts, color, (int)(2 * globalScale));
+                }
             }
         }
     }

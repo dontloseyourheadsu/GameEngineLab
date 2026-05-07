@@ -17,4 +17,7 @@ public sealed class MapEditorStateResource
     public EntityId ColorSelectorId { get; set; }
     public EntityId SizeSliderId { get; set; }
     public EntityId RotationSliderId { get; set; }
+    public EntityId MapWidthSliderId { get; set; }
+    public EntityId MapHeightSliderId { get; set; }
+    public EntityId AutoRotateCheckboxId { get; set; }
 }
