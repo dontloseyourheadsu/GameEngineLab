@@ -97,6 +97,7 @@ public sealed class GolfItGame : Game
         // Gameplay Systems
         _scheduler.AddSystem(new SlingshotInputSystem());
         _scheduler.AddSystem(new MapEditorSystem());
+        _scheduler.AddSystem(new FloorRenderSystem());
 
         var physicsStepper = new PhysicsStepperSystem(order: 5, substeps: 8);
         physicsStepper.AddSystem(new DemoRotationSystem());
@@ -373,11 +374,6 @@ public sealed class GolfItGame : Game
             _lastSelectedEntity = mapStateResource.SelectedEntity;
         }
 
-        if (gameStateResource.Current == GameState.Playing || gameStateResource.Current == GameState.MapEditor)
-        {
-            _scheduler.Update(_world, frameContext);
-        }
-        
         _uiScheduler.Update(_world, frameContext);
         
         if (gameStateResource.Current == GameState.Settings)
@@ -395,6 +391,11 @@ public sealed class GolfItGame : Game
             UpdateMapEditorPropertiesFromUi();
         }
 
+        if (gameStateResource.Current == GameState.Playing || gameStateResource.Current == GameState.MapEditor)
+        {
+            _scheduler.Update(_world, frameContext);
+        }
+
         if (_settings.NeedsApply)
         {
             ApplyGraphicsSettings();
@@ -409,6 +410,24 @@ public sealed class GolfItGame : Game
     private void UpdateMapEditorPropertiesFromUi()
     {
         var mapState = _world.GetRequiredResource<MapEditorStateResource>();
+
+        // Apply MAP BOUNDS (Moved outside selection check so it always works)
+        if (_world.TryGetResource<MapBoundsResource>(out var bounds))
+        {
+            if (_world.TryGetComponent<UiSliderComponent>(mapState.MapWidthSliderId, out var wSlider))
+            {
+                var newWidth = (int)(800 + wSlider.Value * 1200); // 800 to 2000
+                if (bounds.PlayArea.Width != newWidth)
+                    bounds.PlayArea = new Rectangle(0, 0, newWidth, bounds.PlayArea.Height);
+            }
+            if (_world.TryGetComponent<UiSliderComponent>(mapState.MapHeightSliderId, out var hSlider))
+            {
+                var newHeight = (int)(600 + hSlider.Value * 1400); // 600 to 2000
+                if (bounds.PlayArea.Height != newHeight)
+                    bounds.PlayArea = new Rectangle(0, 0, bounds.PlayArea.Width, newHeight);
+            }
+        }
+
         if (!mapState.SelectedEntity.HasValue || !_world.IsAlive(mapState.SelectedEntity.Value)) return;
 
         var selected = mapState.SelectedEntity.Value;
@@ -429,11 +448,28 @@ public sealed class GolfItGame : Game
             if (_world.TryGetComponent<RigidBodyComponent>(selected, out var body))
             {
                 var baseScale = 0.5f + sizeSlider.Value; // 0.5 to 1.5
-                if (body.Shape == RigidBodyShape.Circle)
+                _world.TryGetComponent<EditorObjectComponent>(selected, out var editorObj);
+                
+                if (body.Shape == RigidBodyShape.Circle || (body.Shape == RigidBodyShape.Polygon && editorObj.ToolType == EditorTool.Triangle))
                 {
-                    _world.TryGetComponent<EditorObjectComponent>(selected, out var editorObj);
-                    var baseRadius = editorObj.ToolType == EditorTool.Ball ? 16f : (editorObj.ToolType == EditorTool.Goal ? 40f : 30f);
+                    var baseRadius = 30f;
+                    if (editorObj.ToolType == EditorTool.Ball) baseRadius = 16f;
+                    else if (editorObj.ToolType == EditorTool.Goal) baseRadius = 40f;
+                    else if (editorObj.ToolType == EditorTool.SoftCircle) baseRadius = 50f;
+                    
                     body.BoundingRadius = baseRadius * baseScale;
+
+                    if (editorObj.ToolType == EditorTool.Triangle)
+                    {
+                        float r = body.BoundingRadius;
+                        var triVerts = new[]
+                        {
+                            new Vector2(0, -r),
+                            new Vector2(r * 0.866f, r * 0.5f),
+                            new Vector2(-r * 0.866f, r * 0.5f)
+                        };
+                        _world.SetComponent(selected, new PolygonComponent(triVerts));
+                    }
                 }
                 else if (body.Shape == RigidBodyShape.Rectangle)
                 {
@@ -443,13 +479,46 @@ public sealed class GolfItGame : Game
             }
         }
 
-        // Apply ROTATION
+        // Apply AUTO-ROTATE
+        bool autoRotateEnabled = false;
+        if (_world.TryGetComponent<UiCheckboxComponent>(mapState.AutoRotateCheckboxId, out var autoRotateCheckbox))
+        {
+            autoRotateEnabled = autoRotateCheckbox.Checked;
+            if (autoRotateEnabled)
+            {
+                if (!_world.HasComponent<AutoRotateComponent>(selected))
+                    _world.SetComponent(selected, new AutoRotateComponent(1.0f, true));
+                
+                _world.TryGetComponent<AutoRotateComponent>(selected, out var autoRotate);
+                autoRotate.IsEnabled = true;
+                _world.SetComponent(selected, autoRotate);
+            }
+            else if (_world.HasComponent<AutoRotateComponent>(selected))
+            {
+                _world.TryGetComponent<AutoRotateComponent>(selected, out var autoRotate);
+                autoRotate.IsEnabled = false;
+                _world.SetComponent(selected, autoRotate);
+            }
+        }
+
+        // Apply ROTATION / SPEED
         if (_world.TryGetComponent<UiSliderComponent>(mapState.RotationSliderId, out var rotSlider))
         {
-            if (_world.TryGetComponent<TransformComponent>(selected, out var transform))
+            if (autoRotateEnabled)
             {
-                transform.Rotation = rotSlider.Value * MathHelper.TwoPi;
-                _world.SetComponent(selected, transform);
+                // Slider controls SPEED (-5.0 to 5.0)
+                _world.TryGetComponent<AutoRotateComponent>(selected, out var autoRotate);
+                autoRotate.Speed = (rotSlider.Value - 0.5f) * 10.0f;
+                _world.SetComponent(selected, autoRotate);
+            }
+            else
+            {
+                // Slider controls ANGLE
+                if (_world.TryGetComponent<TransformComponent>(selected, out var transform))
+                {
+                    transform.Rotation = rotSlider.Value * MathHelper.TwoPi;
+                    _world.SetComponent(selected, transform);
+                }
             }
         }
     }
@@ -520,7 +589,20 @@ public sealed class GolfItGame : Game
         // 2. LEFT SIDEBAR: PROPERTIES
         var leftWidth = 240;
         UiBuilder.CreatePanel(_world, 0, 60, leftWidth, GameConstants.DefaultWindowHeight - 60);
-        UiBuilder.CreateLabel(_world, 20, 80, "PROPERTIES", "Fonts/SilkscreenBold", 1.0f);
+        
+        // MAP SETTINGS
+        UiBuilder.CreateLabel(_world, 20, 80, "MAP SETTINGS", "Fonts/SilkscreenBold", 1.0f);
+        var currentBounds = _world.GetRequiredResource<MapBoundsResource>().PlayArea;
+        
+        UiBuilder.CreateLabel(_world, 20, 110, $"WIDTH: {currentBounds.Width}", "Fonts/Silkscreen", 0.7f);
+        mapState.MapWidthSliderId = UiBuilder.CreateSlider(_world, 20, 130, 200, 25, (currentBounds.Width - 800) / 1200f);
+        
+        UiBuilder.CreateLabel(_world, 20, 165, $"HEIGHT: {currentBounds.Height}", "Fonts/Silkscreen", 0.7f);
+        mapState.MapHeightSliderId = UiBuilder.CreateSlider(_world, 20, 185, 200, 25, (currentBounds.Height - 600) / 1400f);
+
+        UiBuilder.CreatePanel(_world, 10, 225, leftWidth - 20, 2); // Separator
+
+        UiBuilder.CreateLabel(_world, 20, 240, "PROPERTIES", "Fonts/SilkscreenBold", 1.0f);
 
         if (mapState.SelectedEntity.HasValue && _world.IsAlive(mapState.SelectedEntity.Value))
         {
@@ -530,33 +612,43 @@ public sealed class GolfItGame : Game
             _world.TryGetComponent<RigidBodyComponent>(selected, out var body);
             _world.TryGetComponent<DrawColorComponent>(selected, out var drawColor);
 
-            UiBuilder.CreateLabel(_world, 20, 120, $"TYPE: {editorObj.ToolType}", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 275, $"TYPE: {editorObj.ToolType}", "Fonts/Silkscreen", 0.8f);
 
             // COLOR PICKER
-            UiBuilder.CreateLabel(_world, 20, 160, "COLOR", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 310, "COLOR", "Fonts/Silkscreen", 0.8f);
             var colorOptions = new[] { "WHITE", "GRAY", "RED", "GREEN", "BLUE", "BLACK" };
             var colors = new[] { Color.White, Color.Gray, Color.Red, Color.Green, Color.Blue, Color.Black };
             int colorIdx = Array.IndexOf(colors, drawColor.Value);
             if (colorIdx < 0) colorIdx = 0;
-            mapState.ColorSelectorId = UiBuilder.CreateSelector(_world, 20, 185, 200, 40, "COLOR", colorOptions, colorIdx);
+            mapState.ColorSelectorId = UiBuilder.CreateSelector(_world, 20, 335, 200, 40, "COLOR", colorOptions, colorIdx);
 
             // SCALE/SIZE SLIDER
-            UiBuilder.CreateLabel(_world, 20, 250, "SIZE", "Fonts/Silkscreen", 0.8f);
-            var baseRadius = editorObj.ToolType == EditorTool.Ball ? 16f : (editorObj.ToolType == EditorTool.Goal ? 40f : 30f);
-            var currentSize = body.Shape == RigidBodyShape.Circle ? body.BoundingRadius : body.Size.X;
-            var baseRef = body.Shape == RigidBodyShape.Circle ? baseRadius : 80f;
-            var initialScale = Math.Clamp((currentSize / baseRef) - 0.5f, 0, 1);
-            mapState.SizeSliderId = UiBuilder.CreateSlider(_world, 20, 275, 200, 30, initialScale);
-
-            // ROTATION SLIDER
-            UiBuilder.CreateLabel(_world, 20, 330, "ROTATION", "Fonts/Silkscreen", 0.8f);
-            mapState.RotationSliderId = UiBuilder.CreateSlider(_world, 20, 355, 200, 30, transform.Rotation / MathHelper.TwoPi);
+            UiBuilder.CreateLabel(_world, 20, 400, "SIZE", "Fonts/Silkscreen", 0.8f);
+            var baseRadius = 30f;
+            if (editorObj.ToolType == EditorTool.Ball) baseRadius = 16f;
+            else if (editorObj.ToolType == EditorTool.Goal) baseRadius = 40f;
+            else if (editorObj.ToolType == EditorTool.SoftCircle) baseRadius = 50f;
             
-            UiBuilder.CreateButton(_world, 20, 450, 200, 50, "DELETE", "delete_selected", "Fonts/SilkscreenBold");
+            var currentSize = body.Shape == RigidBodyShape.Circle || body.Shape == RigidBodyShape.Polygon ? body.BoundingRadius : body.Size.X;
+            var baseRef = body.Shape == RigidBodyShape.Circle || body.Shape == RigidBodyShape.Polygon ? baseRadius : 80f;
+            var initialScale = Math.Clamp((currentSize / baseRef) - 0.5f, 0, 1);
+            mapState.SizeSliderId = UiBuilder.CreateSlider(_world, 20, 425, 200, 30, initialScale);
+
+            // AUTO-ROTATE CHECKBOX
+            bool autoRotateOn = _world.TryGetComponent<AutoRotateComponent>(selected, out var autoRotate) && autoRotate.IsEnabled;
+            mapState.AutoRotateCheckboxId = UiBuilder.CreateCheckbox(_world, 20, 480, "AUTO ROTATE", autoRotateOn, 200);
+
+            // ROTATION / SPEED SLIDER
+            var rotLabel = autoRotateOn ? "SPEED" : "ROTATION";
+            UiBuilder.CreateLabel(_world, 20, 530, rotLabel, "Fonts/Silkscreen", 0.8f);
+            float sliderVal = autoRotateOn ? (autoRotate.Speed / 10.0f + 0.5f) : (transform.Rotation / MathHelper.TwoPi);
+            mapState.RotationSliderId = UiBuilder.CreateSlider(_world, 20, 555, 200, 30, Math.Clamp(sliderVal, 0, 1));
+            
+            UiBuilder.CreateButton(_world, 20, 650, 200, 50, "DELETE", "delete_selected", "Fonts/SilkscreenBold");
         }
         else
         {
-            UiBuilder.CreateLabel(_world, 20, 150, "SELECT AN ITEM\nTO EDIT", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 350, "SELECT AN ITEM\nTO EDIT", "Fonts/Silkscreen", 0.8f);
         }
 
         // 3. RIGHT SIDEBAR: DRAG & DROP ITEMS
@@ -569,14 +661,20 @@ public sealed class GolfItGame : Game
         UiBuilder.CreateLabel(_world, rightX + 20, 110, "RECTANGLE", "Fonts/Silkscreen", 0.7f);
         CreateTemplate(rightX + 90, 160, EditorTool.Square, Color.Gray);
         
-        UiBuilder.CreateLabel(_world, rightX + 20, 230, "SPHERE", "Fonts/Silkscreen", 0.7f);
-        CreateTemplate(rightX + 90, 280, EditorTool.Circle, Color.Gray);
+        UiBuilder.CreateLabel(_world, rightX + 20, 200, "SPHERE", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 240, EditorTool.Circle, Color.Gray);
+
+        UiBuilder.CreateLabel(_world, rightX + 20, 280, "TRIANGLE", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 320, EditorTool.Triangle, Color.Gray);
+
+        UiBuilder.CreateLabel(_world, rightX + 20, 360, "SOFT BODY", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 400, EditorTool.SoftCircle, Color.DeepSkyBlue);
         
-        UiBuilder.CreateLabel(_world, rightX + 20, 350, "BALL", "Fonts/Silkscreen", 0.7f);
-        CreateTemplate(rightX + 90, 400, EditorTool.Ball, Color.White);
+        UiBuilder.CreateLabel(_world, rightX + 20, 450, "BALL", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 490, EditorTool.Ball, Color.White);
         
-        UiBuilder.CreateLabel(_world, rightX + 20, 470, "GOAL", "Fonts/Silkscreen", 0.7f);
-        CreateTemplate(rightX + 90, 520, EditorTool.Goal, Color.Black);
+        UiBuilder.CreateLabel(_world, rightX + 20, 540, "GOAL", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 580, EditorTool.Goal, Color.Black);
     }
 
     private void CreateTemplate(int x, int y, EditorTool tool, Color color)
@@ -586,6 +684,7 @@ public sealed class GolfItGame : Game
         _world.SetComponent(entityId, new EditorObjectComponent { ToolType = tool });
         _world.SetComponent(entityId, new TransformComponent { Position = new Vector2(x, y) });
         _world.SetComponent(entityId, new DrawColorComponent(color));
+        _world.SetComponent(entityId, new HiddenComponent()); // Hide from world-space renderer
 
         switch (tool)
         {
@@ -593,6 +692,19 @@ public sealed class GolfItGame : Game
                 _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Rectangle, Size = new Vector2(60, 30), Mass = 0 });
                 break;
             case EditorTool.Circle:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 25, Mass = 0 });
+                break;
+            case EditorTool.Triangle:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Polygon, BoundingRadius = 25, Mass = 0 });
+                var triVerts = new[]
+                {
+                    new Vector2(0, -25),
+                    new Vector2(25 * 0.866f, 25 * 0.5f),
+                    new Vector2(-25 * 0.866f, 25 * 0.5f)
+                };
+                _world.SetComponent(entityId, new PolygonComponent(triVerts));
+                break;
+            case EditorTool.SoftCircle:
                 _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 25, Mass = 0 });
                 break;
             case EditorTool.Ball:
