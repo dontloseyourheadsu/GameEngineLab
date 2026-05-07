@@ -1,12 +1,15 @@
 using GameEngineLab.Core.Features.Ecs.Entities;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
+using GameEngineLab.Core.Features.Maps.Resources;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Rendering.Resources;
+using GameEngineLab.GolfIt.Features.Physics.Components;
 using GameEngineLab.GolfIt.Features.Runtime;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Linq;
 
 namespace GameEngineLab.GolfIt.Features.Maps;
@@ -16,6 +19,8 @@ public enum EditorTool
     None,
     Square,
     Circle,
+    Triangle,
+    SoftCircle,
     Ball,
     Goal
 }
@@ -126,7 +131,17 @@ public sealed class MapEditorSystem : IGameSystem
                 if (world.IsAlive(entityId))
                 {
                     world.TryGetComponent<TransformComponent>(entityId, out var transform);
-                    transform.Position = worldMousePos + editorContext.DragOffset;
+                    var newPos = worldMousePos + editorContext.DragOffset;
+                    
+                    // CLAMP TO MAP BOUNDS
+                    if (world.TryGetResource<MapBoundsResource>(out var bounds))
+                    {
+                        var area = bounds.PlayArea;
+                        newPos.X = Math.Clamp(newPos.X, area.Left, area.Right);
+                        newPos.Y = Math.Clamp(newPos.Y, area.Top, area.Bottom);
+                    }
+
+                    transform.Position = newPos;
                     world.SetComponent(entityId, transform);
                 }
             }
@@ -169,7 +184,7 @@ public sealed class MapEditorSystem : IGameSystem
     private bool IsPointInObject(Vector2 point, TransformComponent t, RigidBodyComponent b, float scale)
     {
         var pos = t.Position * scale;
-        if (b.Shape == RigidBodyShape.Circle)
+        if (b.Shape == RigidBodyShape.Circle || b.Shape == RigidBodyShape.Polygon)
         {
             return Vector2.Distance(point, pos) <= b.BoundingRadius * scale;
         }
@@ -193,6 +208,18 @@ public sealed class MapEditorSystem : IGameSystem
         world.SetComponent(newEntity, new TransformComponent { Position = worldPos });
         world.SetComponent(newEntity, new DrawColorComponent(templateColor.Value));
         world.SetComponent(newEntity, templateBody);
+
+        // CLONE POLYGON
+        if (world.TryGetComponent<PolygonComponent>(templateId, out var poly))
+        {
+            world.SetComponent(newEntity, new PolygonComponent(poly.Vertices.ToArray()));
+        }
+
+        // CLONE AUTO-ROTATE
+        if (world.TryGetComponent<AutoRotateComponent>(templateId, out var rot))
+        {
+            world.SetComponent(newEntity, rot);
+        }
 
         // Special logic for unique items
         if (templateObj.ToolType == EditorTool.Ball || templateObj.ToolType == EditorTool.Goal)

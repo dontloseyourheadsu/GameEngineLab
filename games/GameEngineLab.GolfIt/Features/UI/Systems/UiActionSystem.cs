@@ -73,6 +73,7 @@ public sealed class UiActionSystem : IGameSystem
         {
             state.Current = GameState.Playing;
             state.Strokes = 0;
+            StartPlaying(world);
         }
         else if (actionId == "settings")
         {
@@ -80,6 +81,7 @@ public sealed class UiActionSystem : IGameSystem
         }
         else if (actionId == "back_to_menu")
         {
+            ClearAllGameplayEntities(world);
             state.Current = GameState.Menu;
         }
         else if (actionId == "goal")
@@ -88,6 +90,7 @@ public sealed class UiActionSystem : IGameSystem
         }
         else if (actionId == "map_editor_list")
         {
+            ClearAllGameplayEntities(world);
             RefreshMaps(mapState);
             state.Current = GameState.MapEditorList;
         }
@@ -158,10 +161,91 @@ public sealed class UiActionSystem : IGameSystem
                 {
                     "tool_square" => EditorTool.Square,
                     "tool_circle" => EditorTool.Circle,
+                    "tool_triangle" => EditorTool.Triangle,
+                    "tool_softcircle" => EditorTool.SoftCircle,
                     "tool_ball" => EditorTool.Ball,
                     "tool_goal" => EditorTool.Goal,
                     _ => EditorTool.None
                 };
+            }
+        }
+    }
+
+    private void StartPlaying(World world)
+    {
+        var editorObjects = world.GetEntitiesWith<EditorObjectComponent>().Where(e => !world.HasComponent<TemplateComponent>(e)).ToList();
+        
+        if (editorObjects.Count == 0)
+        {
+            LoadDemoLevel(world);
+        }
+        else
+        {
+            foreach (var editorId in editorObjects)
+            {
+                world.TryGetComponent<EditorObjectComponent>(editorId, out var obj);
+                world.TryGetComponent<TransformComponent>(editorId, out var t);
+                world.TryGetComponent<DrawColorComponent>(editorId, out var c);
+                world.TryGetComponent<RigidBodyComponent>(editorId, out var b);
+
+                // Hide the editor object during playback
+                world.SetComponent(editorId, new HiddenComponent());
+
+                // Create gameplay version
+                switch (obj.ToolType)
+                {
+                    case EditorTool.Ball:
+                        var ball = world.CreateEntity();
+                        world.SetComponent(ball, new BallComponent());
+                        world.SetComponent(ball, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = b.BoundingRadius, Restitution = 0.6f, Friction = 0.99f, Mass = 5.0f });
+                        world.SetComponent(ball, new TransformComponent { Position = t.Position });
+                        world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
+                        world.SetComponent(ball, new DrawColorComponent(c.Value));
+                        break;
+                    case EditorTool.Goal:
+                        var goal = world.CreateEntity();
+                        world.SetComponent(goal, new TriggerZoneComponent("goal"));
+                        world.SetComponent(goal, new TransformComponent { Position = t.Position });
+                        world.SetComponent(goal, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = b.BoundingRadius, Mass = 0f });
+                        world.SetComponent(goal, new DrawColorComponent(c.Value));
+                        break;
+                    case EditorTool.Square:
+                    case EditorTool.Circle:
+                    case EditorTool.Triangle:
+                        var obstacle = world.CreateEntity();
+                        world.SetComponent(obstacle, new ObstacleComponent());
+                        world.SetComponent(obstacle, new TransformComponent { Position = t.Position, Rotation = t.Rotation });
+                        world.SetComponent(obstacle, new DrawColorComponent(c.Value));
+                        
+                        if (obj.ToolType == EditorTool.Triangle)
+                        {
+                            world.SetComponent(obstacle, new RigidBodyComponent { Shape = RigidBodyShape.Polygon, Mass = 0f, Restitution = 0.5f });
+                            float r = b.BoundingRadius;
+                            var vertices = new[]
+                            {
+                                new Vector2(0, -r),
+                                new Vector2(r * 0.866f, r * 0.5f),
+                                new Vector2(-r * 0.866f, r * 0.5f)
+                            };
+                            world.SetComponent(obstacle, new PolygonComponent(vertices));
+                        }
+                        else
+                        {
+                            world.SetComponent(obstacle, new RigidBodyComponent { Shape = b.Shape, Size = b.Size, BoundingRadius = b.BoundingRadius, Restitution = 0.5f, Mass = 0f });
+                        }
+
+                        // Support Auto-Rotation in gameplay
+                        if (world.TryGetComponent<AutoRotateComponent>(editorId, out var autoRotate))
+                        {
+                            world.SetComponent(obstacle, autoRotate);
+                        }
+                        break;
+                    case EditorTool.SoftCircle:
+                        // Use segments based on size, min 8, max 16
+                        int segments = Math.Clamp((int)(b.BoundingRadius / 5), 8, 16);
+                        SoftBodyFactory.CreateCircle(world, t.Position, b.BoundingRadius, segments, 100f, 20f, c.Value);
+                        break;
+                }
             }
         }
     }
@@ -214,13 +298,14 @@ public sealed class UiActionSystem : IGameSystem
         foreach (var entity in world.GetEntitiesWith<ObstacleComponent>().ToList()) world.DestroyEntity(entity);
         foreach (var entity in world.GetEntitiesWith<BallComponent>().ToList()) world.DestroyEntity(entity);
         foreach (var entity in world.GetEntitiesWith<TriggerZoneComponent>().ToList()) world.DestroyEntity(entity);
-        foreach (var entity in world.GetEntitiesWith<EditorObjectComponent>().ToList())
-        {
-            if (!world.HasComponent<TemplateComponent>(entity))
-                world.DestroyEntity(entity);
-        }
         foreach (var entity in world.GetEntitiesWith<SoftBodyNodeComponent>().ToList()) world.DestroyEntity(entity);
         foreach (var entity in world.GetEntitiesWith<DistanceSpringComponent>().ToList()) world.DestroyEntity(entity);
+        
+        // Restore editor objects
+        foreach (var entity in world.GetEntitiesWith<EditorObjectComponent>().ToList())
+        {
+            world.RemoveComponent<HiddenComponent>(entity);
+        }
     }
 
     private void ClearEditorObjects(World world)
@@ -256,6 +341,22 @@ public sealed class UiActionSystem : IGameSystem
                 case EditorTool.Circle:
                     world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 30, Mass = 0 });
                     world.SetComponent(entityId, new DrawColorComponent(Color.Gray));
+                    break;
+                case EditorTool.Triangle:
+                    world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Polygon, BoundingRadius = 30, Mass = 0 });
+                    world.SetComponent(entityId, new DrawColorComponent(Color.Gray));
+                    // Setup initial polygon vertices for editor preview
+                    var triVerts = new[]
+                    {
+                        new Vector2(0, -30),
+                        new Vector2(30 * 0.866f, 30 * 0.5f),
+                        new Vector2(-30 * 0.866f, 30 * 0.5f)
+                    };
+                    world.SetComponent(entityId, new PolygonComponent(triVerts));
+                    break;
+                case EditorTool.SoftCircle:
+                    world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 30, Mass = 0 });
+                    world.SetComponent(entityId, new DrawColorComponent(Color.DeepSkyBlue));
                     break;
                 case EditorTool.Ball:
                     world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 16, Mass = 5 });

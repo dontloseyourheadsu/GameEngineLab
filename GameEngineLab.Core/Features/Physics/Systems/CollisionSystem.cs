@@ -1,6 +1,7 @@
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
 using GameEngineLab.Core.Features.Physics.Components;
+using GameEngineLab.Core.Features.Rendering.Components;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -18,8 +19,11 @@ public sealed class CollisionSystem : IGameSystem
 
         for (int i = 0; i < entities.Count; i++)
         {
+            if (world.HasComponent<HiddenComponent>(entities[i])) continue;
             for (int j = i + 1; j < entities.Count; j++)
             {
+                if (world.HasComponent<HiddenComponent>(entities[j])) continue;
+                
                 var e1 = entities[i];
                 var e2 = entities[j];
 

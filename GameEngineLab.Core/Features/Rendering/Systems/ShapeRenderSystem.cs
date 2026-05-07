@@ -23,6 +23,8 @@ public sealed class ShapeRenderSystem : IGameSystem
         
         foreach (var entityId in world.GetEntitiesWith<TransformComponent, RigidBodyComponent>())
         {
+            if (world.HasComponent<HiddenComponent>(entityId)) continue;
+            
             world.TryGetComponent<TransformComponent>(entityId, out var transform);
             world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
             
