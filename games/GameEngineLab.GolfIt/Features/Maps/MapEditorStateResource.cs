@@ -20,4 +20,6 @@ public sealed class MapEditorStateResource
     public EntityId MapWidthSliderId { get; set; }
     public EntityId MapHeightSliderId { get; set; }
     public EntityId AutoRotateCheckboxId { get; set; }
+    public EntityId EnableGlobalLightCheckboxId { get; set; }
+    public bool EnableGlobalLight { get; set; } = true;
 }

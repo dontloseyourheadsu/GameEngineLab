@@ -326,6 +326,11 @@ public sealed class UiActionSystem : IGameSystem
         var mapData = JsonSerializer.Deserialize<MapDataDto>(json);
         if (mapData == null) return;
 
+        if (world.TryGetResource<MapEditorStateResource>(out var mapState) && mapState != null)
+        {
+            mapState.EnableGlobalLight = mapData.EnableGlobalLight;
+        }
+
         foreach (var obj in mapData.Objects)
         {
             var entityId = world.CreateEntity();
@@ -366,6 +371,10 @@ public sealed class UiActionSystem : IGameSystem
                     world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 40, Mass = 0 });
                     world.SetComponent(entityId, new DrawColorComponent(Color.Black));
                     break;
+                case EditorTool.Light:
+                    world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 15, Mass = 0 });
+                    world.SetComponent(entityId, new DrawColorComponent(Color.Yellow));
+                    break;
             }
         }
     }
@@ -373,6 +382,7 @@ public sealed class UiActionSystem : IGameSystem
     private void SaveCurrentMap(World world, MapEditorStateResource mapState)
     {
         var mapData = new MapDataDto();
+        mapData.EnableGlobalLight = mapState.EnableGlobalLight;
         foreach (var entityId in world.GetEntitiesWith<EditorObjectComponent, TransformComponent>())
         {
             if (world.HasComponent<TemplateComponent>(entityId)) continue;
@@ -419,6 +429,7 @@ public sealed class UiActionSystem : IGameSystem
 
     private class MapDataDto
     {
+        public bool EnableGlobalLight { get; set; } = true;
         public List<MapObjectDto> Objects { get; set; } = new();
     }
 
