@@ -11,8 +11,14 @@ config_version=5
 [application]
 
 config/name="GameEngine.GODOT"
+run/main_scene="res://games/dimension_hopper/scenes/test_level.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*res://src/common/event_bus.gd"
+TimeManager="*res://src/common/time_manager.gd"
 
 [physics]
 
