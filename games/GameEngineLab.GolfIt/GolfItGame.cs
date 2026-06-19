@@ -98,6 +98,7 @@ public sealed class GolfItGame : Game
         _scheduler.AddSystem(new SlingshotInputSystem());
         _scheduler.AddSystem(new MapEditorSystem());
         _scheduler.AddSystem(new FloorRenderSystem());
+        _scheduler.AddSystem(new ShadowRenderSystem());
 
         var physicsStepper = new PhysicsStepperSystem(order: 5, substeps: 8);
         physicsStepper.AddSystem(new DemoRotationSystem());
@@ -411,6 +412,12 @@ public sealed class GolfItGame : Game
     {
         var mapState = _world.GetRequiredResource<MapEditorStateResource>();
 
+        // Apply GLOBAL LIGHT
+        if (_world.TryGetComponent<UiCheckboxComponent>(mapState.EnableGlobalLightCheckboxId, out var globalLightCheckbox))
+        {
+            mapState.EnableGlobalLight = globalLightCheckbox.Checked;
+        }
+
         // Apply MAP BOUNDS (Moved outside selection check so it always works)
         if (_world.TryGetResource<MapBoundsResource>(out var bounds))
         {
@@ -600,9 +607,11 @@ public sealed class GolfItGame : Game
         UiBuilder.CreateLabel(_world, 20, 165, $"HEIGHT: {currentBounds.Height}", "Fonts/Silkscreen", 0.7f);
         mapState.MapHeightSliderId = UiBuilder.CreateSlider(_world, 20, 185, 200, 25, (currentBounds.Height - 600) / 1400f);
 
-        UiBuilder.CreatePanel(_world, 10, 225, leftWidth - 20, 2); // Separator
+        mapState.EnableGlobalLightCheckboxId = UiBuilder.CreateCheckbox(_world, 20, 220, "GLOBAL LIGHT", mapState.EnableGlobalLight, 200);
 
-        UiBuilder.CreateLabel(_world, 20, 240, "PROPERTIES", "Fonts/SilkscreenBold", 1.0f);
+        UiBuilder.CreatePanel(_world, 10, 265, leftWidth - 20, 2); // Separator
+
+        UiBuilder.CreateLabel(_world, 20, 280, "PROPERTIES", "Fonts/SilkscreenBold", 1.0f);
 
         if (mapState.SelectedEntity.HasValue && _world.IsAlive(mapState.SelectedEntity.Value))
         {
@@ -612,18 +621,18 @@ public sealed class GolfItGame : Game
             _world.TryGetComponent<RigidBodyComponent>(selected, out var body);
             _world.TryGetComponent<DrawColorComponent>(selected, out var drawColor);
 
-            UiBuilder.CreateLabel(_world, 20, 275, $"TYPE: {editorObj.ToolType}", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 315, $"TYPE: {editorObj.ToolType}", "Fonts/Silkscreen", 0.8f);
 
             // COLOR PICKER
-            UiBuilder.CreateLabel(_world, 20, 310, "COLOR", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 350, "COLOR", "Fonts/Silkscreen", 0.8f);
             var colorOptions = new[] { "WHITE", "GRAY", "RED", "GREEN", "BLUE", "BLACK" };
             var colors = new[] { Color.White, Color.Gray, Color.Red, Color.Green, Color.Blue, Color.Black };
             int colorIdx = Array.IndexOf(colors, drawColor.Value);
             if (colorIdx < 0) colorIdx = 0;
-            mapState.ColorSelectorId = UiBuilder.CreateSelector(_world, 20, 335, 200, 40, "COLOR", colorOptions, colorIdx);
+            mapState.ColorSelectorId = UiBuilder.CreateSelector(_world, 20, 375, 200, 40, "COLOR", colorOptions, colorIdx);
 
             // SCALE/SIZE SLIDER
-            UiBuilder.CreateLabel(_world, 20, 400, "SIZE", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 440, "SIZE", "Fonts/Silkscreen", 0.8f);
             var baseRadius = 30f;
             if (editorObj.ToolType == EditorTool.Ball) baseRadius = 16f;
             else if (editorObj.ToolType == EditorTool.Goal) baseRadius = 40f;
@@ -632,23 +641,23 @@ public sealed class GolfItGame : Game
             var currentSize = body.Shape == RigidBodyShape.Circle || body.Shape == RigidBodyShape.Polygon ? body.BoundingRadius : body.Size.X;
             var baseRef = body.Shape == RigidBodyShape.Circle || body.Shape == RigidBodyShape.Polygon ? baseRadius : 80f;
             var initialScale = Math.Clamp((currentSize / baseRef) - 0.5f, 0, 1);
-            mapState.SizeSliderId = UiBuilder.CreateSlider(_world, 20, 425, 200, 30, initialScale);
+            mapState.SizeSliderId = UiBuilder.CreateSlider(_world, 20, 465, 200, 30, initialScale);
 
             // AUTO-ROTATE CHECKBOX
             bool autoRotateOn = _world.TryGetComponent<AutoRotateComponent>(selected, out var autoRotate) && autoRotate.IsEnabled;
-            mapState.AutoRotateCheckboxId = UiBuilder.CreateCheckbox(_world, 20, 480, "AUTO ROTATE", autoRotateOn, 200);
+            mapState.AutoRotateCheckboxId = UiBuilder.CreateCheckbox(_world, 20, 520, "AUTO ROTATE", autoRotateOn, 200);
 
             // ROTATION / SPEED SLIDER
             var rotLabel = autoRotateOn ? "SPEED" : "ROTATION";
-            UiBuilder.CreateLabel(_world, 20, 530, rotLabel, "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 570, rotLabel, "Fonts/Silkscreen", 0.8f);
             float sliderVal = autoRotateOn ? (autoRotate.Speed / 10.0f + 0.5f) : (transform.Rotation / MathHelper.TwoPi);
-            mapState.RotationSliderId = UiBuilder.CreateSlider(_world, 20, 555, 200, 30, Math.Clamp(sliderVal, 0, 1));
+            mapState.RotationSliderId = UiBuilder.CreateSlider(_world, 20, 595, 200, 30, Math.Clamp(sliderVal, 0, 1));
             
-            UiBuilder.CreateButton(_world, 20, 650, 200, 50, "DELETE", "delete_selected", "Fonts/SilkscreenBold");
+            UiBuilder.CreateButton(_world, 20, 690, 200, 50, "DELETE", "delete_selected", "Fonts/SilkscreenBold");
         }
         else
         {
-            UiBuilder.CreateLabel(_world, 20, 350, "SELECT AN ITEM\nTO EDIT", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, 20, 390, "SELECT AN ITEM\nTO EDIT", "Fonts/Silkscreen", 0.8f);
         }
 
         // 3. RIGHT SIDEBAR: DRAG & DROP ITEMS
@@ -675,6 +684,9 @@ public sealed class GolfItGame : Game
         
         UiBuilder.CreateLabel(_world, rightX + 20, 540, "GOAL", "Fonts/Silkscreen", 0.7f);
         CreateTemplate(rightX + 90, 580, EditorTool.Goal, Color.Black);
+
+        UiBuilder.CreateLabel(_world, rightX + 20, 620, "LIGHT", "Fonts/Silkscreen", 0.7f);
+        CreateTemplate(rightX + 90, 660, EditorTool.Light, Color.Yellow);
     }
 
     private void CreateTemplate(int x, int y, EditorTool tool, Color color)
@@ -712,6 +724,9 @@ public sealed class GolfItGame : Game
                 break;
             case EditorTool.Goal:
                 _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 30, Mass = 0 });
+                break;
+            case EditorTool.Light:
+                _world.SetComponent(entityId, new RigidBodyComponent { Shape = RigidBodyShape.Circle, BoundingRadius = 15, Mass = 0 });
                 break;
         }
     }

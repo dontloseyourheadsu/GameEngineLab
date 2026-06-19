@@ -95,4 +95,58 @@ public static class ShapeRenderer
             DrawLine(spriteBatch, pixel, start, end, color, thickness);
         }
     }
+
+    public static void DrawFilledPolygon(SpriteBatch spriteBatch, Texture2D pixel, Vector2[] vertices, Color color)
+    {
+        if (vertices == null || vertices.Length < 3) return;
+
+        // Find Y bounding range
+        float minY = vertices[0].Y;
+        float maxY = vertices[0].Y;
+        for (int i = 1; i < vertices.Length; i++)
+        {
+            if (vertices[i].Y < minY) minY = vertices[i].Y;
+            if (vertices[i].Y > maxY) maxY = vertices[i].Y;
+        }
+
+        int startY = (int)Math.Floor(minY);
+        int endY = (int)Math.Ceiling(maxY);
+
+        // Rasterize row by row
+        for (int y = startY; y <= endY; y++)
+        {
+            float xMin = float.MaxValue;
+            float xMax = float.MinValue;
+            int intersects = 0;
+
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                var p1 = vertices[i];
+                var p2 = vertices[(i + 1) % vertices.Length];
+
+                // Detect intersection with horizontal line at y
+                if ((p1.Y <= y && p2.Y > y) || (p2.Y <= y && p1.Y > y))
+                {
+                    float t = (y - p1.Y) / (p2.Y - p1.Y);
+                    float x = p1.X + t * (p2.X - p1.X);
+
+                    if (x < xMin) xMin = x;
+                    if (x > xMax) xMax = x;
+                    intersects++;
+                }
+            }
+
+            if (intersects >= 2)
+            {
+                int ixMin = (int)Math.Floor(xMin);
+                int ixMax = (int)Math.Ceiling(xMax);
+                if (ixMax > ixMin)
+                {
+                    var rect = new Rectangle(ixMin, y, ixMax - ixMin, 1);
+                    spriteBatch.Draw(pixel, rect, color);
+                }
+            }
+        }
+    }
 }
+

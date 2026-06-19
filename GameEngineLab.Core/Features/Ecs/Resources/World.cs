@@ -201,4 +201,31 @@ public sealed class World
         _componentStores[componentType] = store;
         return store;
     }
+
+    public bool TryGetComponentDynamic(EntityId entityId, string componentTypeName, out object? component)
+    {
+        component = null;
+        foreach (var kvp in _componentStores)
+        {
+            if (kvp.Key.Name == componentTypeName)
+            {
+                return kvp.Value.TryGetValue(entityId.Value, out component);
+            }
+        }
+        return false;
+    }
+
+    public bool TryGetResourceDynamic(string resourceTypeName, out object? resource)
+    {
+        resource = null;
+        foreach (var kvp in _resources)
+        {
+            if (kvp.Key.Name == resourceTypeName)
+            {
+                resource = kvp.Value;
+                return true;
+            }
+        }
+        return false;
+    }
 }

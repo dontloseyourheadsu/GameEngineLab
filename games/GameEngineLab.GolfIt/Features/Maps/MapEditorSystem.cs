@@ -22,7 +22,8 @@ public enum EditorTool
     Triangle,
     SoftCircle,
     Ball,
-    Goal
+    Goal,
+    Light
 }
 
 public sealed class EditorContextResource

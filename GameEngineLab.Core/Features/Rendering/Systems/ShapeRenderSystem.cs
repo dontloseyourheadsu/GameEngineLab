@@ -21,6 +21,20 @@ public sealed class ShapeRenderSystem : IGameSystem
 
         world.TryGetResource<PaletteResource>(out var palette);
         
+        bool isMapEditor = false;
+        if (world.TryGetResourceDynamic("GameStateResource", out var gameStateResource) && gameStateResource != null)
+        {
+            var currentProp = gameStateResource.GetType().GetProperty("Current");
+            if (currentProp != null)
+            {
+                var currentValue = currentProp.GetValue(gameStateResource);
+                if (currentValue != null && currentValue.ToString() == "MapEditor")
+                {
+                    isMapEditor = true;
+                }
+            }
+        }
+        
         foreach (var entityId in world.GetEntitiesWith<TransformComponent, RigidBodyComponent>())
         {
             if (world.HasComponent<HiddenComponent>(entityId)) continue;
@@ -28,6 +42,24 @@ public sealed class ShapeRenderSystem : IGameSystem
             world.TryGetComponent<TransformComponent>(entityId, out var transform);
             world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
             
+            if (world.TryGetComponentDynamic(entityId, "EditorObjectComponent", out var editorObj) && editorObj != null)
+            {
+                var toolTypeField = editorObj.GetType().GetField("ToolType");
+                if (toolTypeField != null)
+                {
+                    var toolTypeValue = toolTypeField.GetValue(editorObj);
+                    if (toolTypeValue != null && toolTypeValue.ToString() == "Light")
+                    {
+                        if (isMapEditor)
+                        {
+                            ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position, 25, new Color(255, 255, 0, 100));
+                            ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, transform.Position, 10, Color.White);
+                        }
+                        continue;
+                    }
+                }
+            }
+
             Color color = Color.White;
             if (world.TryGetComponent<DrawColorComponent>(entityId, out var drawColor))
             {
