@@ -4,6 +4,7 @@ using GameEngineLab.Core.Features.Rendering.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using GameEngineLab.ShadowHell.Features.Environment.Resources;
 
 namespace GameEngineLab.ShadowHell.Features.Environment.Systems;
 
@@ -20,6 +21,9 @@ public sealed class FloorRendererSystem : IGameSystem
     public void Draw(World world, FrameContext frameContext)
     {
         if (frameContext.SpriteBatch == null || frameContext.DebugPixel == null) return;
+
+        // Retrieve generated textures
+        if (!world.TryGetResource<GameTextureResource>(out var textures) || textures == null) return;
 
         // Obtain camera to perform viewport frustum culling
         world.TryGetResource<CameraResource>(out var camera);
@@ -49,23 +53,22 @@ public sealed class FloorRendererSystem : IGameSystem
         {
             for (int c = startCol; c < endCol; c++)
             {
-                // Alternate tile colors to create a subtle dirt grid texture
-                bool alternate = (r + c) % 2 == 0;
-                Color dirtColor = alternate 
-                    ? new Color(38, 24, 20)  // Earthy dark brown dirt
-                    : new Color(32, 18, 14); // Slightly darker dirt tone
-
-                Vector2 center = new Vector2(
-                    c * TileSize + TileSize / 2f, 
-                    r * TileSize + TileSize / 2f
+                var destRect = new Rectangle(
+                    (int)(c * TileSize),
+                    (int)(r * TileSize),
+                    (int)TileSize,
+                    (int)TileSize
                 );
 
-                ShapeRenderer.DrawRectangle(
-                    frameContext.SpriteBatch, 
-                    frameContext.DebugPixel, 
-                    center, 
-                    new Vector2(TileSize, TileSize), 
-                    dirtColor
+                // Slight procedural grid shade variance to create organic landscape waves ( Celeste/Isaac look)
+                float wave = (float)(Math.Sin(c * 0.4f) * Math.Cos(r * 0.4f) * 0.05f);
+                float colorMod = 0.95f + wave;
+                Color tileColor = new Color(colorMod, colorMod, colorMod, 1.0f);
+
+                frameContext.SpriteBatch.Draw(
+                    textures.FloorTexture,
+                    destRect,
+                    tileColor
                 );
             }
         }
