@@ -61,17 +61,21 @@ public sealed class PlayerInputSystem : IGameSystem
                 // Active Flight State
                 player.FlightTimer -= dt;
                 
-                // Slightly hover bob
-                player.JumpZ = 32f + (float)Math.Sin(player.AnimationTime * 7f) * 4f;
+                // Smoothly lift up to hover height using rate limiting to prevent teleporting
+                float targetHoverZ = 32f + (float)Math.Sin(player.AnimationTime * 7f) * 4f;
+                float maxLiftChange = 180f * dt;
+                player.JumpZ = MathHelper.Clamp(targetHoverZ, player.JumpZ - maxLiftChange, player.JumpZ + maxLiftChange);
 
                 // Move at slightly elevated speeds in flight
                 velocity.Value = player.MovementDirection * player.NormalSpeed * 1.15f;
 
-                // Deactivate flight if timer expires or space pressed again or roll triggered
+                // Deactivate flight if timer expires or space pressed again (with cooldown to prevent X11 auto-repeat) or roll triggered
                 bool rollTriggered = (kState.IsKeyDown(Keys.LeftShift) || kState.IsKeyDown(Keys.RightShift)) &&
                                      (prevKState.IsKeyUp(Keys.LeftShift) && prevKState.IsKeyUp(Keys.RightShift));
 
-                if (player.FlightTimer <= 0f || spaceJustPressed || rollTriggered)
+                bool spaceToggle = spaceJustPressed && (player.FlightDuration - player.FlightTimer > 0.25f);
+
+                if (player.FlightTimer <= 0f || spaceToggle || rollTriggered)
                 {
                     // Descend back to ground
                     player.State = PlayerState.Idle;
@@ -115,11 +119,12 @@ public sealed class PlayerInputSystem : IGameSystem
                     velocity.Value = Vector2.Zero;
                 }
 
-                // Trigger Flight from ground
-                if (spaceJustPressed)
+                // Trigger Flight from ground (only if fully grounded to prevent mid-air reactivation and reset)
+                if (spaceJustPressed && player.JumpZ <= 0.001f)
                 {
                     player.State = PlayerState.Flying;
                     player.FlightTimer = player.FlightDuration;
+                    player.JumpStartPos = transform.Position;
                 }
 
                 // Trigger Roll from ground

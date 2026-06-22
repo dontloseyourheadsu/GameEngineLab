@@ -19,6 +19,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 
+using GameEngineLab.ShadowHell.Features.Environment.Resources;
+
 namespace GameEngineLab.ShadowHell;
 
 public sealed class ShadowHellGame : Game
@@ -54,10 +56,9 @@ public sealed class ShadowHellGame : Game
 
     protected override void Initialize()
     {
-        // 1. Initialize Core Resources
         _world.SetResource(new MapBoundsResource
         {
-            PlayArea = new Rectangle(0, 0, (int)WorldWidth, (int)WorldHeight)
+            PlayArea = new Rectangle(64, 64, (int)WorldWidth - 128, (int)WorldHeight - 128)
         });
 
         _world.SetResource(new CameraResource
@@ -69,6 +70,9 @@ public sealed class ShadowHellGame : Game
         // 2. Setup ECS Schedulers
         // Floor Renderer (runs first under everything)
         _scheduler.AddSystem(new FloorRendererSystem());
+
+        // Textured Wall Renderer
+        _scheduler.AddSystem(new WallRendererSystem());
 
         // Shadow Projection and Color Lighting System
         _scheduler.AddSystem(new ShadowSystem());
@@ -110,119 +114,61 @@ public sealed class ShadowHellGame : Game
 
         var random = new Random();
 
-        // Create jagged borders (overlapping black circle rocks)
-        // Top and Bottom rocky boundaries
-        for (float x = 0; x <= WorldWidth + 50f; x += 60f)
+        // Create 4 boundary walls as simple rectangles of the color of the darker tile
+        Color wallColor = new Color(42, 28, 48);
+        float wallThickness = 64f;
+
+        // Top Wall
+        var topWall = _world.CreateEntity();
+        _world.SetComponent(topWall, new TransformComponent { Position = new Vector2(WorldWidth / 2f, wallThickness / 2f) });
+        _world.SetComponent(topWall, new DrawColorComponent(wallColor));
+        _world.SetComponent(topWall, new HiddenComponent());
+        _world.SetComponent(topWall, new RigidBodyComponent
         {
-            // Top rock
-            var topRock = _world.CreateEntity();
-            float topRadius = random.Next(40, 80);
-            float topY = random.Next(-20, 20);
-            _world.SetComponent(topRock, new TransformComponent { Position = new Vector2(x, topY) });
-            _world.SetComponent(topRock, new DrawColorComponent(new Color(78, 30, 32))); // Netherrack red
-            _world.SetComponent(topRock, new RigidBodyComponent
-            {
-                Shape = RigidBodyShape.Circle,
-                BoundingRadius = topRadius,
-                Mass = 0f, // Static
-                CollisionGroup = 1 // Cavern boundaries
-            });
+            Shape = RigidBodyShape.Rectangle,
+            Size = new Vector2(WorldWidth, wallThickness),
+            Mass = 0f, // Static
+            CollisionGroup = 1 // Cavern boundaries
+        });
 
-            // Bottom rock
-            var botRock = _world.CreateEntity();
-            float botRadius = random.Next(40, 80);
-            float botY = WorldHeight + random.Next(-20, 20);
-            _world.SetComponent(botRock, new TransformComponent { Position = new Vector2(x, botY) });
-            _world.SetComponent(botRock, new DrawColorComponent(new Color(78, 30, 32)));
-            _world.SetComponent(botRock, new RigidBodyComponent
-            {
-                Shape = RigidBodyShape.Circle,
-                BoundingRadius = botRadius,
-                Mass = 0f,
-                CollisionGroup = 1
-            });
-        }
-
-        // Left and Right rocky boundaries
-        for (float y = 0; y <= WorldHeight + 50f; y += 60f)
+        // Bottom Wall
+        var botWall = _world.CreateEntity();
+        _world.SetComponent(botWall, new TransformComponent { Position = new Vector2(WorldWidth / 2f, WorldHeight - wallThickness / 2f) });
+        _world.SetComponent(botWall, new DrawColorComponent(wallColor));
+        _world.SetComponent(botWall, new HiddenComponent());
+        _world.SetComponent(botWall, new RigidBodyComponent
         {
-            // Left rock
-            var leftRock = _world.CreateEntity();
-            float leftRadius = random.Next(40, 80);
-            float leftX = random.Next(-20, 20);
-            _world.SetComponent(leftRock, new TransformComponent { Position = new Vector2(leftX, y) });
-            _world.SetComponent(leftRock, new DrawColorComponent(new Color(78, 30, 32))); // Netherrack red
-            _world.SetComponent(leftRock, new RigidBodyComponent
-            {
-                Shape = RigidBodyShape.Circle,
-                BoundingRadius = leftRadius,
-                Mass = 0f,
-                CollisionGroup = 1
-            });
+            Shape = RigidBodyShape.Rectangle,
+            Size = new Vector2(WorldWidth, wallThickness),
+            Mass = 0f,
+            CollisionGroup = 1
+        });
 
-            // Right rock
-            var rightRock = _world.CreateEntity();
-            float rightRadius = random.Next(40, 80);
-            float rightX = WorldWidth + random.Next(-20, 20);
-            _world.SetComponent(rightRock, new TransformComponent { Position = new Vector2(rightX, y) });
-            _world.SetComponent(rightRock, new DrawColorComponent(new Color(78, 30, 32)));
-            _world.SetComponent(rightRock, new RigidBodyComponent
-            {
-                Shape = RigidBodyShape.Circle,
-                BoundingRadius = rightRadius,
-                Mass = 0f,
-                CollisionGroup = 1
-            });
-        }
-
-        // Place random rocky pillars inside the room (foreground objects)
-        for (int i = 0; i < 15; i++)
+        // Left Wall
+        var leftWall = _world.CreateEntity();
+        _world.SetComponent(leftWall, new TransformComponent { Position = new Vector2(wallThickness / 2f, WorldHeight / 2f) });
+        _world.SetComponent(leftWall, new DrawColorComponent(wallColor));
+        _world.SetComponent(leftWall, new HiddenComponent());
+        _world.SetComponent(leftWall, new RigidBodyComponent
         {
-            Vector2 position;
-            bool ok;
-            int attempts = 0;
+            Shape = RigidBodyShape.Rectangle,
+            Size = new Vector2(wallThickness, WorldHeight),
+            Mass = 0f,
+            CollisionGroup = 1
+        });
 
-            do
-            {
-                position = new Vector2(random.Next(200, (int)WorldWidth - 200), random.Next(200, (int)WorldHeight - 200));
-                // Ensure away from player starting center
-                ok = Vector2.Distance(position, new Vector2(WorldWidth / 2f, WorldHeight / 2f)) > 250f;
-                attempts++;
-            } while (!ok && attempts < 100);
-
-            if (ok)
-            {
-                var pillar = _world.CreateEntity();
-                float radius = random.Next(45, 90);
-                
-                _world.SetComponent(pillar, new TransformComponent { Position = position });
-                _world.SetComponent(pillar, new DrawColorComponent(new Color(61, 33, 38))); // Nether Fortress Brick purple-red
-                
-                // 50% chance circle, 50% rectangle pillar
-                if (random.Next(0, 2) == 0)
-                {
-                    _world.SetComponent(pillar, new RigidBodyComponent
-                    {
-                        Shape = RigidBodyShape.Circle,
-                        BoundingRadius = radius,
-                        Mass = 0f, // Static
-                        CollisionGroup = 8 // Cavern interior pillars (casts shadows!)
-                    });
-                }
-                else
-                {
-                    float width = random.Next(80, 160);
-                    float height = random.Next(80, 160);
-                    _world.SetComponent(pillar, new RigidBodyComponent
-                    {
-                        Shape = RigidBodyShape.Rectangle,
-                        Size = new Vector2(width, height),
-                        Mass = 0f,
-                        CollisionGroup = 8
-                    });
-                }
-            }
-        }
+        // Right Wall
+        var rightWall = _world.CreateEntity();
+        _world.SetComponent(rightWall, new TransformComponent { Position = new Vector2(WorldWidth - wallThickness / 2f, WorldHeight / 2f) });
+        _world.SetComponent(rightWall, new DrawColorComponent(wallColor));
+        _world.SetComponent(rightWall, new HiddenComponent());
+        _world.SetComponent(rightWall, new RigidBodyComponent
+        {
+            Shape = RigidBodyShape.Rectangle,
+            Size = new Vector2(wallThickness, WorldHeight),
+            Mass = 0f,
+            CollisionGroup = 1
+        });
 
         // Spawn shadow enemies
         for (int i = 0; i < 6; i++)
@@ -254,21 +200,6 @@ public sealed class ShadowHellGame : Game
             });
         }
 
-        // Spawn 3 static warm light sources corresponding to the lava pools
-        // Pool 1: (500, 1000)
-        var lavaLight1 = _world.CreateEntity();
-        _world.SetComponent(lavaLight1, new TransformComponent { Position = new Vector2(500, 1000) });
-        _world.SetComponent(lavaLight1, new LightSourceComponent(new Color(255, 90, 0), 250f, 0.8f));
-
-        // Pool 2: (1500, 600)
-        var lavaLight2 = _world.CreateEntity();
-        _world.SetComponent(lavaLight2, new TransformComponent { Position = new Vector2(1500, 600) });
-        _world.SetComponent(lavaLight2, new LightSourceComponent(new Color(255, 120, 0), 280f, 0.8f));
-
-        // Pool 3: (1000, 1200)
-        var lavaLight3 = _world.CreateEntity();
-        _world.SetComponent(lavaLight3, new TransformComponent { Position = new Vector2(1000, 1200) });
-        _world.SetComponent(lavaLight3, new LightSourceComponent(new Color(255, 75, 0), 300f, 0.75f));
     }
 
     protected override void LoadContent()
@@ -281,6 +212,23 @@ public sealed class ShadowHellGame : Game
 
         // Load built-in font from Content
         _font = Content.Load<SpriteFont>("Fonts/Silkscreen");
+
+        // Generate procedural textures for earth terrain background, walls, and lights
+        Color floorBase = new Color(38, 24, 20); // earth tile base
+        Color floorDetail = new Color(54, 38, 32); // earth tile highlights
+        Color wallBase = new Color(32, 18, 14); // wall base
+        Color wallDetail = new Color(42, 24, 20); // wall highlights (Netherrack rocky texture)
+
+        var floorTex = NoiseTextureGenerator.GenerateFloorTexture(GraphicsDevice, 128);
+        var wallTex = NoiseTextureGenerator.GenerateWallTexture(GraphicsDevice, 128);
+        var lightTex = NoiseTextureGenerator.GenerateLightTexture(GraphicsDevice, 128);
+
+        _world.SetResource(new GameTextureResource
+        {
+            FloorTexture = floorTex,
+            WallTexture = wallTex,
+            LightTexture = lightTex
+        });
     }
 
     protected override void Update(GameTime gameTime)

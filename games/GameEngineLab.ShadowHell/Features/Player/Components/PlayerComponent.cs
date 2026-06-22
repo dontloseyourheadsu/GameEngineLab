@@ -32,6 +32,7 @@ public struct PlayerComponent : IComponent
     public float JumpVelocityZ;
     public float GravityZ;
     public float JumpStrength;
+    public Vector2 JumpStartPos;
     
     // Flight control
     public float FlightDuration; // maximum flight duration in seconds
@@ -57,6 +58,7 @@ public struct PlayerComponent : IComponent
         JumpVelocityZ = 0f;
         GravityZ = 900f; // matches top-down arc feel
         JumpStrength = 350f;
+        JumpStartPos = Vector2.Zero;
 
         FlightDuration = 2.0f; // float for 2 seconds max
         FlightTimer = 0f;

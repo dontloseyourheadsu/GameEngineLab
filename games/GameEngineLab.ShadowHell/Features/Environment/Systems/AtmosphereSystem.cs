@@ -189,18 +189,7 @@ public sealed class AtmosphereSystem : IGameSystem
         }
         */
 
-        // 4. Draw Lava pools/cracks on the ground (Atmospheric background details)
-        Color lavaGlow = new Color(255, 60, 0, 110);
-        Color lavaCore = new Color(255, 175, 10, 200);
-        // Draw three central lava pools in the world
-        ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, new Vector2(500, 1000), 120f, lavaGlow);
-        ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, new Vector2(500, 1000), 80f, lavaCore);
 
-        ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, new Vector2(1500, 600), 150f, lavaGlow);
-        ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, new Vector2(1500, 600), 100f, lavaCore);
-
-        ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, new Vector2(1000, 1200), 180f, lavaGlow);
-        ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, new Vector2(1000, 1200), 120f, lavaCore);
 
         // 5. Draw Ember Particles
         foreach (var p in _embers)
