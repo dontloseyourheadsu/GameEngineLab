@@ -14,6 +14,10 @@ using GameEngineLab.Core.Features.UI;
 using GameEngineLab.Core.Features.UI.Components;
 using GameEngineLab.Core.Features.UI.Resources;
 using GameEngineLab.Core.Features.UI.Systems;
+using GameEngineLab.Core.Features.Identity.Resources;
+using GameEngineLab.Core.Features.Identity.Components;
+using GameEngineLab.Core.Features.Online.Resources;
+using GameEngineLab.Core.Features.Online.Systems;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Input.Systems;
 using GameEngineLab.GolfIt.Features.Maps;
@@ -28,6 +32,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace GameEngineLab.GolfIt;
 
@@ -51,6 +56,14 @@ public sealed class GolfItGame : Game
     private EntityId _scaleSelector;
     private EntityId _fullscreenCheckbox;
 
+    // Multiplayer UI tracking
+    private EntityId _usernameInput;
+    private EntityId _ipInput;
+    private EntityId _statusLabel;
+    private string _statusMessage = "Disconnected";
+    private DiscoveryService? _discoveryService;
+    private int _lastFoundHostsCount;
+
     public GolfItGame()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -59,6 +72,15 @@ public sealed class GolfItGame : Game
         Window.AllowUserResizing = false; // Block resizing as requested
         _graphics.PreferredBackBufferWidth = GameConstants.DefaultWindowWidth;
         _graphics.PreferredBackBufferHeight = GameConstants.DefaultWindowHeight;
+
+        Exiting += (sender, args) =>
+        {
+            if (_world.TryGetResource<NetworkResource>(out var net) && net != null)
+            {
+                net.State = NetworkState.Disconnected;
+            }
+            _discoveryService?.Dispose();
+        };
     }
 
     protected override void Initialize()
@@ -79,6 +101,12 @@ public sealed class GolfItGame : Game
         _world.SetResource(new MapEditorStateResource());
         _world.SetResource(_settings);
         _world.SetResource(new ActionQueueResource());
+
+        var account = new UserAccountResource();
+        account.Login($"Player_{new Random().Next(1000, 9999)}");
+        _world.SetResource(account);
+        _world.SetResource(new NetworkResource());
+
         _world.SetResource(new UiThemeResource()
         {
             BorderColor = library.Cozy.GetColor(6),
@@ -95,6 +123,8 @@ public sealed class GolfItGame : Game
         });
 
         // Gameplay Systems
+        _scheduler.AddSystem(new NetworkSystem());
+        _scheduler.AddSystem(new GolfItMultiplayerSystem());
         _scheduler.AddSystem(new SlingshotInputSystem());
         _scheduler.AddSystem(new MapEditorSystem());
         _scheduler.AddSystem(new FloorRenderSystem());
@@ -141,6 +171,11 @@ public sealed class GolfItGame : Game
         _world.SetComponent(ball, new TransformComponent { Position = new Vector2(512, 600) });
         _world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
         _world.SetComponent(ball, new DrawColorComponent(library.Specific.GetColor(1))); // Use a specific color for the ball
+
+        if (_world.TryGetResource<UserAccountResource>(out var account) && account != null)
+        {
+            _world.SetComponent(ball, new UserIdentityComponent { UserId = account.UserId, Username = account.Username });
+        }
 
         // Create a Rotating Polygon
         var poly = _world.CreateEntity();
@@ -281,6 +316,14 @@ public sealed class GolfItGame : Game
         ClearUi();
         var gameStateRes = _world.GetRequiredResource<GameStateResource>();
         var state = gameStateRes.Current;
+
+        // Clean up LAN discovery when leaving lobby
+        if (state != GameState.MultiplayerLobby && _discoveryService != null)
+        {
+            _discoveryService.Dispose();
+            _discoveryService = null;
+            _world.RemoveResource<DiscoveryService>();
+        }
         
         if (state == GameState.Menu)
         {
@@ -302,22 +345,52 @@ public sealed class GolfItGame : Game
         {
             CreateMapEditorUi();
         }
+        else if (state == GameState.MultiplayerLobby)
+        {
+            if (_discoveryService == null)
+            {
+                _discoveryService = new DiscoveryService();
+                _world.SetResource(_discoveryService);
+            }
+            _discoveryService.StartListening();
+            
+            CreateMultiplayerLobbyUi();
+        }
     }
 
     private void CreateGameOverUi()
     {
         var centerX = GameConstants.DefaultWindowWidth / 2;
         var gameStateRes = _world.GetRequiredResource<GameStateResource>();
+        var net = _world.GetRequiredResource<NetworkResource>();
+        var account = _world.GetRequiredResource<UserAccountResource>();
         
         UiBuilder.CreateLabel(_world, centerX - 250, 100, "HOLE FINISHED", "Fonts/Blanka", 2.5f, true);
         
-        var strokesText = $"STROKES: {gameStateRes.Strokes}";
-        var legendText = gameStateRes.GetStrokeLegend();
+        if (net.IsConnected)
+        {
+            var localStrokesText = $"{account.Username.ToUpper()}: {gameStateRes.Strokes} STROKES";
+            var remoteStrokesText = $"{net.RemotePlayerName.ToUpper()}: {net.RemotePlayerStrokes} STROKES";
+            
+            UiBuilder.CreateLabel(_world, centerX - 200, 220, localStrokesText, "Fonts/SilkscreenBold", 1.2f, true);
+            UiBuilder.CreateLabel(_world, centerX - 200, 280, remoteStrokesText, "Fonts/SilkscreenBold", 1.2f, true);
+            
+            string resultText = "IT'S A TIE!";
+            if (gameStateRes.Strokes < net.RemotePlayerStrokes) resultText = "YOU WIN!";
+            else if (gameStateRes.Strokes > net.RemotePlayerStrokes) resultText = "YOU LOSE!";
+            
+            UiBuilder.CreateLabel(_world, centerX - 150, 350, resultText, "Fonts/SilkscreenBold", 1.8f, true);
+        }
+        else
+        {
+            var strokesText = $"STROKES: {gameStateRes.Strokes}";
+            var legendText = gameStateRes.GetStrokeLegend();
+            
+            UiBuilder.CreateLabel(_world, centerX - 150, 250, strokesText, "Fonts/SilkscreenBold", 1.5f, true);
+            UiBuilder.CreateLabel(_world, centerX - 150, 320, legendText, "Fonts/SilkscreenBold", 2.0f, true);
+        }
         
-        UiBuilder.CreateLabel(_world, centerX - 150, 250, strokesText, "Fonts/SilkscreenBold", 1.5f, true);
-        UiBuilder.CreateLabel(_world, centerX - 150, 320, legendText, "Fonts/SilkscreenBold", 2.0f, true);
-        
-        UiBuilder.CreateButton(_world, centerX - 150, 450, 300, 80, "MAIN MENU", "back_to_menu", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 480, 300, 80, "MAIN MENU", "back_to_menu", "Fonts/SilkscreenBold");
     }
 
     private void CreateMainMenuUi()
@@ -325,9 +398,78 @@ public sealed class GolfItGame : Game
         var centerX = GameConstants.DefaultWindowWidth / 2;
         UiBuilder.CreateLabel(_world, centerX - 250, 100, "GOLFIN'", "Fonts/Blanka", 3.0f, true);
         
-        UiBuilder.CreateButton(_world, centerX - 150, 300, 300, 80, "PLAY", "play", "Fonts/SilkscreenBold");
-        UiBuilder.CreateButton(_world, centerX - 150, 400, 300, 80, "MAP EDITOR", "map_editor_list", "Fonts/SilkscreenBold");
-        UiBuilder.CreateButton(_world, centerX - 150, 500, 300, 80, "SETTINGS", "settings", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 240, 300, 75, "PLAY", "play", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 335, 300, 75, "MULTIPLAYER", "multiplayer_lobby", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 430, 300, 75, "MAP EDITOR", "map_editor_list", "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX - 150, 525, 300, 75, "SETTINGS", "settings", "Fonts/SilkscreenBold");
+    }
+
+    private void CreateMultiplayerLobbyUi()
+    {
+        var centerX = GameConstants.DefaultWindowWidth / 2;
+        UiBuilder.CreateLabel(_world, centerX - 180, 50, "MULTIPLAYER", "Fonts/Blanka", 1.5f, true);
+
+        var net = _world.GetRequiredResource<NetworkResource>();
+        var account = _world.GetRequiredResource<UserAccountResource>();
+
+        // 1. LEFT PANEL - PLAYER PROFILE & DIRECT JOIN
+        var leftX = 50;
+        var leftY = 130;
+        var leftWidth = 420;
+        var leftHeight = 480;
+        
+        UiBuilder.CreatePanel(_world, leftX, leftY, leftWidth, leftHeight);
+        UiBuilder.CreateLabel(_world, leftX + 20, leftY + 20, "PLAYER PROFILE", "Fonts/SilkscreenBold", 1.0f);
+        
+        UiBuilder.CreateLabel(_world, leftX + 20, leftY + 70, "USERNAME:", "Fonts/Silkscreen", 0.8f);
+        _usernameInput = UiBuilder.CreateTextInput(_world, leftX + 20, leftY + 100, 380, 50, account.Username);
+
+        UiBuilder.CreateLabel(_world, leftX + 20, leftY + 200, "CONNECT BY IP", "Fonts/SilkscreenBold", 1.0f);
+        
+        UiBuilder.CreateLabel(_world, leftX + 20, leftY + 250, "HOST IP ADDRESS:", "Fonts/Silkscreen", 0.8f);
+        _ipInput = UiBuilder.CreateTextInput(_world, leftX + 20, leftY + 280, 380, 50, string.IsNullOrEmpty(net.RemoteAddress) ? "127.0.0.1" : net.RemoteAddress);
+
+        UiBuilder.CreateButton(_world, leftX + 20, leftY + 370, 380, 70, "JOIN HOST", "mp_join_ip", "Fonts/SilkscreenBold");
+
+        // 2. RIGHT PANEL - LAN LOBBIES
+        var rightX = 520;
+        var rightY = 130;
+        var rightWidth = 450;
+        var rightHeight = 480;
+
+        UiBuilder.CreatePanel(_world, rightX, rightY, rightWidth, rightHeight);
+        UiBuilder.CreateLabel(_world, rightX + 20, rightY + 20, "LAN LOBBIES", "Fonts/SilkscreenBold", 1.0f);
+
+        // Discovered hosts list
+        var found = _discoveryService?.FoundHosts.ToList() ?? new List<string>();
+        int startIdx = 0;
+        int count = Math.Min(4, found.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            var hostIp = found[startIdx + i];
+            var itemY = rightY + 70 + i * 90;
+
+            UiBuilder.CreatePanel(_world, rightX + 20, itemY, rightWidth - 40, 80);
+            UiBuilder.CreateLabel(_world, rightX + 40, itemY + 25, $"HOST: {hostIp}", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateButton(_world, rightX + 280, itemY + 15, 130, 50, "JOIN", $"mp_join_lan:{hostIp}", "Fonts/SilkscreenBold");
+        }
+
+        if (found.Count == 0)
+        {
+            UiBuilder.CreateLabel(_world, rightX + 40, rightY + 180, "NO LAN LOBBIES FOUND", "Fonts/Silkscreen", 0.8f);
+            UiBuilder.CreateLabel(_world, rightX + 40, rightY + 220, "SEARCHING...", "Fonts/Silkscreen", 0.7f);
+        }
+
+        // 3. STATUS BAR & BOTTOM ACTIONS
+        _statusLabel = UiBuilder.CreateLabel(_world, centerX - 450, 625, $"STATUS: {_statusMessage}", "Fonts/Silkscreen", 0.8f);
+
+        // Host/Start button
+        string hostButtonText = net.State == NetworkState.ConnectedAsHost ? "START GAME" : "HOST GAME";
+        string hostButtonAction = net.State == NetworkState.ConnectedAsHost ? "mp_start_game" : "mp_host";
+        
+        UiBuilder.CreateButton(_world, centerX - 260, 665, 240, 70, hostButtonText, hostButtonAction, "Fonts/SilkscreenBold");
+        UiBuilder.CreateButton(_world, centerX + 20, 665, 240, 70, "BACK", "back_to_menu", "Fonts/SilkscreenBold");
     }
 
     private void CreateSettingsUi()
@@ -368,8 +510,12 @@ public sealed class GolfItGame : Game
         var mapStateResource = _world.GetRequiredResource<MapEditorStateResource>();
         
         // Handle State Transitions or Selection changes
-        if (gameStateResource.Current != _lastGameState || mapStateResource.SelectedEntity != _lastSelectedEntity)
+        int currentFoundHostsCount = _discoveryService?.FoundHosts.Count() ?? 0;
+        if (gameStateResource.Current != _lastGameState || 
+            mapStateResource.SelectedEntity != _lastSelectedEntity ||
+            (gameStateResource.Current == GameState.MultiplayerLobby && currentFoundHostsCount != _lastFoundHostsCount))
         {
+            _lastFoundHostsCount = currentFoundHostsCount;
             RebuildUi();
             _lastGameState = gameStateResource.Current;
             _lastSelectedEntity = mapStateResource.SelectedEntity;
@@ -382,6 +528,11 @@ public sealed class GolfItGame : Game
             UpdateSettingsFromUi();
         }
         
+        if (gameStateResource.Current == GameState.MultiplayerLobby)
+        {
+            UpdateMultiplayerLobbyFromUi();
+        }
+        
         if (gameStateResource.Current == GameState.MapEditorList)
         {
             UpdateMapEditorListFromUi();
@@ -392,7 +543,7 @@ public sealed class GolfItGame : Game
             UpdateMapEditorPropertiesFromUi();
         }
 
-        if (gameStateResource.Current == GameState.Playing || gameStateResource.Current == GameState.MapEditor)
+        if (gameStateResource.Current == GameState.Playing || gameStateResource.Current == GameState.MapEditor || gameStateResource.Current == GameState.MultiplayerLobby)
         {
             _scheduler.Update(_world, frameContext);
         }
@@ -756,6 +907,45 @@ public sealed class GolfItGame : Game
             {
                 _settings.IsFullScreen = fullscreenCheckbox.Checked;
                 _settings.NeedsApply = true;
+            }
+        }
+    }
+
+    private void UpdateMultiplayerLobbyFromUi()
+    {
+        // Update local player username from text box
+        if (_world.TryGetComponent<UiTextInputComponent>(_usernameInput, out var usernameInput))
+        {
+            if (_world.TryGetResource<UserAccountResource>(out var account) && account != null)
+            {
+                if (account.Username != usernameInput.Text && !string.IsNullOrEmpty(usernameInput.Text))
+                {
+                    account.Username = usernameInput.Text;
+                }
+            }
+        }
+
+        // Connect status message checks
+        if (_world.TryGetResource<NetworkResource>(out var net) && net != null)
+        {
+            string newStatus = net.State switch
+            {
+                NetworkState.Disconnected => "Disconnected",
+                NetworkState.Connecting => "Connecting...",
+                NetworkState.ConnectedAsHost => net.RemotePlayerId != Guid.Empty ? $"Host Connected to {net.RemotePlayerName}" : "Hosting - Waiting for players...",
+                NetworkState.ConnectedAsGuest => $"Connected to Host ({net.RemotePlayerName})",
+                NetworkState.Error => "Connection Error",
+                _ => "Disconnected"
+            };
+
+            if (_statusMessage != newStatus)
+            {
+                _statusMessage = newStatus;
+                if (_world.TryGetComponent<UiTextComponent>(_statusLabel, out var textComp))
+                {
+                    textComp.Text = $"STATUS: {_statusMessage}";
+                    _world.SetComponent(_statusLabel, textComp);
+                }
             }
         }
     }
