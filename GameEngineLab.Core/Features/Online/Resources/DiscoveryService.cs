@@ -40,11 +40,20 @@ public sealed class DiscoveryService : IDisposable
     {
         if (_isListening) return;
         
-        _udpClient = new UdpClient(DiscoveryPort);
-        _isListening = true;
+        try
+        {
+            _udpClient = new UdpClient(DiscoveryPort);
+            _isListening = true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to start LAN listener: {ex.Message}");
+            return;
+        }
 
         Task.Run(async () =>
         {
+
             while (_isListening && _udpClient != null)
             {
                 try

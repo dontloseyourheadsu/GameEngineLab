@@ -30,6 +30,13 @@ public sealed class NetworkSystem : IGameSystem
 
         if (_transport != null)
         {
+            // Send all queued outgoing packets
+            while (net.OutgoingPackets.TryDequeue(out var packet))
+            {
+                _transport.Send(packet);
+            }
+
+            // Receive all incoming packets
             var incoming = _transport.Receive().ToList();
             foreach (var packet in incoming)
             {
@@ -42,14 +49,10 @@ public sealed class NetworkSystem : IGameSystem
 
     private void ProcessPacket(World world, NetworkPacket packet)
     {
-        switch (packet.Type)
+        if (world.TryGetResource<NetworkResource>(out var net) && net != null)
         {
-            case PacketType.AssetTransfer:
-                // This would be handled by a specific social/asset system listening for this data
-                break;
-            case PacketType.InputUpdate:
-                // Update remote player input components
-                break;
+            net.IncomingPackets.Enqueue(packet);
         }
     }
 }
+
