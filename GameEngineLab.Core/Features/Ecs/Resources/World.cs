@@ -166,6 +166,12 @@ public sealed class World
         return true;
     }
 
+    public bool RemoveResource<TResource>()
+        where TResource : class
+    {
+        return _resources.Remove(typeof(TResource));
+    }
+
     public TResource GetRequiredResource<TResource>()
         where TResource : class
     {
