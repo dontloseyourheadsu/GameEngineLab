@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Concurrent;
+
 namespace GameEngineLab.Core.Features.Online.Resources;
 
 public enum NetworkState
@@ -22,4 +25,17 @@ public sealed class NetworkResource
     public bool IsConnected => State is NetworkState.ConnectedAsHost or NetworkState.ConnectedAsGuest;
     
     public bool IsHost => State == NetworkState.ConnectedAsHost;
+
+    // Concurrent queues for thread-safe networking communication
+    public ConcurrentQueue<NetworkPacket> IncomingPackets { get; } = new();
+    
+    public ConcurrentQueue<NetworkPacket> OutgoingPackets { get; } = new();
+
+    // Remote peer identity
+    public Guid RemotePlayerId { get; set; } = Guid.Empty;
+    
+    public string RemotePlayerName { get; set; } = "Guest Player";
+
+    public int RemotePlayerStrokes { get; set; } = 0;
 }
+

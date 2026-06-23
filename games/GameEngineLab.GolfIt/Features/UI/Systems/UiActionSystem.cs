@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text;
 using GameEngineLab.Core.Features.Ecs.Entities;
 using GameEngineLab.Core.Features.Ecs.Resources;
 using GameEngineLab.Core.Features.Ecs.Systems;
@@ -14,6 +15,9 @@ using GameEngineLab.Core.Features.UI.Components;
 using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Rendering.Components;
 using GameEngineLab.Core.Features.Runtime.Resources;
+using GameEngineLab.Core.Features.Identity.Resources;
+using GameEngineLab.Core.Features.Identity.Components;
+using GameEngineLab.Core.Features.Online.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Maps;
 using GameEngineLab.GolfIt.Features.Physics.Components;
@@ -79,9 +83,140 @@ public sealed class UiActionSystem : IGameSystem
         {
             state.Current = GameState.Settings;
         }
+        else if (actionId == "multiplayer_lobby")
+        {
+            state.Current = GameState.MultiplayerLobby;
+        }
+        else if (actionId == "mp_host")
+        {
+            if (world.TryGetResource<NetworkResource>(out var net) && net != null)
+            {
+                net.State = NetworkState.ConnectedAsHost;
+                net.Port = 7777;
+                
+                // Get the discovery service and start broadcasting
+                if (world.TryGetResource<DiscoveryService>(out var ds) && ds != null)
+                {
+                    ds.StartBroadcasting();
+                }
+            }
+        }
+        else if (actionId == "mp_join_ip")
+        {
+            if (world.TryGetResource<NetworkResource>(out var net) && net != null)
+            {
+                // Find IP text input
+                var textInputs = world.GetEntitiesWith<UiTextInputComponent>().ToList();
+                string ipAddress = "127.0.0.1";
+                foreach (var inputEntity in textInputs)
+                {
+                    world.TryGetComponent<UiTextInputComponent>(inputEntity, out var textInput);
+                    if (world.TryGetResource<UserAccountResource>(out var account) && account != null)
+                    {
+                        if (textInput.Text != account.Username)
+                        {
+                            ipAddress = textInput.Text;
+                            break;
+                        }
+                    }
+                }
+
+                net.RemoteAddress = ipAddress;
+                net.Port = 7777;
+                net.State = NetworkState.Connecting;
+                
+                // Send Handshake
+                if (world.TryGetResource<UserAccountResource>(out var accountRes) && accountRes != null)
+                {
+                    var handshake = new NetworkPacket
+                    {
+                        Type = PacketType.Handshake,
+                        SenderId = accountRes.UserId,
+                        Payload = Encoding.UTF8.GetBytes(accountRes.Username)
+                    };
+                    net.OutgoingPackets.Enqueue(handshake);
+                }
+            }
+        }
+        else if (actionId.StartsWith("mp_join_lan:"))
+        {
+            var hostIp = actionId.Substring("mp_join_lan:".Length);
+            if (world.TryGetResource<NetworkResource>(out var net) && net != null)
+            {
+                net.RemoteAddress = hostIp;
+                net.Port = 7777;
+                net.State = NetworkState.Connecting;
+                
+                // Send Handshake
+                if (world.TryGetResource<UserAccountResource>(out var accountRes) && accountRes != null)
+                {
+                    var handshake = new NetworkPacket
+                    {
+                        Type = PacketType.Handshake,
+                        SenderId = accountRes.UserId,
+                        Payload = Encoding.UTF8.GetBytes(accountRes.Username)
+                    };
+                    net.OutgoingPackets.Enqueue(handshake);
+                }
+            }
+        }
+        else if (actionId == "mp_start_game")
+        {
+            if (world.TryGetResource<NetworkResource>(out var net) && net != null)
+            {
+                if (world.TryGetResource<UserAccountResource>(out var accountRes) && accountRes != null)
+                {
+                    var mapStateRes = world.GetRequiredResource<MapEditorStateResource>();
+                    var mapPath = mapStateRes.SelectedMapPath ?? "";
+                    
+                    var packet = new NetworkPacket
+                    {
+                        Type = PacketType.Handshake,
+                        SenderId = accountRes.UserId,
+                        Payload = Encoding.UTF8.GetBytes($"START_GAME:{mapPath}")
+                    };
+                    net.OutgoingPackets.Enqueue(packet);
+                }
+            }
+            state.Current = GameState.Playing;
+            state.Strokes = 0;
+            StartPlaying(world);
+        }
+        else if (actionId.StartsWith("mp_start_game_trigger"))
+        {
+            state.Current = GameState.Playing;
+            state.Strokes = 0;
+            
+            // Check if there was a map path in the message
+            string? mapPath = null;
+            if (actionId.Contains(":"))
+            {
+                mapPath = actionId.Substring(actionId.IndexOf(':') + 1);
+            }
+            
+            if (!string.IsNullOrEmpty(mapPath) && File.Exists(mapPath))
+            {
+                ClearEditorObjects(world);
+                mapState.SelectedMapPath = mapPath;
+                LoadMap(world, mapPath);
+                StartPlaying(world);
+            }
+            else
+            {
+                StartPlaying(world);
+            }
+        }
         else if (actionId == "back_to_menu")
         {
             ClearAllGameplayEntities(world);
+            // Disconnect if we leave multiplayer
+            if (world.TryGetResource<NetworkResource>(out var net) && net != null)
+            {
+                net.State = NetworkState.Disconnected;
+                net.RemotePlayerId = Guid.Empty;
+                net.RemotePlayerName = "";
+                net.RemotePlayerStrokes = 0;
+            }
             state.Current = GameState.Menu;
         }
         else if (actionId == "goal")
@@ -201,6 +336,10 @@ public sealed class UiActionSystem : IGameSystem
                         world.SetComponent(ball, new TransformComponent { Position = t.Position });
                         world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
                         world.SetComponent(ball, new DrawColorComponent(c.Value));
+                        if (world.TryGetResource<UserAccountResource>(out var account) && account != null)
+                        {
+                            world.SetComponent(ball, new UserIdentityComponent { UserId = account.UserId, Username = account.Username });
+                        }
                         break;
                     case EditorTool.Goal:
                         var goal = world.CreateEntity();
@@ -261,6 +400,10 @@ public sealed class UiActionSystem : IGameSystem
         world.SetComponent(ball, new TransformComponent { Position = new Vector2(512, 600) });
         world.SetComponent(ball, new VelocityComponent { Value = Vector2.Zero });
         world.SetComponent(ball, new DrawColorComponent(library.Specific.GetColor(1)));
+        if (world.TryGetResource<UserAccountResource>(out var account) && account != null)
+        {
+            world.SetComponent(ball, new UserIdentityComponent { UserId = account.UserId, Username = account.Username });
+        }
 
         // Rotating Poly
         var poly = world.CreateEntity();

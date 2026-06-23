@@ -7,7 +7,8 @@ public enum GameState
     Settings,
     GameOver,
     MapEditorList,
-    MapEditor
+    MapEditor,
+    MultiplayerLobby
 }
 
 public sealed class GameStateResource
