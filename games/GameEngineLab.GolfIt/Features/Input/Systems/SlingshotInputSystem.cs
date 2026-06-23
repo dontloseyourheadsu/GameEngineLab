@@ -4,6 +4,8 @@ using GameEngineLab.Core.Features.Physics.Components;
 using GameEngineLab.Core.Features.Rendering.Resources;
 using GameEngineLab.GolfIt.Features.Ball.Components;
 using GameEngineLab.GolfIt.Features.Runtime;
+using GameEngineLab.Core.Features.Identity.Components;
+using GameEngineLab.Core.Features.Identity.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -30,7 +32,20 @@ public sealed class SlingshotInputSystem : IGameSystem
 
         foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent, RigidBodyComponent>())
         {
+            // Only allow slingshot control on local player's ball in multiplayer
+            if (world.TryGetComponent<UserIdentityComponent>(entityId, out var identity))
+            {
+                if (world.TryGetResource<UserAccountResource>(out var account) && account != null)
+                {
+                    if (identity.UserId != account.UserId)
+                    {
+                        continue;
+                    }
+                }
+            }
+
             world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
+
             world.TryGetComponent<TransformComponent>(entityId, out var transform);
             world.TryGetComponent<VelocityComponent>(entityId, out var velocity);
 
@@ -99,6 +114,17 @@ public sealed class SlingshotInputSystem : IGameSystem
             // Highlight the ball being dragged
             foreach (var entityId in world.GetEntitiesWith<BallComponent, TransformComponent, RigidBodyComponent>())
             {
+                if (world.TryGetComponent<UserIdentityComponent>(entityId, out var identity))
+                {
+                    if (world.TryGetResource<UserAccountResource>(out var account) && account != null)
+                    {
+                        if (identity.UserId != account.UserId)
+                        {
+                            continue;
+                        }
+                    }
+                }
+
                 world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
                 world.TryGetComponent<TransformComponent>(entityId, out var transform);
                 
@@ -112,6 +138,7 @@ public sealed class SlingshotInputSystem : IGameSystem
                         Color.Yellow);
                 }
             }
+
         }
     }
 }
