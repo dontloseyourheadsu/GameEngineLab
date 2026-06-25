@@ -37,9 +37,7 @@ public sealed class PlayerRendererSystem : IGameSystem
             // In top-down 2D, the shadow is projected at the feet of the object (bottom of the collision circle),
             // while the body is offset upwards.
             float verticalOffset = body.BoundingRadius * 0.6f;
-            Vector2 shadowCenter = (player.State == PlayerState.Flying || player.JumpZ > 0.001f)
-                ? player.JumpStartPos + new Vector2(0f, verticalOffset)
-                : transform.Position + new Vector2(0f, verticalOffset);
+            Vector2 shadowCenter = transform.Position + new Vector2(0f, verticalOffset);
 
             ShapeRenderer.DrawEllipse(
                 frameContext.SpriteBatch, 
@@ -49,19 +47,21 @@ public sealed class PlayerRendererSystem : IGameSystem
                 new Color(0, 0, 0, 100)
             );
 
-            // 2. Draw white player body offset by JumpZ (elevation) and offset upwards slightly
+            // 2. Draw player body offset by JumpZ (elevation) and offset upwards slightly
             Vector2 bodyCenter = transform.Position - new Vector2(0f, player.JumpZ + verticalOffset * 0.5f);
 
-            // Draw soft breathing light aura around the player (short-range circle)
+            Color glowColor = new Color(177, 0, 255); // Neon Purple
+            Color innerGlowColor = new Color(220, 120, 255); // Light Violet
+
+            // Draw soft breathing purple light aura around the player (smaller and less bright)
             if (textures != null)
             {
-                float pulse = (float)Math.Sin(player.AnimationTime * 2.5f) * 0.04f;
-                // Tight short-range light that scales slightly with flight height
+                float pulse = (float)Math.Sin(player.AnimationTime * 4f) * 0.03f;
                 float heightFactor = player.JumpZ / 64f;
-                float auraScale = (0.75f + heightFactor * 0.1f) + pulse;
+                float auraScale = (0.4f + heightFactor * 0.05f) + pulse;
                 Vector2 auraSize = new Vector2(textures.LightTexture.Width, textures.LightTexture.Height) * auraScale;
                 Vector2 auraTopLeft = bodyCenter - auraSize / 2f;
-                Color auraColor = new Color(255, 235, 180) * (0.22f - heightFactor * 0.04f); // faint warm glow
+                Color auraColor = glowColor * (0.22f - heightFactor * 0.04f);
 
                 frameContext.SpriteBatch.Draw(
                     textures.LightTexture,
@@ -70,27 +70,54 @@ public sealed class PlayerRendererSystem : IGameSystem
                 );
             }
 
-            // Draw solid white circle
+            // Draw smooth flying/motion trail if rolling
+            if (player.State == PlayerState.Rolling)
+            {
+                for (int i = 1; i <= 3; i++)
+                {
+                    float offsetDist = i * 8f;
+                    Vector2 trailPos = bodyCenter - player.RollDirection * offsetDist;
+                    float alpha = 0.45f / i;
+                    
+                    // Trail circles
+                    ShapeRenderer.DrawCircleOutline(
+                        frameContext.SpriteBatch, 
+                        frameContext.DebugPixel, 
+                        trailPos, 
+                        body.BoundingRadius, 
+                        glowColor * alpha, 
+                        2
+                    );
+                }
+            }
+
+            // Draw solid deep black core circle
             ShapeRenderer.DrawCircle(
                 frameContext.SpriteBatch, 
                 frameContext.DebugPixel, 
                 bodyCenter, 
                 body.BoundingRadius, 
-                Color.White
+                new Color(10, 8, 15) // Deep shadow black core
             );
 
-            // 3. Draw golden halo circle outline above the body
-            float bob = (player.State == PlayerState.Idle || player.State == PlayerState.Flying)
-                ? (float)Math.Sin(player.AnimationTime * 3.5f) * 2f
-                : 0f;
-            Vector2 haloCenter = bodyCenter + new Vector2(0f, -22f + bob);
-
+            // Draw glowing purple/violet borders
+            // Outer soft glow outline
             ShapeRenderer.DrawCircleOutline(
                 frameContext.SpriteBatch, 
                 frameContext.DebugPixel, 
-                haloCenter, 
-                12f, 
-                new Color(255, 230, 80), 
+                bodyCenter, 
+                body.BoundingRadius + 1f, 
+                glowColor * 0.6f, 
+                2
+            );
+
+            // Inner crisp outline
+            ShapeRenderer.DrawCircleOutline(
+                frameContext.SpriteBatch, 
+                frameContext.DebugPixel, 
+                bodyCenter, 
+                body.BoundingRadius, 
+                innerGlowColor, 
                 2
             );
         }
