@@ -40,6 +40,9 @@ public static class PlayerFactory
             Friction = 0.95f
         });
 
+        // Add purple/violet glowing light source centered on player (smaller and less bright)
+        world.SetComponent(player, new LightSourceComponent(new Color(177, 0, 255), 220f, 0.4f));
+
         // Skip default ShapeRenderSystem; PlayerRendererSystem handles drawing instead.
         world.SetComponent(player, new HiddenComponent());
 

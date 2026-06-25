@@ -9,6 +9,7 @@ using GameEngineLab.Core.Features.Rendering.Resources;
 using GameEngineLab.Core.Features.Rendering.Systems;
 using GameEngineLab.Core.Features.Animation.Systems;
 using GameEngineLab.ShadowHell.Features.Player.Entities;
+using GameEngineLab.ShadowHell.Features.Player.Components;
 using GameEngineLab.ShadowHell.Features.Player.Systems;
 using GameEngineLab.ShadowHell.Features.Environment.Systems;
 using GameEngineLab.ShadowHell.Features.Environment.Components;
@@ -95,11 +96,11 @@ public sealed class ShadowHellGame : Game
         // Shape renderer for solid walls/caverns/pillars (pure black silhouette foreground)
         _scheduler.AddSystem(new ShapeRenderSystem());
 
-        // Fortress brick highlights and boundary cracks
-        _scheduler.AddSystem(new FortressRendererSystem());
-
         // Enemy steering AI and crawl rendering
         _scheduler.AddSystem(new EnemySystem());
+
+        // Bullet project updates and rendering
+        _scheduler.AddSystem(new BulletSystem());
 
         // 3. Generate Level (Cavern boundary & rocky pillars)
         GenerateCavernLevel();
@@ -170,8 +171,8 @@ public sealed class ShadowHellGame : Game
             CollisionGroup = 1
         });
 
-        // Spawn shadow enemies
-        for (int i = 0; i < 6; i++)
+        // Spawn shadow enemies (4 Melee, 3 Ranged)
+        for (int i = 0; i < 7; i++)
         {
             Vector2 position;
             bool ok;
@@ -183,8 +184,11 @@ public sealed class ShadowHellGame : Game
                 attempts++;
             } while (!ok && attempts < 100);
 
+            EnemyType type = (i < 4) ? EnemyType.Melee : EnemyType.Ranged;
+            float speed = (type == EnemyType.Melee) ? 65f : 80f;
+
             var enemy = _world.CreateEntity();
-            _world.SetComponent(enemy, new EnemyComponent());
+            _world.SetComponent(enemy, new EnemyComponent(type, speed));
             _world.SetComponent(enemy, new TransformComponent { Position = position });
             _world.SetComponent(enemy, new VelocityComponent { Value = Vector2.Zero });
             _world.SetComponent(enemy, new DrawColorComponent(Color.Black));
@@ -272,8 +276,8 @@ public sealed class ShadowHellGame : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        // Hell oppressive dark background tint (Very dark ash brown-black)
-        GraphicsDevice.Clear(new Color(24, 12, 14));
+        // Dark black/purple theme background clear color
+        GraphicsDevice.Clear(new Color(10, 8, 15));
 
         var frameContext = new FrameContext(
             gameTime,
@@ -308,35 +312,64 @@ public sealed class ShadowHellGame : Game
         {
             _spriteBatch.Begin();
 
-            /*
-            // 1. Celeste-style screen overlay filter (semi-transparent glowing heat wash - optimized to be subtle)
-            ShapeRenderer.DrawRectangle(
-                _spriteBatch, 
-                _debugPixel, 
-                new Vector2(WindowWidth / 2f, WindowHeight / 2f), 
-                new Vector2(WindowWidth, WindowHeight), 
-                new Color(255, 60, 0, 8) // subtle warm glow (approx 3% opacity)
-            );
+            // Fetch Player Health to display in HUD
+            float playerHealth = 2f;
+            float maxHealth = 2f;
+            foreach (var entity in _world.GetEntitiesWith<PlayerComponent>())
+            {
+                if (_world.TryGetComponent<PlayerComponent>(entity, out var p))
+                {
+                    playerHealth = p.Health;
+                    maxHealth = p.MaxHealth;
+                }
+                break;
+            }
 
-            // 2. Rising heat gradient fog at the bottom of the screen (magma glow - faint and clean)
-            ShapeRenderer.DrawRectangle(_spriteBatch, _debugPixel, new Vector2(WindowWidth / 2f, WindowHeight - 25), new Vector2(WindowWidth, 50), new Color(255, 80, 0, 25));
-            ShapeRenderer.DrawRectangle(_spriteBatch, _debugPixel, new Vector2(WindowWidth / 2f, WindowHeight - 65), new Vector2(WindowWidth, 30), new Color(255, 60, 0, 15));
-            ShapeRenderer.DrawRectangle(_spriteBatch, _debugPixel, new Vector2(WindowWidth / 2f, WindowHeight - 100), new Vector2(WindowWidth, 40), new Color(255, 45, 0, 8));
-            ShapeRenderer.DrawRectangle(_spriteBatch, _debugPixel, new Vector2(WindowWidth / 2f, WindowHeight - 140), new Vector2(WindowWidth, 40), new Color(255, 30, 0, 4));
-            */
+            // Draw player life icons in the top-right (mini player circles with purple/violet glowing borders)
+            int startX = WindowWidth - 50;
+            int startY = 40;
+            Color glowColor = new Color(177, 0, 255); // Neon Purple
+            Color innerGlowColor = new Color(220, 120, 255); // Light Violet
+            Color shadowBlack = new Color(10, 8, 15); // Deep shadow black core
+
+            for (int i = 0; i < (int)maxHealth; i++)
+            {
+                Vector2 iconPos = new Vector2(startX - i * 35, startY);
+                float checkHealth = i + 1.0f;
+                
+                if (playerHealth >= checkHealth)
+                {
+                    // Full Heart: fully visible purple outline
+                    ShapeRenderer.DrawCircleOutline(_spriteBatch, _debugPixel, iconPos, 11f, glowColor * 0.6f, 2);
+                    ShapeRenderer.DrawCircleOutline(_spriteBatch, _debugPixel, iconPos, 10f, innerGlowColor, 2);
+                    ShapeRenderer.DrawCircle(_spriteBatch, _debugPixel, iconPos, 10f, shadowBlack);
+                }
+                else if (playerHealth >= checkHealth - 0.5f)
+                {
+                    // Half Heart: partially transparent/faded purple outline
+                    ShapeRenderer.DrawCircleOutline(_spriteBatch, _debugPixel, iconPos, 11f, glowColor * 0.25f, 2);
+                    ShapeRenderer.DrawCircleOutline(_spriteBatch, _debugPixel, iconPos, 10f, innerGlowColor * 0.4f, 2);
+                    ShapeRenderer.DrawCircle(_spriteBatch, _debugPixel, iconPos, 10f, shadowBlack);
+                }
+                else
+                {
+                    // Empty Container: dark gray faded outline
+                    ShapeRenderer.DrawCircleOutline(_spriteBatch, _debugPixel, iconPos, 10f, Color.DarkGray * 0.25f, 2);
+                }
+            }
 
             // Draw HUD Title
             if (_font != null)
             {
                 // Title shadow
-                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(32, 22), Color.DarkRed * 0.5f, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
-                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(30, 20), Color.Red, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
+                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(32, 22), new Color(80, 0, 120) * 0.5f, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
+                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(30, 20), new Color(177, 0, 255), 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
 
                 // Subtitle
                 _spriteBatch.DrawString(_font, "Android Roguelike Techbed - testing build", new Vector2(30, 60), Color.Gray, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0f);
 
                 // Instructions
-                string controls = "CONTROLS:\nWASD / Arrows - Move\nSpace - Procedural Jump\nLeft Shift - Dodge Roll";
+                string controls = "CONTROLS:\nWASD / Arrows - Move\nSpace / Left Shift - Dodge Roll (Smooth Hover)";
                 _spriteBatch.DrawString(_font, controls, new Vector2(30, WindowHeight - 100), Color.LightGray * 0.8f, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0f);
             }
 

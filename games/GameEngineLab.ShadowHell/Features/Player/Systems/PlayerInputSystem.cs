@@ -28,6 +28,10 @@ public sealed class PlayerInputSystem : IGameSystem
             world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
 
             player.AnimationTime += dt;
+            if (player.InvincibilityTimer > 0f)
+            {
+                player.InvincibilityTimer -= dt;
+            }
 
             // 1. Standing constraint: The player NEVER rotates (Isaac-style)
             transform.Rotation = 0f;
@@ -53,45 +57,27 @@ public sealed class PlayerInputSystem : IGameSystem
                 player.MovementDirection = Vector2.Zero;
             }
 
-            // 3. Handle Flight/Hover Trigger (Space bar toggle)
-            bool spaceJustPressed = kState.IsKeyDown(Keys.Space) && prevKState.IsKeyUp(Keys.Space);
-            
-            if (player.State == PlayerState.Flying)
-            {
-                // Active Flight State
-                player.FlightTimer -= dt;
-                
-                // Smoothly lift up to hover height using rate limiting to prevent teleporting
-                float targetHoverZ = 32f + (float)Math.Sin(player.AnimationTime * 7f) * 4f;
-                float maxLiftChange = 180f * dt;
-                player.JumpZ = MathHelper.Clamp(targetHoverZ, player.JumpZ - maxLiftChange, player.JumpZ + maxLiftChange);
-
-                // Move at slightly elevated speeds in flight
-                velocity.Value = player.MovementDirection * player.NormalSpeed * 1.15f;
-
-                // Deactivate flight if timer expires or space pressed again (with cooldown to prevent X11 auto-repeat) or roll triggered
-                bool rollTriggered = (kState.IsKeyDown(Keys.LeftShift) || kState.IsKeyDown(Keys.RightShift)) &&
-                                     (prevKState.IsKeyUp(Keys.LeftShift) && prevKState.IsKeyUp(Keys.RightShift));
-
-                bool spaceToggle = spaceJustPressed && (player.FlightDuration - player.FlightTimer > 0.25f);
-
-                if (player.FlightTimer <= 0f || spaceToggle || rollTriggered)
-                {
-                    // Descend back to ground
-                    player.State = PlayerState.Idle;
-                }
-            }
-            else if (player.State == PlayerState.Rolling)
+            // 3. Handle Roll and Ground States
+            if (player.State == PlayerState.Rolling)
             {
                 // Dodge Rolling state
                 player.RollTimer -= dt;
-                velocity.Value = player.RollDirection * player.RollSpeed;
                 
-                // Decelerate height back to ground if we rolled out of air
-                if (player.JumpZ > 0)
+                // Allow slight steering adjustment during the roll for a smooth, flying steering feel
+                if (moveDir != Vector2.Zero)
                 {
-                    player.JumpZ = Math.Max(0f, player.JumpZ - 120f * dt);
+                    player.RollDirection = Vector2.Lerp(player.RollDirection, moveDir, 5f * dt);
+                    if (player.RollDirection != Vector2.Zero) player.RollDirection.Normalize();
                 }
+
+                // Smooth ease-out speed curve
+                float progress = 1f - (player.RollTimer / player.RollDuration);
+                float speedFactor = 1.25f - 0.75f * (progress * progress); // starts fast, decelerates
+                velocity.Value = player.RollDirection * player.RollSpeed * speedFactor;
+                
+                // Smooth rise and fall for the roll (acting like a smooth hover/flight jump)
+                // Peaks at progress = 0.5 (sine goes to 1)
+                player.JumpZ = (float)Math.Sin(progress * Math.PI) * 24f;
 
                 if (player.RollTimer <= 0f)
                 {
@@ -102,11 +88,7 @@ public sealed class PlayerInputSystem : IGameSystem
             else
             {
                 // Ground State (Idle / Walking)
-                // Smoothly lower height if descending
-                if (player.JumpZ > 0f)
-                {
-                    player.JumpZ = Math.Max(0f, player.JumpZ - 180f * dt);
-                }
+                player.JumpZ = 0f;
 
                 if (player.MovementDirection != Vector2.Zero)
                 {
@@ -119,18 +101,12 @@ public sealed class PlayerInputSystem : IGameSystem
                     velocity.Value = Vector2.Zero;
                 }
 
-                // Trigger Flight from ground (only if fully grounded to prevent mid-air reactivation and reset)
-                if (spaceJustPressed && player.JumpZ <= 0.001f)
-                {
-                    player.State = PlayerState.Flying;
-                    player.FlightTimer = player.FlightDuration;
-                    player.JumpStartPos = transform.Position;
-                }
-
-                // Trigger Roll from ground
+                // Trigger Roll from ground (both Shift and Space trigger it)
                 bool shiftJustPressed = (kState.IsKeyDown(Keys.LeftShift) || kState.IsKeyDown(Keys.RightShift)) &&
                                         (prevKState.IsKeyUp(Keys.LeftShift) && prevKState.IsKeyUp(Keys.RightShift));
-                if (shiftJustPressed)
+                bool spaceJustPressed = kState.IsKeyDown(Keys.Space) && prevKState.IsKeyUp(Keys.Space);
+
+                if (shiftJustPressed || spaceJustPressed)
                 {
                     player.State = PlayerState.Rolling;
                     player.RollTimer = player.RollDuration;
