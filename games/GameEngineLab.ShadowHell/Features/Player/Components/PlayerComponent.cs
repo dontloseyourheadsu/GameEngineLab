@@ -40,6 +40,11 @@ public struct PlayerComponent : IComponent
 
     // Procedural animation clocks
     public float AnimationTime;
+
+    // Life points & invincibility
+    public float Health;
+    public float MaxHealth;
+    public float InvincibilityTimer;
     
     public PlayerComponent()
     {
@@ -64,5 +69,10 @@ public struct PlayerComponent : IComponent
         FlightTimer = 0f;
 
         AnimationTime = 0f;
+
+        // Base 2 life points
+        Health = 2f;
+        MaxHealth = 2f;
+        InvincibilityTimer = 0f;
     }
 }

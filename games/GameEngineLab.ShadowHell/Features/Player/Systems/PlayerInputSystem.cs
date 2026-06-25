@@ -28,6 +28,10 @@ public sealed class PlayerInputSystem : IGameSystem
             world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
 
             player.AnimationTime += dt;
+            if (player.InvincibilityTimer > 0f)
+            {
+                player.InvincibilityTimer -= dt;
+            }
 
             // 1. Standing constraint: The player NEVER rotates (Isaac-style)
             transform.Rotation = 0f;

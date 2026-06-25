@@ -50,6 +50,12 @@ public sealed class PlayerRendererSystem : IGameSystem
             // 2. Draw player body offset by JumpZ (elevation) and offset upwards slightly
             Vector2 bodyCenter = transform.Position - new Vector2(0f, player.JumpZ + verticalOffset * 0.5f);
 
+            // Flashing effect during invincibility frames
+            if (player.InvincibilityTimer > 0f && (int)(player.InvincibilityTimer * 20f) % 2 == 0)
+            {
+                continue;
+            }
+
             Color glowColor = new Color(177, 0, 255); // Neon Purple
             Color innerGlowColor = new Color(220, 120, 255); // Light Violet
 
