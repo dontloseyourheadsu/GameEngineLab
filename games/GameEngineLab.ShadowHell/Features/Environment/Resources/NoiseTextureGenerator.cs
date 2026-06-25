@@ -11,11 +11,11 @@ public static class NoiseTextureGenerator
         Texture2D texture = new Texture2D(graphics, size, size);
         Color[] data = new Color[size * size];
 
-        // Saturated, stylized retro colors (Celeste / Binding of Isaac style)
-        Color baseColor = new Color(55, 34, 30);      // Rich dark terracotta floor
-        Color borderColor = new Color(24, 12, 12);    // Bold dark boundary lines
-        Color specColor = new Color(90, 52, 45);      // Warm hand-drawn highlight
-        Color detailColor = new Color(42, 24, 22);    // Shadowed floor accent
+        // Dark black/purple gaming palette (researched colors)
+        Color baseColor = new Color(10, 8, 15);       // Deep shadow black
+        Color borderColor = new Color(6, 4, 10);      // Very dark violet border
+        Color specColor = new Color(26, 21, 37);      // Subtle dark purple highlight
+        Color detailColor = new Color(15, 12, 22);    // Deep dark purple accent
 
         int tileSize = 64;
 

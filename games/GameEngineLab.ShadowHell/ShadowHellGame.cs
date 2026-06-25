@@ -95,9 +95,6 @@ public sealed class ShadowHellGame : Game
         // Shape renderer for solid walls/caverns/pillars (pure black silhouette foreground)
         _scheduler.AddSystem(new ShapeRenderSystem());
 
-        // Fortress brick highlights and boundary cracks
-        _scheduler.AddSystem(new FortressRendererSystem());
-
         // Enemy steering AI and crawl rendering
         _scheduler.AddSystem(new EnemySystem());
 
@@ -272,8 +269,8 @@ public sealed class ShadowHellGame : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        // Hell oppressive dark background tint (Very dark ash brown-black)
-        GraphicsDevice.Clear(new Color(24, 12, 14));
+        // Dark black/purple theme background clear color
+        GraphicsDevice.Clear(new Color(10, 8, 15));
 
         var frameContext = new FrameContext(
             gameTime,
@@ -329,14 +326,14 @@ public sealed class ShadowHellGame : Game
             if (_font != null)
             {
                 // Title shadow
-                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(32, 22), Color.DarkRed * 0.5f, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
-                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(30, 20), Color.Red, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
+                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(32, 22), new Color(80, 0, 120) * 0.5f, 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
+                _spriteBatch.DrawString(_font, "SHADOWHELL", new Vector2(30, 20), new Color(177, 0, 255), 0f, Vector2.Zero, 2.0f, SpriteEffects.None, 0f);
 
                 // Subtitle
                 _spriteBatch.DrawString(_font, "Android Roguelike Techbed - testing build", new Vector2(30, 60), Color.Gray, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0f);
 
                 // Instructions
-                string controls = "CONTROLS:\nWASD / Arrows - Move\nSpace - Procedural Jump\nLeft Shift - Dodge Roll";
+                string controls = "CONTROLS:\nWASD / Arrows - Move\nSpace / Left Shift - Dodge Roll (Smooth Hover)";
                 _spriteBatch.DrawString(_font, controls, new Vector2(30, WindowHeight - 100), Color.LightGray * 0.8f, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0f);
             }
 

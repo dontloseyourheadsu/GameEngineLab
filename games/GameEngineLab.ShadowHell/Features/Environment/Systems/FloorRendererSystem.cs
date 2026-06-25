@@ -22,55 +22,13 @@ public sealed class FloorRendererSystem : IGameSystem
     {
         if (frameContext.SpriteBatch == null || frameContext.DebugPixel == null) return;
 
-        // Retrieve generated textures
-        if (!world.TryGetResource<GameTextureResource>(out var textures) || textures == null) return;
-
-        // Obtain camera to perform viewport frustum culling
-        world.TryGetResource<CameraResource>(out var camera);
-        
-        float minX = 0f;
-        float maxX = WorldWidth;
-        float minY = 0f;
-        float maxY = WorldHeight;
-
-        if (camera != null)
-        {
-            float halfW = frameContext.Viewport.Width / 2f;
-            float halfH = frameContext.Viewport.Height / 2f;
-            // Pad by 1 tile size to avoid border pop-in
-            minX = MathHelper.Clamp(camera.Position.X - halfW - TileSize, 0f, WorldWidth);
-            maxX = MathHelper.Clamp(camera.Position.X + halfW + TileSize, 0f, WorldWidth);
-            minY = MathHelper.Clamp(camera.Position.Y - halfH - TileSize, 0f, WorldHeight);
-            maxY = MathHelper.Clamp(camera.Position.Y + halfH + TileSize, 0f, WorldHeight);
-        }
-
-        int startCol = (int)(minX / TileSize);
-        int endCol = Math.Min((int)(maxX / TileSize) + 1, (int)(WorldWidth / TileSize));
-        int startRow = (int)(minY / TileSize);
-        int endRow = Math.Min((int)(maxY / TileSize) + 1, (int)(WorldHeight / TileSize));
-
-        for (int r = startRow; r < endRow; r++)
-        {
-            for (int c = startCol; c < endCol; c++)
-            {
-                var destRect = new Rectangle(
-                    (int)(c * TileSize),
-                    (int)(r * TileSize),
-                    (int)TileSize,
-                    (int)TileSize
-                );
-
-                // Slight procedural grid shade variance to create organic landscape waves ( Celeste/Isaac look)
-                float wave = (float)(Math.Sin(c * 0.4f) * Math.Cos(r * 0.4f) * 0.05f);
-                float colorMod = 0.95f + wave;
-                Color tileColor = new Color(colorMod, colorMod, colorMod, 1.0f);
-
-                frameContext.SpriteBatch.Draw(
-                    textures.FloorTexture,
-                    destRect,
-                    tileColor
-                );
-            }
-        }
+        // Draw a solid black rectangle over the entire world map
+        ShapeRenderer.DrawRectangle(
+            frameContext.SpriteBatch,
+            frameContext.DebugPixel,
+            new Vector2(WorldWidth / 2f, WorldHeight / 2f),
+            new Vector2(WorldWidth, WorldHeight),
+            Color.Black
+        );
     }
 }
