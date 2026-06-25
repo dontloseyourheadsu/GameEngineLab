@@ -71,19 +71,29 @@ public sealed class EnemySystem : IGameSystem
     {
         if (frameContext.SpriteBatch == null || frameContext.DebugPixel == null) return;
 
-        // Draw glowing red eyes in the center of the black shadow enemies
+        // Draw black and white style enemies
         foreach (var entityId in world.GetEntitiesWith<EnemyComponent, TransformComponent, RigidBodyComponent>())
         {
             world.TryGetComponent<TransformComponent>(entityId, out var transform);
             world.TryGetComponent<RigidBodyComponent>(entityId, out var body);
 
-            // Glowing red eye offset slightly in movement direction (using body radius as reference)
+            // Draw crisp white outline around the enemy's body
+            ShapeRenderer.DrawCircleOutline(
+                frameContext.SpriteBatch, 
+                frameContext.DebugPixel, 
+                transform.Position, 
+                body.BoundingRadius, 
+                Color.White, 
+                2
+            );
+
+            // Glowing white eye in the center of the body
             Vector2 eyePos = transform.Position;
             
-            // Draw eye core
-            ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, eyePos, 4f, Color.Red);
-            // Draw eye glow
-            ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, eyePos, 8f, new Color(255, 0, 0, 100));
+            // Draw eye core (white)
+            ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, eyePos, 4f, Color.White);
+            // Draw eye glow (white)
+            ShapeRenderer.DrawCircle(frameContext.SpriteBatch, frameContext.DebugPixel, eyePos, 8f, new Color(255, 255, 255, 120));
         }
     }
 }
